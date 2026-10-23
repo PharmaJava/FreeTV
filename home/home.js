@@ -136,11 +136,11 @@
 
   // MARK: - Focus
 
-  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest'};
-  var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0};
+  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community'};
+  var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0};
   var cards = [];
 
-  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG; }
+  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM; }
 
   function updateFocus() {
     var i, list;
@@ -174,6 +174,7 @@
     focusRows($('settings'), st.row, st.zone === Z.SETTINGS);
     focusRows($('shelfedit'), st.edit, st.zone === Z.EDIT);
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
+    focusRows($('community'), st.comm, st.zone === Z.COMM && commOpen < 0);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
   }
 
@@ -494,6 +495,7 @@
     setClass($('settings'), 'open', false);
     setClass($('shelfedit'), 'open', false);
     setClass($('suggest'), 'open', false);
+    setClass($('community'), 'open', false);
     st.zone = Z.SHELF;
     updateFocus();
   }
@@ -528,6 +530,7 @@
     }
     rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
     rows.push({label: tr('Sugestões', 'Suggestions', 'Sugerencias'), value: '›', step: function (d) { if (d >= 0) openSuggest(); }});
+    if (TV.name !== 'tizen') rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});
     if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
     rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -568,6 +571,86 @@
     st.row = 0;
     renderSettings();
     setClass($('settings'), 'open', true);
+    updateFocus();
+  }
+
+  // MARK: - Community apps: the webOS Homebrew catalogue, read-only. Installing is done from the computer, with a hash check.
+
+  var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
+  var commList = [], commOpen = -1, commState = 'idle';
+
+  function commTitle() { return tr('Apps da comunidade', 'Community apps', 'Apps de la comunidad'); }
+
+  /** Apps that need a word of warning before installing (kept in step with tools/community.py). */
+  var COMM_CAUTION = {
+    'youtube.leanback.v4': ['Substitui o YouTube oficial: é preciso desinstalá-lo antes.', 'Replaces the official YouTube: uninstall it first.', 'Reemplaza el YouTube oficial: hay que desinstalar antes el oficial.'],
+    'com.open.hidden.menu': ['Abre o menu de serviço da LG: pode danificar a TV.', "Opens LG's service menu: it can break the TV.", 'Abre el menú de servicio de LG: puede estropear la tele.'],
+    'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.']
+  };
+
+  function openCommunity() {
+    setClass($('settings'), 'open', false);
+    st.zone = Z.COMM;
+    st.comm = 0;
+    commOpen = -1;
+    commState = commList.length ? 'ready' : 'loading';
+    renderCommunity();
+    setClass($('community'), 'open', true);
+    updateFocus();
+    if (commList.length) return;
+    Data.getJson(CATALOGUE, function (err, data) {
+      if (err || !data || !data.packages) { commState = 'error'; renderCommunity(); return; }
+      commList = data.packages.filter(function (p) { return p && p.id && p.manifest; }).sort(function (a, b) {
+        var ra = a.manifest.rootRequired ? 1 : 0, rb = b.manifest.rootRequired ? 1 : 0;
+        if (ra !== rb) return ra - rb;
+        return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
+      });
+      commState = 'ready';
+      renderCommunity();
+    });
+  }
+
+  function line(box, cls, text) { return el('div', 'dtext' + (cls ? ' ' + cls : ''), box, text); }
+
+  function renderCommunity() {
+    var box = $('community').firstChild;
+    box.innerHTML = '';
+    var title = el('div', 'title', box);
+    sym('apps', title);
+    title.appendChild(document.createTextNode(commTitle()));
+    if (commState !== 'ready') {
+      line(box, '', commState === 'error' ? tr('Sem conexão com o catálogo agora.', 'No connection to the catalogue right now.', 'Sin conexión con el catálogo ahora mismo.')
+          : tr('Carregando o catálogo…', 'Loading the catalogue…', 'Cargando el catálogo…'));
+      updateFocus();
+      return;
+    }
+    if (commOpen >= 0) {
+      var a = commList[commOpen], m = a.manifest, req = a.requirements || {};
+      line(box, '', '').appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
+      line(box, '', a.shortDescription || m.appDescription || '');
+      line(box, '', tr('Precisa de: ', 'Needs: ', 'Necesita: ') + (req.webosRelease ? 'webOS ' + req.webosRelease : tr('nada especial', 'nothing special', 'nada especial')) +
+          (req.deviceSoC ? ' · chip ' + req.deviceSoC.join(', ') : ''));
+      if (m.rootRequired) line(box, 'warn', tr('Precisa de root: o FreeTV não instala isto.', 'Needs root: FreeTV does not install this.', 'Necesita root: FreeTV no la instala.'));
+      else line(box, '', tr('Sem root: dá para instalar pelo computador.', 'No root: it can be installed from the computer.', 'Sin root: se instala desde el ordenador.'));
+      if (COMM_CAUTION[a.id]) { var cw = COMM_CAUTION[a.id]; line(box, 'warn', tr(cw[0], cw[1], cw[2])); }
+      if (m.sourceUrl) line(box, '', tr('Código: ', 'Code: ', 'Código: ') + m.sourceUrl);
+      if (!m.rootRequired) line(box, 'code', 'python3 tools/community.py install ' + a.id + ' <IP>');
+      el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));
+      updateFocus();
+      return;
+    }
+    el('div', 'hint', box, tr('Do catálogo webOS Homebrew. Só lista: instala-se pelo computador, com verificação.',
+        'From the webOS Homebrew catalogue. Read-only: you install from the computer, with a check.',
+        'Del catálogo webOS Homebrew. Solo lectura: se instala desde el ordenador, con comprobación.')).style.marginBottom = '14px';
+    var list = el('div', 'list', box), holder = el('div', 'rows', list);
+    list.style.height = Math.min(commList.length, 7) * 78 + 'px';
+    for (var i = 0; i < commList.length; i++) {
+      var p = commList[i], row = el('div', 'row', holder, p.title), v = el('span', 'value', row);
+      var root = !!p.manifest.rootRequired;
+      el('span', 'tag' + (root ? ' root' : ''), v, root ? 'root' : tr('sem root', 'no root', 'sin root'));
+      hover(row, Z.COMM, i);
+    }
+    el('div', 'hint', box, tr('OK mostra os detalhes', 'OK shows the details', 'OK muestra los detalles'));
     updateFocus();
   }
 
@@ -740,6 +823,9 @@
       case Z.EDIT:
         editShelf(0);
         return;
+      case Z.COMM:
+        if (commOpen < 0 && commList[st.comm]) { commOpen = st.comm; renderCommunity(); }
+        return;
       case Z.SUGG:
         if (suggestNow[st.sug]) { var sr = suggestNow[st.sug]; sr.step(1); if (st.zone === Z.SUGG) renderSuggest(); }
         return;
@@ -797,6 +883,9 @@
         if (dy) st.edit = Math.max(0, Math.min(apps.length - 1, st.edit + dy));
         else if (dx) editShelf(dx);
         break;
+      case Z.COMM:
+        if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
+        break;
       case Z.SUGG:
         if (dy) st.sug = Math.max(0, Math.min(suggestNow.length - 1, st.sug + dy));
         else if (dx && suggestNow[st.sug] && suggestNow[st.sug].toggle === undefined) { suggestNow[st.sug].step(dx); renderSuggest(); }
@@ -808,6 +897,14 @@
   function back() {
     if (grabbed >= 0) { drop(); return; }
     if (st.zone === Z.EDIT) { setClass($('shelfedit'), 'open', false); openSettings(); st.row = rowsNow.length - 2; updateFocus(); return; }
+    if (st.zone === Z.COMM) {
+      if (commOpen >= 0) { commOpen = -1; renderCommunity(); return; }
+      setClass($('community'), 'open', false);
+      openSettings();
+      for (var c = 0; c < rowsNow.length; c++) if (rowsNow[c].label === commTitle()) st.row = c;
+      updateFocus();
+      return;
+    }
     if (st.zone === Z.SUGG) {
       setClass($('suggest'), 'open', false);
       openSettings();
@@ -824,7 +921,7 @@
   /** The pointer focuses what it's over (the Magic Remote, or a mouse when previewing). */
   function hover(node, zone, index) {
     node.onmouseover = function () {
-      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG))) return;
+      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
       if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
       if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
@@ -837,6 +934,7 @@
       else if (zone === Z.SETTINGS) st.row = index;
       else if (zone === Z.EDIT) st.edit = index;
       else if (zone === Z.SUGG) st.sug = index;
+      else if (zone === Z.COMM) st.comm = index;
       updateFocus();
     };
     node.onclick = function () { node.onmouseover(); activate(); };

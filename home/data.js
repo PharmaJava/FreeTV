@@ -582,6 +582,7 @@ var Data = (function () {
   return {
     COINS: COINS,
     FIRST_FUND: FIRST_FUND,
+    getJson: function (url, done) { get(url, {}, done); },
     city: Place.city,
     currency: CURRENCY,
     onChange: function (fn) { listeners.push(fn); },

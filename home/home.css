@@ -314,6 +314,13 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 /* Samsung's logos are not squares with their own background: they sit inside the tile, on its brand color. */
 .tv-tizen .tile img.ico, .tv-tizen .cell .face img.ico { left: 12%; top: 12%; width: 76%; height: 76%; -o-object-fit: contain; object-fit: contain; }
+/* Community apps: a detail page of plain text lines. */
+#community .dtext { margin: 0 0 12px; font-size: 25px; line-height: 34px; color: rgba(245, 245, 247, 0.82); white-space: normal; word-wrap: break-word; }
+#community .dtext b { color: #FFF; font-weight: 600; }
+#community .dtext.warn { color: #FFD9A0; }
+#community .dtext.code { font-family: monospace; font-size: 21px; line-height: 30px; color: #BFD8FF; }
+#community .tag { color: rgba(245, 245, 247, 0.6); }
+#community .tag.root { color: #FFB4A8; }
 /* An app that is a symbol, like Live TV. */
 .tile .bigsym, .cell .face .bigsym { position: absolute; left: 50%; top: 50%; width: 56%; height: 56%; color: #FFF; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); }
 /* LG's icons are squares with their own background: they fill the tile. */
@@ -461,7 +468,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .cell.focus .face { -webkit-transform: scale(1.08); transform: scale(1.08); box-shadow: 0 16px 34px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
 .cell.focus .label { color: #FFF; }
 
-#settings .box, #shelfedit .box, #suggest .box {
+#settings .box, #shelfedit .box, #suggest .box, #community .box {
   position: absolute;
   left: 560px;
   top: 150px;

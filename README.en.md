@@ -123,6 +123,12 @@ Your `config.properties` (with your TMDB key) is **never** uploaded: it is in `.
 **blocks a commit** that would publish a key or a private file. If you plan to change FreeTV and push, turn it on once:
 `git config core.hooksPath .githooks`. Check the whole history any time with `python3 tools/check_secrets.py --all`.
 
+## Community apps (ad-free YouTube, Kodi, Jellyfin…)
+
+*Home Settings → Community apps* shows the webOS Homebrew catalogue, and `python3 tools/community.py install <id> <IP>` installs
+**the ones that don't need root** (36 of 56), checking their hash first. Ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex,
+RetroArch, IPTV… Anything that needs root is **not installed**: FreeTV does not root TVs. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
+
 ## Other TVs
 
 | TV | What there is | Status |

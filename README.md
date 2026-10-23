@@ -171,6 +171,12 @@ git config core.hooksPath .githooks
 
 Y puedes revisar todo el historial cuando quieras con `python3 tools/check_secrets.py --all`.
 
+## Apps de la comunidad (YouTube sin anuncios, Kodi, Jellyfin…)
+
+*Ajustes de inicio → Apps de la comunidad* muestra el catálogo de webOS Homebrew, y `python3 tools/community.py install <id> <IP>`
+instala **las que no necesitan root** (36 de 56), comprobando su hash antes. YouTube sin anuncios, Kodi, Jellyfin, Moonlight,
+Plex nativo, RetroArch, IPTV… Lo que pide root **no se instala**: FreeTV no hace root. Todo en [docs/COMUNIDAD.md](docs/COMUNIDAD.md).
+
 ## Otras teles
 
 | Tele | Qué hay | Estado |
