@@ -659,7 +659,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' ? 25000 : 15000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' ? 70000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -1250,7 +1250,7 @@
     setClass(body, 'night', Data.isNight(Date.now()));
   }
 
-  var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverTimer = 0, SAVER_AFTER = 5 * 60000;
+  var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 5 * 60000;
 
   function showSaver() {
     var mode = Data.saver(), photos = mode === 'places' ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
@@ -1280,17 +1280,31 @@
       var p = photos.length ? photos[saverIndex++ % photos.length] : null;
       var back = front === a ? b : a;
       if (p && p.place) {
-        // [file, place, author, licence]: the author and the licence are shown, as CC BY asks.
-        back.style.backgroundImage = 'url(https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(p.place[0]) + '?width=1920)';
-        back.style.webkitTransform = back.style.transform = 'scale(1.0)';
-        clock.lastChild.textContent = p.place[1];
-        credit.textContent = '© ' + p.place[2] + ' · ' + p.place[3] + ' · Wikimedia Commons';
-        setTimeout(function () {
-          setClass(back, 'on', true);
-          setClass(front, 'on', false);
-          back.style.webkitTransform = back.style.transform = 'scale(1.08) translateX(-1.5%)';
-          front = back;
-        }, 60);
+        // A photo from the web is fetched first and shown when it is ready (a slow one never leaves a black screen); one that
+        // fails or takes too long is skipped.
+        var im = new Image(), mine = ++saverSeq, settled = false;
+        var go = function (ok) {
+          if (settled || !saverOn || mine !== saverSeq) return;
+          settled = true;
+          if (!ok) { saverTimer = setTimeout(next, 1000); return; }
+          back.style.backgroundImage = 'url(' + im.src + ')';
+          back.style.webkitTransform = back.style.transform = 'scale(1.0)';
+          clock.lastChild.textContent = p.place[1];
+          credit.textContent = '© ' + p.place[2] + ' · ' + p.place[3] + ' · Wikimedia Commons';   // as CC BY asks
+          setTimeout(function () {
+            setClass(back, 'on', true);
+            setClass(front, 'on', false);
+            back.style.webkitTransform = back.style.transform = 'scale(1.08) translateX(-1.5%)';
+            front = back;
+          }, 60);
+          tickSaverClock(clock);
+          saverTimer = setTimeout(next, 12000);
+        };
+        im.onload = function () { go(true); };
+        im.onerror = function () { go(false); };
+        setTimeout(function () { go(false); }, 40000);
+        im.src = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(p.place[0]) + '?width=1920';
+        return;
       } else if (p) {
         credit.textContent = '';
         back.style.backgroundImage = 'url(' + Data.image(p.backdrop, 'original') + ')';
@@ -1471,6 +1485,9 @@
     Data.refresh();
     if (openedForStore) openCommunity();
   });
+  // Wake the store service now, so the first visit to the Store does not wait for its cold start (about 30 s on the TV).
+  if (TV.name === 'webos') setTimeout(function () { svcCall('status', {}, function () {}); }, 20000);
+
   setInterval(function () {
     renderClock();
     checkNight();
