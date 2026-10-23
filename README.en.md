@@ -127,7 +127,8 @@ Your `config.properties` (with your TMDB key) is **never** uploaded: it is in `.
 
 *Home Settings → Community apps* shows the webOS Homebrew catalogue, and `python3 tools/community.py install <id> <IP>` installs
 **the ones that don't need root** (36 of 56), checking their hash first. Ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex,
-RetroArch, IPTV… Anything that needs root is **not installed**: FreeTV does not root TVs. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
+RetroArch, IPTV… With `python3 tools/community.py serve <IP>` running on the computer, the TV's own screen installs them
+(**Install on this TV** button). Anything that needs root is **not installed**: FreeTV does not root TVs. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
 
 ## Other TVs
 

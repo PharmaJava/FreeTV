@@ -39,6 +39,10 @@ Vuelve a activar el *Dev Mode Status* y ejecuta otra vez `bash install.sh <IP>`.
 **Una app de la comunidad dice «no available space».** La tele tiene poco espacio para apps. Borra en la tele las que no uses
 (mantén OK sobre ellas en el inicio de LG): desde el ordenador no se puede. Mira [COMUNIDAD.md](COMUNIDAD.md).
 
+**La tienda de la tele dice «No encuentro el ordenador».** Hace falta `python3 tools/community.py serve <IP de la tele>` abierto en un
+ordenador de **la misma red**, y que su cortafuegos deje entrar el puerto 8777 desde la tele. Si el ordenador cambió de dirección, vuelve a
+ejecutar `serve` (se lo cuenta a la tele). Mira [COMUNIDAD.md](COMUNIDAD.md).
+
 **YouTube sin anuncios: «Success» pero no se instala, y desaparece el acceso de YouTube del inicio de LG.** Instalaste con el YouTube
 oficial puesto. Reinicia la tele (el acceso suele volver), **bórralo tú en la tele** y vuelve a instalar con `--official-removed`.
 

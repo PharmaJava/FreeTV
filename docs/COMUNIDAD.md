@@ -1,11 +1,34 @@
 # Apps de la comunidad (YouTube sin anuncios, Kodi, Jellyfin, Moonlight…)
 
 FreeTV lee el catálogo de [webOS Homebrew](https://repo.webosbrew.org) (el proyecto comunitario de apps para LG) y te deja
-**ver todas** desde la tele e **instalar** desde el ordenador **las que no necesitan root**. Hoy son **36 de 56**.
+**ver todas** desde la tele e **instalar** **las que no necesitan root**. Hoy son **36 de 56**.
 
-- **En la tele:** *Ajustes de inicio → Apps de la comunidad*. Es solo lectura: lista cada app («sin root» o «root»), y con OK ves
-  su ficha: qué es, qué necesita, dónde está su código y el comando para instalarla.
+- **En la tele:** *Ajustes de inicio → Apps de la comunidad*. Lista cada app («sin root» o «root»), y con OK ves su ficha: qué es,
+  qué necesita, dónde está su código y, si tu ordenador está conectado (siguiente apartado), el botón **Instalar en esta tele**.
 - **En el ordenador:** `python3 tools/community.py` (solo necesita Python 3).
+
+## Instalar desde la tele (la «tienda»)
+
+Una app de la tele **no puede instalar paquetes sin root** (el instalador que hay dentro de la tele es el de Homebrew, que es root).
+Por eso la tele le pide la instalación a **tu ordenador**, que hace el trabajo de siempre (descarga, hash, instalación):
+
+```bash
+python3 tools/community.py serve 192.168.1.140     # la IP de tu tele; déjalo abierto mientras instalas
+```
+
+1. El comando abre en la tele la pantalla *Apps de la comunidad* y le dice dónde está el ordenador (nadie escribe direcciones con el mando).
+2. En la ficha de una app **sin root** aparece **Instalar en esta tele**. Al pulsarlo te pide confirmación; las apps con aviso
+   (YouTube AdFree, las «sensibles») enseñan su aviso y la pantalla empieza en **Cancelar**.
+3. El ordenador descarga el paquete, comprueba el SHA-256 y lo instala; la tele va mostrando cada paso y el resultado.
+
+Qué hace para ser seguro, además de lo de abajo: solo atiende a **la dirección de la tele**; exige una cabecera que una página web no
+puede mandar por su cuenta; la tele solo manda el **identificador** (el ordenador busca la app en el catálogo, nunca descarga una dirección
+que le dé la tele); una instalación cada vez; y **no instala sin que lo confirmes tú en la tele**. Con `--no-launch` no abre la tele
+al arrancar; con `--port N` cambia el puerto (8777).
+
+Si la tele no encuentra el ordenador, la ficha lo dice y enseña el comando. Si tu ordenador tiene una dirección fija, puedes ponerla en
+`community_host=` de `config.properties` y volver a ejecutar `bash install.sh <IP>`. El ordenador y la tele tienen que estar en la misma
+red, y el cortafuegos del ordenador debe dejar entrar al puerto 8777 desde la tele.
 
 ```bash
 python3 tools/community.py list                          # las que se pueden instalar sin root
@@ -13,6 +36,7 @@ python3 tools/community.py list --all                    # también las que pide
 python3 tools/community.py info org.xbmc.kodi            # ficha: versión, código, requisitos, hash
 python3 tools/community.py install org.xbmc.kodi 192.168.1.140
 python3 tools/community.py remove  org.xbmc.kodi 192.168.1.140
+python3 tools/community.py serve   192.168.1.140        # instalar desde la pantalla de la tele
 ```
 
 Hace falta haber instalado FreeTV antes (`bash install.sh <IP>`): deja las herramientas de LG y el perfil de tu tele.
@@ -22,8 +46,8 @@ Hace falta haber instalado FreeTV antes (`bash install.sh <IP>`): deja las herra
 1. **Solo sin root.** Si el catálogo dice que una app necesita root, `install` se niega. FreeTV no hace root a ninguna tele.
 2. **Comprueba el hash.** Descarga el paquete, calcula su SHA-256 y lo compara con el del catálogo. Si falta o no coincide, **lo borra
    y no instala nada**. (Lo probamos con un hash falso: lo rechaza.)
-3. **Te enseña lo que va a instalar** (nombre, versión, dónde está su código, dirección de descarga) y **te lo pregunta**.
-   `--yes` salta la pregunta, para scripts.
+3. **Te enseña lo que va a instalar** (nombre, versión, dónde está su código, dirección de descarga) y **te lo pregunta**
+   (en la terminal, o en la pantalla de la tele con `serve`). `--yes` salta la pregunta, para scripts.
 4. **Avisos extra** en tres casos, con una bandera que tienes que escribir a propósito (más abajo).
 5. Solo habla con `repo.webosbrew.org` y con la dirección `https` del paquete que el propio catálogo publica.
 
@@ -81,7 +105,7 @@ funciones más potentes del **Homebrew Channel**.
 FreeTV **no hace root ni lo recomienda**: puede dejar la tele sin arrancar o sin garantía, cada modelo y versión de firmware es
 distinto y se puede perder lo que hoy funciona. El Homebrew Channel, sin root, **sirve de poco**: su tienda se puede instalar, pero
 sus funciones importantes (ejecutar como root, ajustes de arranque, acceso SSH) necesitan una tele rooteada. Por eso FreeTV trae su
-**propia tienda de lectura** (la pantalla de arriba) y el instalador con comprobación de hash, que hacen lo útil sin root.
+**propia tienda** (la pantalla de arriba, con el instalador de `serve`) y el instalador con comprobación de hash, que hacen lo útil sin root.
 
 Si de todos modos quieres investigarlo por tu cuenta, la documentación de referencia es la del proyecto
 (https://www.webosbrew.org) y la compatibilidad por modelo se mira en https://cani.rootmy.tv. **FreeTV no lo ha probado y no da
@@ -97,5 +121,11 @@ RetroArch). Una (el reproductor IPTV de lennylxx) no aparece en el catálogo y n
 
 El catálogo es `https://repo.webosbrew.org/api/apps.json` (permite leerlo desde la propia pantalla). Cada app trae
 `manifest.rootRequired`, `manifest.ipkUrl`, `manifest.ipkHash.sha256` y `requirements`. El código de la pantalla es `openCommunity()`
-en `home/home.js`; el instalador es `tools/community.py`. Los avisos extra están **en los dos sitios** (`CAUTION` y `COMM_CAUTION`):
-si cambias uno, cambia el otro.
+en `home/home.js`; el instalador es `tools/community.py`. Los avisos extra están **en los dos sitios** (`CAUTION` y `COMM_CAUTION`,
+y la bandera de cada uno en `COMM_FLAG`): si cambias uno, cambia los otros.
+
+`serve` es un servidor HTTP mínimo (`/ping`, `/status`, `POST /install?id=…&flag=…`) en la dirección del ordenador que da la ruta hacia la
+tele. Lo arranca con `ares-launch com.gathin.tvhome -p {"storeHost","storePort","n"}`: la pantalla lee esos parámetros (`PalmSystem.launchParams`
+al arrancar, `webOSRelaunch` si ya corría), solo acepta direcciones privadas y recuerda el último `n` para no reabrirse con parámetros viejos.
+**Esa parte (los parámetros de lanzamiento y la tienda en una tele real) no la hemos probado aún en una tele**: se probó el servidor con
+herramientas `ares` simuladas y la pantalla en un navegador.

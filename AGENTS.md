@@ -40,7 +40,9 @@ Read [`docs/GUIA-IA.md`](docs/GUIA-IA.md) first: it is written for exactly this.
 | `tools/build_home.py` | Builds `out/home` from `home/` and `config.properties` |
 | `tools/patch_helper.py` | The two helper fixes |
 | `install.sh` | The whole install (LG) |
-| `tools/community.py` | Installs community apps from the webOS Homebrew catalogue: no-root only, SHA-256 checked, asks first. Cautions live here (`CAUTION`) and in `home/home.js` (`COMM_CAUTION`): keep both in step. **Never install anything on the person's TV without their yes for that app.** Store/LG apps cannot be removed from the computer (`FAILED_REMOVE`); installing an app whose id belongs to a store app (YouTube AdFree) while the original is present half-breaks the original's launcher entry: the person must delete the original on the TV first |
+| `tools/community.py` | Installs community apps from the webOS Homebrew catalogue: no-root only, SHA-256 checked, asks first. Cautions live here (`CAUTION`) and in `home/home.js` (`COMM_CAUTION`, flags in `COMM_FLAG`): keep them in step. `serve` lets the TV's
+Community screen install through the computer (the TV app itself cannot install without root); it answers only the TV's IP, only catalogue
+ids, and every install is confirmed on the TV. The TV side of it (launch params from `ares-launch -p`) is untested on real hardware. **Never install anything on the person's TV without their yes for that app.** Store/LG apps cannot be removed from the computer (`FAILED_REMOVE`); installing an app whose id belongs to a store app (YouTube AdFree) while the original is present half-breaks the original's launcher entry: the person must delete the original on the TV first |
 | `tizen/` | Samsung: `build.py` (unsigned/signed .wgt), `install.py` (SDB over Wi-Fi). Experimental, untested by us on a Samsung |
 | `android/` | Free My TV's Android app, unchanged (`build.sh`, `app/`). Not built or tested by us. Never commit its `config.properties`, `*.keystore` or `*.apk` |
 

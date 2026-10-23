@@ -174,7 +174,7 @@
     focusRows($('settings'), st.row, st.zone === Z.SETTINGS);
     focusRows($('shelfedit'), st.edit, st.zone === Z.EDIT);
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
-    focusRows($('community'), st.comm, st.zone === Z.COMM && commOpen < 0);
+    focusRows($('community'), commOpen < 0 ? st.comm : commAct, st.zone === Z.COMM);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
   }
 
@@ -574,10 +574,13 @@
     updateFocus();
   }
 
-  // MARK: - Community apps: the webOS Homebrew catalogue, read-only. Installing is done from the computer, with a hash check.
+  // MARK: - Community apps: the webOS Homebrew catalogue. A TV app cannot install packages without root, so the install is done
+  // by the person's computer (tools/community.py serve): the TV asks, the computer downloads, checks the hash and installs.
 
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
-  var commList = [], commOpen = -1, commState = 'idle';
+  var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
+  // conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
+  var store = {conn: 'none', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0}, storeTimer = 0;
 
   function commTitle() { return tr('Apps da comunidade', 'Community apps', 'Apps de la comunidad'); }
 
@@ -585,8 +588,107 @@
   var COMM_CAUTION = {
     'youtube.leanback.v4': ['Substitui o YouTube oficial: apague-o você na TV antes (o computador não consegue).', 'Replaces the official YouTube: delete it yourself on the TV first (the computer cannot).', 'Reemplaza el YouTube oficial: bórralo tú en la tele antes (desde el ordenador no se puede).'],
     'com.open.hidden.menu': ['Abre o menu de serviço da LG: pode danificar a TV.', "Opens LG's service menu: it can break the TV.", 'Abre el menú de servicio de LG: puede estropear la tele.'],
+    'com.pirate.refresh': ['Renova o Modo Desenvolvedor por conta própria: o FreeTV já tem o seu painel.', 'Renews Developer Mode on its own: FreeTV already has its panel.', 'Renueva el Modo Desarrollador por su cuenta: FreeTV ya trae su panel.'],
     'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.']
   };
+  /** The flag tools/community.py wants for them (CAUTION there): the person gives it by confirming on this screen. */
+  var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive'};
+
+  function privateIp(ip) {
+    var p = ip.split('.'), i;
+    for (i = 0; i < 4; i++) if (+p[i] > 255) return false;
+    return +p[0] === 10 || (+p[0] === 172 && +p[1] >= 16 && +p[1] <= 31) || (+p[0] === 192 && +p[1] === 168);
+  }
+
+  /** `community.py serve` opens this app with {storeHost, storePort, n}: keep where the computer is (a new n each time, so an old
+      launch's parameters do not reopen the store). Only addresses on a home network. */
+  function takeStoreHost(raw) {
+    var o = raw;
+    if (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { return false; } }
+    if (!o || typeof o !== 'object' || typeof o.storeHost !== 'string' || !/^\d{1,3}(\.\d{1,3}){3}$/.test(o.storeHost) || !privateIp(o.storeHost)) return false;
+    var port = o.storePort === undefined ? 8777 : +o.storePort, nonce = String(o.n || '');
+    if (!nonce || nonce === Prefs.storeNonce() || Math.floor(port) !== port || port < 1024 || port > 65535) return false;
+    Prefs.set('storeNonce', nonce);
+    Prefs.set('storeHost', o.storeHost + ':' + port);
+    store.conn = 'none';
+    return true;
+  }
+
+  function storeBase() {
+    var m = /^(\d{1,3}(?:\.\d{1,3}){3})(?::(\d{2,5}))?$/.exec(Prefs.storeHost() || '');
+    return m && privateIp(m[1]) ? 'http://' + m[1] + ':' + (m[2] || 8777) : '';
+  }
+
+  function storeCall(method, path, done) {
+    var base = storeBase();
+    if (!base) { done(new Error('no host')); return; }
+    var x = new XMLHttpRequest(), over = false;
+    x.open(method, base + path, true);
+    x.timeout = 6000;
+    x.setRequestHeader('X-FreeTV', '1');
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4 || over) return;
+      over = true;
+      var json = null;
+      try { json = JSON.parse(x.responseText); } catch (e) {}
+      if (x.status >= 200 && x.status < 300 && json) done(null, json);
+      else done(new Error(x.status === 0 ? 'no connection' : json && json.error ? json.error : 'HTTP ' + x.status), json);
+    };
+    x.ontimeout = x.onerror = function () { if (!over) { over = true; done(new Error('no connection')); } };
+    x.send();
+  }
+
+  function communityShown() { return st.zone === Z.COMM; }
+
+  /** Is the computer there? (Its answer redraws the screen.) */
+  function storeCheck() {
+    if (!storeBase()) { store.conn = 'none'; return; }
+    store.conn = 'checking';
+    storeCall('GET', '/ping', function (err, r) {
+      store.conn = !err && r && r.service === 'freetv-community' ? 'ok' : 'off';
+      if (communityShown()) renderCommunity();
+    });
+  }
+
+  function storeInstall(app) {
+    var flag = COMM_FLAG[app.id] || '';
+    store.id = app.id;
+    store.flow = 'working';
+    store.phase = 'starting';
+    store.message = store.note = '';
+    store.misses = 0;
+    renderCommunity();
+    storeCall('POST', '/install?id=' + encodeURIComponent(app.id) + (flag ? '&flag=' + flag : ''), function (err) {
+      if (err) { store.flow = 'failed'; store.message = err.message === 'no connection' ? tr('Sem conexão com o computador.', 'No connection to the computer.', 'Sin conexión con el ordenador.') : err.message; store.conn = 'off'; if (communityShown()) renderCommunity(); return; }
+      storePoll(app);
+    });
+  }
+
+  function storePoll(app) {
+    clearTimeout(storeTimer);
+    storeCall('GET', '/status', function (err, r) {
+      if (err || !r) {
+        // The computer may be busy for a moment; give up after a while.
+        if (++store.misses > 10) { store.flow = 'failed'; store.message = tr('O computador parou de responder.', 'The computer stopped answering.', 'El ordenador dejó de responder.'); if (communityShown()) renderCommunity(); return; }
+        storeTimer = setTimeout(function () { storePoll(app); }, 2000);
+        return;
+      }
+      store.misses = 0;
+      if (r.id !== app.id) { storeTimer = setTimeout(function () { storePoll(app); }, 1500); return; }
+      store.phase = r.phase;
+      store.note = r.note || '';
+      if (r.phase === 'done') {
+        store.flow = 'done';
+        toast(app.title + ': ' + tr('instalada', 'installed', 'instalada'));
+        loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); });
+      } else if (r.phase === 'failed') {
+        store.flow = 'failed';
+        store.message = r.message || '';
+        toast(app.title + ': ' + tr('não foi instalada', 'was not installed', 'no se instaló'));
+      } else storeTimer = setTimeout(function () { storePoll(app); }, 1500);
+      if (communityShown()) renderCommunity();
+    });
+  }
 
   function openCommunity() {
     setClass($('settings'), 'open', false);
@@ -597,6 +699,7 @@
     renderCommunity();
     setClass($('community'), 'open', true);
     updateFocus();
+    storeCheck();
     if (commList.length) return;
     Data.getJson(CATALOGUE, function (err, data) {
       if (err || !data || !data.packages) { commState = 'error'; renderCommunity(); return; }
@@ -612,6 +715,76 @@
 
   function line(box, cls, text) { return el('div', 'dtext' + (cls ? ' ' + cls : ''), box, text); }
 
+  /** A button on the detail page; OK runs it. */
+  function action(box, label, run) {
+    var i = commActs.length, row = el('div', 'row', box, label);
+    commActs.push(run);
+    row.onmouseover = function () { if (st.zone === Z.COMM && commAct !== i) { commAct = i; updateFocus(); } };
+    row.onclick = function () { commAct = i; updateFocus(); run(); };
+  }
+
+  function phaseText(phase) {
+    return phase === 'downloading' ? tr('Baixando o pacote no computador…', 'Downloading the package on the computer…', 'Descargando el paquete en el ordenador…')
+        : phase === 'verifying' ? tr('Conferindo o hash SHA-256…', 'Checking the SHA-256 hash…', 'Comprobando el hash SHA-256…')
+        : phase === 'installing' ? tr('Instalando na TV…', 'Installing on the TV…', 'Instalando en la tele…')
+        : tr('Preparando…', 'Getting ready…', 'Preparando…');
+  }
+
+  function renderDetail(box) {
+    var a = commList[commOpen], m = a.manifest, req = a.requirements || {}, mine = store.id === a.id ? store.flow : 'idle';
+    var warn = COMM_CAUTION[a.id], cmd = 'python3 tools/community.py serve <IP>';
+    commActs = [];
+    line(box, '', '').appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
+    if (mine === 'asking') {
+      line(box, '', tr('O computador baixa o pacote, confere o hash SHA-256 e instala na TV. Leva alguns minutos.',
+          'Your computer downloads the package, checks its SHA-256 hash and installs it on the TV. It takes a few minutes.',
+          'Tu ordenador descarga el paquete, comprueba su hash SHA-256 y lo instala en la tele. Tarda unos minutos.'));
+      if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
+      var go = warn ? (COMM_FLAG[a.id] === 'official-removed' ? tr('Já apaguei o oficial: instalar', 'I deleted the official: install', 'Ya borré el oficial: instalar')
+          : tr('Entendi o aviso: instalar', 'I understand: install', 'Entendido: instalar')) : tr('Instalar', 'Install', 'Instalar');
+      var stop = tr('Cancelar', 'Cancel', 'Cancelar');
+      // With a warning, OK lands on Cancel first.
+      if (warn) { action(box, stop, function () { store.flow = 'idle'; commAct = 0; renderCommunity(); }); action(box, go, function () { storeInstall(a); }); }
+      else { action(box, go, function () { storeInstall(a); }); action(box, stop, function () { store.flow = 'idle'; commAct = 0; renderCommunity(); }); }
+    } else if (mine === 'working') {
+      line(box, '', phaseText(store.phase));
+      line(box, '', tr('Não desligue a TV nem o computador. Voltar deixa a instalação continuar.', 'Do not turn off the TV or the computer. Back lets the install carry on.', 'No apagues la tele ni el ordenador. Atrás deja que siga instalándose.'));
+    } else if (mine === 'done' || mine === 'failed') {
+      if (mine === 'done') line(box, '', tr('Pronto: instalada. Procure em «Todos os Apps».', 'Done: installed. Look for it in "All Apps".', 'Listo: instalada. Búscala en «Todas las apps».'));
+      else line(box, 'warn', tr('Não foi possível instalar: ', 'Could not install: ', 'No se pudo instalar: ') + store.message);
+      if (store.note) line(box, 'warn', store.note);
+      action(box, mine === 'done' ? tr('Ver mais apps', 'Browse more apps', 'Ver más apps') : tr('Tentar de novo', 'Try again', 'Intentar de nuevo'), function () {
+        store.flow = 'idle';
+        if (mine === 'done') { commOpen = -1; }
+        commAct = 0;
+        renderCommunity();
+        storeCheck();
+      });
+    } else {
+      line(box, '', a.shortDescription || m.appDescription || '');
+      line(box, '', tr('Precisa de: ', 'Needs: ', 'Necesita: ') + (req.webosRelease ? 'webOS ' + req.webosRelease : tr('nada especial', 'nothing special', 'nada especial')) +
+          (req.deviceSoC ? ' · chip ' + req.deviceSoC.join(', ') : ''));
+      if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
+      if (m.sourceUrl) line(box, '', tr('Código: ', 'Code: ', 'Código: ') + m.sourceUrl);
+      if (m.rootRequired) line(box, 'warn', tr('Precisa de root: o FreeTV não instala isto.', 'Needs root: FreeTV does not install this.', 'Necesita root: FreeTV no la instala.'));
+      else if (store.conn === 'ok' && store.flow === 'working') line(box, '', tr('Há outra instalação em andamento.', 'Another install is in progress.', 'Hay otra instalación en marcha.'));
+      else if (store.conn === 'ok') {
+        action(box, tr('Instalar nesta TV', 'Install on this TV', 'Instalar en esta tele'), function () {
+          store.flow = 'asking'; store.id = a.id; commAct = 0; renderCommunity();
+        });
+      } else if (store.conn === 'checking') line(box, '', tr('Procurando o computador…', 'Looking for the computer…', 'Buscando el ordenador…'));
+      else {
+        line(box, '', store.conn === 'off' ? tr('Não encontro o computador. No computador, com o FreeTV instalado, execute:', 'Cannot reach the computer. On the computer, with FreeTV installed, run:', 'No encuentro el ordenador. En el ordenador, con FreeTV instalado, ejecuta:')
+            : tr('Para instalar daqui, no computador execute:', 'To install from here, on the computer run:', 'Para instalar desde aquí, en el ordenador ejecuta:'));
+        line(box, 'code', cmd);
+        action(box, tr('Verificar de novo', 'Check again', 'Comprobar de nuevo'), function () { storeCheck(); renderCommunity(); });
+      }
+    }
+    if (commAct >= commActs.length) commAct = 0;
+    el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));
+    updateFocus();
+  }
+
   function renderCommunity() {
     var box = $('community').firstChild;
     box.innerHTML = '';
@@ -624,24 +797,12 @@
       updateFocus();
       return;
     }
-    if (commOpen >= 0) {
-      var a = commList[commOpen], m = a.manifest, req = a.requirements || {};
-      line(box, '', '').appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
-      line(box, '', a.shortDescription || m.appDescription || '');
-      line(box, '', tr('Precisa de: ', 'Needs: ', 'Necesita: ') + (req.webosRelease ? 'webOS ' + req.webosRelease : tr('nada especial', 'nothing special', 'nada especial')) +
-          (req.deviceSoC ? ' · chip ' + req.deviceSoC.join(', ') : ''));
-      if (m.rootRequired) line(box, 'warn', tr('Precisa de root: o FreeTV não instala isto.', 'Needs root: FreeTV does not install this.', 'Necesita root: FreeTV no la instala.'));
-      else line(box, '', tr('Sem root: dá para instalar pelo computador.', 'No root: it can be installed from the computer.', 'Sin root: se instala desde el ordenador.'));
-      if (COMM_CAUTION[a.id]) { var cw = COMM_CAUTION[a.id]; line(box, 'warn', tr(cw[0], cw[1], cw[2])); }
-      if (m.sourceUrl) line(box, '', tr('Código: ', 'Code: ', 'Código: ') + m.sourceUrl);
-      if (!m.rootRequired) line(box, 'code', 'python3 tools/community.py install ' + a.id + ' <IP>' + (a.id === 'youtube.leanback.v4' ? ' --official-removed' : ''));
-      el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));
-      updateFocus();
-      return;
-    }
-    el('div', 'hint', box, tr('Do catálogo webOS Homebrew. Só lista: instala-se pelo computador, com verificação.',
-        'From the webOS Homebrew catalogue. Read-only: you install from the computer, with a check.',
-        'Del catálogo webOS Homebrew. Solo lectura: se instala desde el ordenador, con comprobación.')).style.marginBottom = '14px';
+    if (commOpen >= 0) { renderDetail(box); return; }
+    el('div', 'hint', box, store.conn === 'ok'
+        ? tr('Computador conectado: na ficha de cada app (sem root) dá para instalar.', 'Computer connected: each app without root can be installed from its page.', 'Ordenador conectado: en la ficha de cada app (sin root) se puede instalar.')
+        : tr('Do catálogo webOS Homebrew. Para instalar daqui, conecte o computador (veja qualquer ficha).',
+            'From the webOS Homebrew catalogue. To install from here, connect the computer (see any app page).',
+            'Del catálogo webOS Homebrew. Para instalar desde aquí, conecta el ordenador (mira cualquier ficha).')).style.marginBottom = '14px';
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
     list.style.height = Math.min(commList.length, 7) * 78 + 'px';
     for (var i = 0; i < commList.length; i++) {
@@ -824,7 +985,8 @@
         editShelf(0);
         return;
       case Z.COMM:
-        if (commOpen < 0 && commList[st.comm]) { commOpen = st.comm; renderCommunity(); }
+        if (commOpen < 0 && commList[st.comm]) { commOpen = st.comm; commAct = 0; renderCommunity(); }
+        else if (commOpen >= 0 && commActs[commAct]) commActs[commAct]();
         return;
       case Z.SUGG:
         if (suggestNow[st.sug]) { var sr = suggestNow[st.sug]; sr.step(1); if (st.zone === Z.SUGG) renderSuggest(); }
@@ -885,6 +1047,7 @@
         break;
       case Z.COMM:
         if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
+        else if (commOpen >= 0 && dy) commAct = Math.max(0, Math.min(commActs.length - 1, commAct + dy));
         break;
       case Z.SUGG:
         if (dy) st.sug = Math.max(0, Math.min(suggestNow.length - 1, st.sug + dy));
@@ -898,7 +1061,12 @@
     if (grabbed >= 0) { drop(); return; }
     if (st.zone === Z.EDIT) { setClass($('shelfedit'), 'open', false); openSettings(); st.row = rowsNow.length - 2; updateFocus(); return; }
     if (st.zone === Z.COMM) {
-      if (commOpen >= 0) { commOpen = -1; renderCommunity(); return; }
+      if (commOpen >= 0) {
+        if (store.flow !== 'working') store.flow = 'idle';   // a running install carries on in the background
+        commOpen = -1;
+        renderCommunity();
+        return;
+      }
       setClass($('community'), 'open', false);
       openSettings();
       for (var c = 0; c < rowsNow.length; c++) if (rowsNow[c].label === commTitle()) st.row = c;
@@ -1128,11 +1296,12 @@
     checkNight();
   });
 
-  function reopened() {
+  function reopened(e) {
     // LG: with handlesRelaunch the app has to come to the front itself, or opening it again while it runs shows nothing.
     if (window.PalmSystem && window.PalmSystem.activate) window.PalmSystem.activate();
+    var toStore = takeStoreHost(e && e.detail) || takeStoreHost(window.PalmSystem && window.PalmSystem.launchParams);   // `community.py serve`
     reset();
-    loadApps(function () { renderShelf(); renderDrawer(); Data.refresh(); });
+    loadApps(function () { renderShelf(); renderDrawer(); Data.refresh(); if (toStore) openCommunity(); });
   }
 
   window.addEventListener('resize', fit);
@@ -1147,9 +1316,11 @@
   I18N.set(Prefs.language());
   fit();
   renderTop();
+  var openedForStore = takeStoreHost(window.PalmSystem && window.PalmSystem.launchParams);   // started by `community.py serve`
   loadApps(function () {
     renderAll();
     Data.refresh();
+    if (openedForStore) openCommunity();
   });
   setInterval(function () {
     renderClock();
