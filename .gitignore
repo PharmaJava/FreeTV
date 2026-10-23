@@ -1,0 +1,11 @@
+# Your settings (they can hold your TMDB key) and everything the installer creates stay on your computer
+config.properties
+out/
+work/
+dist/
+*.ipk
+.lgtv-key.json
+*.keystore
+.venv/
+node_modules/
+__pycache__/
