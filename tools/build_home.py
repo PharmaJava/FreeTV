@@ -18,6 +18,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'out', 'home')
 
 
+def community_host(value):
+    """The computer that installs community apps for the TV ("192.168.1.20" or "192.168.1.20:8777"), or ''."""
+    if value and not re.match(r'^\d{1,3}(\.\d{1,3}){3}(:\d{2,5})?$', value):
+        sys.exit('config.properties: community_host must be an address like 192.168.1.20 (got "%s")' % value)
+    return value
+
+
 def read_config(path):
     if not os.path.exists(path):
         shutil.copy(os.path.join(ROOT, 'config.example.properties'), path)
@@ -49,6 +56,7 @@ def read_config(path):
         'temperature': values.get('temperature', 'auto') or 'auto',
         'showCrypto': values.get('show_crypto', 'true').lower() != 'false',
         'hideAnimation': values.get('hide_animation', 'false').lower() == 'true',
+        'communityHost': community_host(values.get('community_host', '')),
         'hideServices': [s.strip().lower() for s in values.get('hide_services', '').split(',') if s.strip()],
     }
 

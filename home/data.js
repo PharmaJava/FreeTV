@@ -53,6 +53,9 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** Where the computer that installs community apps is ("192.168.1.20:8777"): told by `community.py serve`, or community_host. */
+    storeHost: function () { return pick('storeHost', CONFIG.communityHost || ''); },
+    storeNonce: function () { return pick('storeNonce', ''); },
     /** Whether picks may come from a streaming service (the person has an account there). Off for hide_services. */
     service: function (key) {
       var s = pick('services', null);
