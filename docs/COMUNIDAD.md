@@ -100,7 +100,7 @@ las mantiene; solo transmite lo que el catálogo publica.
 
 Mira la lista completa con `python3 tools/community.py list`.
 
-## Los tres avisos extra
+## Los avisos extra
 
 - **`--official-removed` (YouTube AdFree).** Usa el mismo identificador que el YouTube de LG, así que **antes hay que borrar el
   oficial, y solo se puede hacer en la tele**: en el inicio de LG, mantén **OK** sobre YouTube y elige *Eliminar* (se puede volver
@@ -113,6 +113,12 @@ Mira la lista completa con `python3 tools/community.py list`.
 - **`--sensitive` (Auto Dev Token Refresh).** Renueva el Modo Desarrollador por su cuenta. FreeTV ya trae su propio panel de
   renovación (beta): no hace falta usar los dos.
 - **`--sensitive` (Homebrew Channel).** Ver siguiente apartado.
+- **`--unofficial` (RezkaTV).** La única app que viene de **fuera del catálogo oficial**: el repositorio de su autor
+  (github.com/atlet99/rezkatv-public, licencia MIT). Es un cliente de **terceros** para HDRezka, un sitio de películas y series en
+  ruso que **no es una plataforma con licencia**; el propio autor dice que no está afiliado a él. FreeTV solo comprueba que no pide
+  root, que la descarga es https y que el hash SHA-256 coincide: **lo que hace la app y lo que ves con ella es cosa tuya.** Hay una
+  versión normal (webOS 5+) y otra `legacy` (webOS 3 y 4). Solo se leen de ese repositorio esos dos identificadores; lo demás que
+  tuviera no se ofrece. Si ese repositorio no responde, simplemente no aparece.
 
 ## Espacio, y borrar apps de LG
 
@@ -124,6 +130,16 @@ available space to install App». Jellyfin, YouTube AdFree y casi todas las dem�
 manteniendo **OK** sobre ellas en el inicio de LG. Candidatas habituales: apps promocionales (8 Ball Pool, SkyShowtime, LG Sports
 Playbook, LG Gaming Portal, LG Radio+, LG Movies & TV, RT News…) y las que no uses (Apple TV ocupa 48 MB).
 `tools/community.py` te avisa del espacio libre antes de instalar.
+
+## Salvapantallas bonitos, sin root
+
+Los salvapantallas «de verdad» del catálogo (Aerial, el personalizable…) **necesitan root**, así que no se instalan. Pero FreeTV trae
+el suyo: tras cinco minutos sin tocar el mando en el inicio, enseña fotos a pantalla completa con el reloj. En *Ajustes de inicio →
+Salvapantallas* eliges **Paisajes y sugerencias** (por defecto), **Paisajes** (solo lugares) o **Sugerencias** (solo las fotos de las
+recomendaciones). Los paisajes son unas 120 fotos de **Sevilla, Andalucía, España y Lituania** (naturaleza y monumentos) que
+Wikimedia Commons marca como destacadas o de calidad, **solo con licencia libre** (dominio público, CC0, CC BY o CC BY-SA). Cada foto
+muestra en la esquina su autor y su licencia, como piden esas licencias. Se descargan de Wikimedia al momento (sin clave de nadie). Para
+cambiar o ampliar las fotos: edita las categorías de `tools/make_landscapes.py` y ejecútalo (`python3 tools/make_landscapes.py`).
 
 ## Lo que NO se instala: root y el Homebrew Channel
 

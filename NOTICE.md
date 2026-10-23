@@ -18,6 +18,10 @@ TMDB.** Weather comes from Open-Meteo, crypto prices from Binance, and the S&P 5
 Finance (justETF as a fallback). Those are unofficial or free public endpoints: they can change or stop without notice,
 and the prices are information, not investment advice.
 
+The screensaver's landscape photos (`home/landscapes.js`) are not copied into this repository: the TV loads them from Wikimedia
+Commons, and each one is shown with its author and licence (public domain, CC0, CC BY or CC BY-SA). RezkaTV, offered in the store
+as an unofficial extra, is a third-party app (MIT) that this project does not make or endorse.
+
 FreeTV is not affiliated with, endorsed by or sponsored by LG Electronics. "LG" and "webOS" belong to their owners.
 Netflix, YouTube, Prime Video, Disney+ and the other app icons shown on the home screen are the icons your own TV gives
 to apps already installed on it.

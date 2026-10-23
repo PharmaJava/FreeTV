@@ -537,6 +537,12 @@
     }
     rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
     rows.push({label: tr('Sugestões', 'Suggestions', 'Sugerencias'), value: '›', step: function (d) { if (d >= 0) openSuggest(); }});
+    var modes = ['both', 'places', 'picks'], names = {
+      both: tr('Paisagens e sugestões', 'Places and picks', 'Paisajes y sugerencias'),
+      places: tr('Paisagens', 'Places', 'Paisajes'),
+      picks: tr('Sugestões', 'Picks', 'Sugerencias')};
+    rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
+      step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
     if (TV.name !== 'tizen') rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});
     if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
     rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
@@ -585,6 +591,8 @@
   // by the person's computer (tools/community.py serve): the TV asks, the computer downloads, checks the hash and installs.
 
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
+  // Other people's repositories, read only for these app ids (keep in step with store-service/store.js); they always need the "unofficial" confirmation.
+  var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']}];
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
   var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0}, storeTimer = 0;
@@ -596,10 +604,12 @@
     'youtube.leanback.v4': ['Substitui o YouTube oficial: apague-o você na TV antes (o computador não consegue).', 'Replaces the official YouTube: delete it yourself on the TV first (the computer cannot).', 'Reemplaza el YouTube oficial: bórralo tú en la tele antes (desde el ordenador no se puede).'],
     'com.open.hidden.menu': ['Abre o menu de serviço da LG: pode danificar a TV.', "Opens LG's service menu: it can break the TV.", 'Abre el menú de servicio de LG: puede estropear la tele.'],
     'com.pirate.refresh': ['Renova o Modo Desenvolvedor por conta própria: o FreeTV já tem o seu painel.', 'Renews Developer Mode on its own: FreeTV already has its panel.', 'Renueva el Modo Desarrollador por su cuenta: FreeTV ya trae su panel.'],
-    'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.']
+    'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.'],
+    'com.rezkatv.app': ['App de TERCEIROS, não oficial, para o HDRezka (site de filmes sem licença). O FreeTV só confere o hash: o uso é por sua conta.', 'THIRD-PARTY, unofficial app for HDRezka (an unlicensed movie site). FreeTV only checks the hash: using it is on you.', 'App de TERCEROS, no oficial, para HDRezka (un sitio de películas sin licencia). FreeTV solo comprueba el hash: usarla es cosa tuya.'],
+    'com.rezkatv.app.legacy': ['App de TERCEIROS (RezkaTV, webOS 3 e 4), não oficial: mesmo aviso.', 'THIRD-PARTY app (RezkaTV, webOS 3 and 4), unofficial: same warning.', 'App de TERCEROS (RezkaTV, webOS 3 y 4), no oficial: mismo aviso.']
   };
   /** The flag tools/community.py wants for them (CAUTION there): the person gives it by confirming on this screen. */
-  var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive'};
+  var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive', 'com.rezkatv.app': 'unofficial', 'com.rezkatv.app.legacy': 'unofficial'};
 
   function privateIp(ip) {
     var p = ip.split('.'), i;
@@ -798,7 +808,22 @@
       });
       commState = 'ready';
       renderCommunity();
+      EXTRA.forEach(function (src) {
+        Data.getJson(src.url, function (e2, d2) {
+          if (e2 || !d2 || !d2.packages) return;   // an extra source that does not answer is just not offered
+          d2.packages.forEach(function (p) {
+            if (p && p.manifest && src.ids.indexOf(p.id) >= 0 && !commList.some(function (o) { return o.id === p.id; })) commList.push(p);
+          });
+          if (commOpen < 0) { commList.sort(commOrder); renderCommunity(); }
+        });
+      });
     });
+  }
+
+  function commOrder(a, b) {
+    var ra = a.manifest.rootRequired ? 1 : 0, rb = b.manifest.rootRequired ? 1 : 0;
+    if (ra !== rb) return ra - rb;
+    return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
   }
 
   function line(box, cls, text) { return el('div', 'dtext' + (cls ? ' ' + cls : ''), box, text); }
@@ -1228,7 +1253,17 @@
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverTimer = 0, SAVER_AFTER = 5 * 60000;
 
   function showSaver() {
-    var photos = Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
+    var mode = Data.saver(), photos = mode === 'places' ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
+    if (mode !== 'picks' && typeof LANDSCAPES !== 'undefined') {
+      // Photos of the places (Wikimedia Commons, free licences) go in a random order, one after every pick when both are on.
+      var places = LANDSCAPES.slice(), mixed = [], j, k, t;
+      for (j = places.length - 1; j > 0; j--) { k = Math.floor(Math.random() * (j + 1)); t = places[j]; places[j] = places[k]; places[k] = t; }
+      for (j = 0; j < Math.max(places.length, photos.length); j++) {
+        if (j < places.length) mixed.push({place: places[j]});
+        if (j < photos.length) mixed.push(photos[j]);
+      }
+      photos = mixed;
+    }
     saverOn = true;
     var s = $('saver');
     s.innerHTML = '';
@@ -1238,12 +1273,26 @@
     el('div', 'time', clock);
     el('div', 'date', clock);
     el('div', 'title', clock);
+    var credit = el('div', 'credit', s);
     var front = a;
     function next() {
       if (!saverOn) return;
       var p = photos.length ? photos[saverIndex++ % photos.length] : null;
       var back = front === a ? b : a;
-      if (p) {
+      if (p && p.place) {
+        // [file, place, author, licence]: the author and the licence are shown, as CC BY asks.
+        back.style.backgroundImage = 'url(https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(p.place[0]) + '?width=1920)';
+        back.style.webkitTransform = back.style.transform = 'scale(1.0)';
+        clock.lastChild.textContent = p.place[1];
+        credit.textContent = '© ' + p.place[2] + ' · ' + p.place[3] + ' · Wikimedia Commons';
+        setTimeout(function () {
+          setClass(back, 'on', true);
+          setClass(front, 'on', false);
+          back.style.webkitTransform = back.style.transform = 'scale(1.08) translateX(-1.5%)';
+          front = back;
+        }, 60);
+      } else if (p) {
+        credit.textContent = '';
         back.style.backgroundImage = 'url(' + Data.image(p.backdrop, 'original') + ')';
         back.style.webkitTransform = back.style.transform = 'scale(1.0)';
         clock.lastChild.textContent = p.title;

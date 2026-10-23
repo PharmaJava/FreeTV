@@ -18,6 +18,9 @@
 var Client = require('ssh2').Client;
 
 var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
+// Other people's repositories FreeTV also reads, each one only for the app ids listed (nothing else in them is offered).
+// What comes from here always needs the person's "unofficial" confirmation; root, https and the SHA-256 hash are checked the same.
+var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']}];
 var TEMP = '/media/developer/temp';
 var ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 var URL_RE = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]{2,5})?\/[A-Za-z0-9._~!$&()*+,;=:@%\/?#-]*$/;   // no quotes, no spaces: it goes into a shell command
@@ -29,7 +32,9 @@ var CAUTION = {
   'youtube.leanback.v4': 'official-removed',
   'com.open.hidden.menu': 'sensitive',
   'com.pirate.refresh': 'sensitive',
-  'org.webosbrew.hbchannel': 'sensitive'
+  'org.webosbrew.hbchannel': 'sensitive',
+  'com.rezkatv.app': 'unofficial',
+  'com.rezkatv.app.legacy': 'unofficial'
 };
 
 function Store(options) {
@@ -90,7 +95,19 @@ function q(value) {
 Store.prototype.catalogue = async function (conn) {
   var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(CATALOGUE));
   if (r.code !== 0) throw fail('No pude leer el catálogo (' + (r.err.trim().split('\n').pop() || 'sin respuesta') + ').');
-  try { return JSON.parse(r.out).packages; } catch (e) { throw fail('El catálogo no tiene el formato esperado.'); }
+  var apps;
+  try { apps = JSON.parse(r.out).packages; } catch (e) { throw fail('El catálogo no tiene el formato esperado.'); }
+  for (var x = 0; x < EXTRA.length; x++) {
+    var e = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(EXTRA[x].url));
+    if (e.code !== 0) continue;   // an extra source that does not answer is just not offered
+    var more;
+    try { more = JSON.parse(e.out).packages; } catch (err) { continue; }
+    for (var y = 0; y < more.length; y++) {
+      var id = more[y] && more[y].id;
+      if (EXTRA[x].ids.indexOf(id) >= 0 && !apps.some(function (a) { return a.id === id; })) apps.push(more[y]);
+    }
+  }
+  return apps;
 };
 
 Store.prototype.freeMb = async function (conn) {

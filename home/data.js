@@ -53,6 +53,8 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** What the screensaver shows: 'places' (photos of Seville, Spain, Lithuania and nature), 'picks' (the suggestions' photos) or 'both'. */
+    saver: function () { return pick('saver', 'both'); },
     /** The Store icon is added to a saved shelf once; after that it is the person's to keep or take away. */
     storeOffered: function () { return pick('storeOffered', false); },
     /** Where the computer that installs community apps is ("192.168.1.20:8777"): told by `community.py serve`, or community_host. */
@@ -604,6 +606,8 @@ var Data = (function () {
     setService: function (key, on) { Prefs.setService(key, on); refreshRecs(); changed(); },
     animation: function () { return Prefs.animation(); },
     setAnimation: function (on) { Prefs.set('animation', on); refreshRecs(); changed(); },
+    saver: function () { return Prefs.saver(); },
+    setSaver: function (s) { Prefs.set('saver', s); },
     pickCount: function () { return Prefs.pickCount(); },
     setPickCount: function (n) { Prefs.set('pickCount', n); changed(); },
     refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); },

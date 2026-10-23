@@ -44,6 +44,9 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   `node` (20+) with `npm`.
 - Optional: a **free TMDB key** (themoviedb.org → Settings → API) for the picks. It is yours and secret.
 
+> **Screensaver.** FreeTV has its own, with photos of Seville, Spain and Lithuania (free licences, author credited), no root needed.
+> See `docs/COMUNIDAD.md`.
+
 ## Install, step by step
 
 **1. On the TV (you do it).** LG Content Store → install **Developer Mode** → open it, sign in → **Dev Mode Status ON**

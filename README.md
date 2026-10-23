@@ -44,6 +44,9 @@ de LG, y **todo se puede deshacer**.
 - Opcional: una **clave gratuita de TMDB** (themoviedb.org → Ajustes → API) para las recomendaciones y las fotos del
   salvapantallas. Es tuya y secreta.
 
+> **Salvapantallas.** FreeTV trae uno propio con fotos de Sevilla, España y Lituania (licencias libres, con crédito del autor), sin root.
+> Ver `docs/COMUNIDAD.md`.
+
 ## Instalación paso a paso
 
 ### 1. En la tele (lo haces tú)

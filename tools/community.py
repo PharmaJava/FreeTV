@@ -35,6 +35,8 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOGUE = 'https://repo.webosbrew.org/api/apps.json'
+# Other people's repositories FreeTV also reads, each one only for the app ids listed (keep in step with store-service/store.js).
+EXTRA = [('https://atlet99.github.io/rezkatv-public/repository.json', ('com.rezkatv.app', 'com.rezkatv.app.legacy'))]
 WORK = os.path.join(ROOT, 'work', 'community')
 HOME_APP = 'com.gathin.tvhome'
 PORT = 8777
@@ -49,8 +51,12 @@ CAUTION = {
                             'de uso de YouTube: es tu decisión.'),
     'com.open.hidden.menu': ('sensitive', 'Abre el menú de servicio oculto de LG. Cambiar ahí ajustes puede estropear la tele y anular la '
                              'garantía. Instálala solo si sabes exactamente qué vas a tocar.'),
+    'com.rezkatv.app.legacy': ('unofficial', 'La misma app de terceros (RezkaTV) para webOS 3 y 4; mismo aviso que la normal: no es oficial y es cosa tuya.'),
     'com.pirate.refresh': ('sensitive', 'Renueva el Modo Desarrollador por su cuenta, sin pasar por LG. FreeTV ya trae un panel de renovación (beta): '
                            'no hace falta usar las dos.'),
+    'com.rezkatv.app': ('unofficial', 'Cliente de TERCEROS (no es de LG, ni del catálogo oficial, ni de FreeTV) para HDRezka, un sitio de películas '
+                        'y series en ruso que no es una plataforma con licencia. FreeTV solo comprueba el hash del paquete: lo que '
+                        'hace la app y lo que ves con ella es cosa tuya.'),
     'org.webosbrew.hbchannel': ('sensitive', 'La tienda Homebrew Channel solo es útil entera en una tele con ROOT, que FreeTV no hace ni '
                                 'recomienda. Sin root casi todo lo que hace no funciona.'),
 }
@@ -75,7 +81,15 @@ def fetch_json(url):
 
 
 def catalogue():
-    return fetch_json(CATALOGUE)['packages']
+    apps = fetch_json(CATALOGUE)['packages']
+    for url, ids in EXTRA:
+        try:
+            for a in fetch_json(url)['packages']:
+                if a.get('id') in ids and not any(o['id'] == a['id'] for o in apps):
+                    apps.append(a)
+        except Exception:
+            pass   # an extra source that does not answer is just not offered
+    return apps
 
 
 def find(apps, app_id):
