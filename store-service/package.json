@@ -1,0 +1,11 @@
+{
+  "name": "com.gathin.tvhome.store",
+  "version": "1.0.0",
+  "description": "FreeTV: installs community apps from the TV itself, through the TV's own Developer Mode SSH",
+  "main": "service.js",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "ssh2": "0.8.9"
+  }
+}

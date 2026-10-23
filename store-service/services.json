@@ -1,0 +1,1 @@
+{"id":"com.gathin.tvhome.store","description":"FreeTV community apps installer","services":[{"name":"com.gathin.tvhome.store"}],"requiredACG":["activity.operation"]}

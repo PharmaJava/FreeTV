@@ -579,8 +579,8 @@
 
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
-  // conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
-  var store = {conn: 'none', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0}, storeTimer = 0;
+  // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
+  var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0}, storeTimer = 0;
 
   function commTitle() { return tr('Apps da comunidade', 'Community apps', 'Apps de la comunidad'); }
 
@@ -640,6 +640,44 @@
 
   function communityShown() { return st.zone === Z.COMM; }
 
+  /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
+  function svcCall(method, payload, done) {
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' ? 25000 : 15000);
+    function finish(r) {
+      if (over) return;
+      over = true;
+      clearTimeout(timer);
+      if (bridge) { try { bridge.cancel(); } catch (e) {} }
+      done(r);
+    }
+    try {
+      bridge = new window.PalmServiceBridge();
+      bridge.onservicecallback = function (raw) { var r = null; try { r = JSON.parse(raw); } catch (e) {} finish(r); };
+      bridge.call('luna://com.gathin.tvhome.store/' + method, JSON.stringify(payload || {}));
+    } catch (e) { finish(null); }
+  }
+
+  /** Can this TV install by itself? 'ok' when the service has its key and its SSH session opens. */
+  function svcCheck() {
+    if (!window.PalmServiceBridge) { store.svc = 'none'; return; }
+    store.svc = 'checking';
+    svcCall('status', {}, function (r) {
+      store.svc = r && r.returnValue && r.provisioned ? (r.ready ? 'ok' : 'off') : 'none';
+      if (store.svc === 'ok') svcApps();
+      if (communityShown()) renderCommunity();
+    });
+  }
+
+  /** The apps installed through Developer Mode, as the store service sees them. They are kept so that FreeTV lists an app the moment
+      it is installed (the TV does not let an app read its own full list), without the computer reading the TV again. */
+  function svcApps(done) {
+    svcCall('apps', {}, function (r) {
+      var ok = !!(r && r.returnValue && r.apps);
+      if (ok) { try { localStorage.setItem('fmtv.devApps', JSON.stringify(r.apps)); } catch (e) {} }
+      if (done) done(ok);
+    });
+  }
+
   /** Is the computer there? (Its answer redraws the screen.) */
   function storeCheck() {
     if (!storeBase()) { store.conn = 'none'; return; }
@@ -657,7 +695,20 @@
     store.phase = 'starting';
     store.message = store.note = '';
     store.misses = 0;
+    store.via = store.svc === 'ok' ? 'tv' : 'pc';
     renderCommunity();
+    if (store.via === 'tv') {
+      svcCall('install', {id: app.id, flag: flag}, function (r) {
+        if (!r || !r.returnValue) {
+          store.flow = 'failed';
+          store.message = r && r.error ? r.error : tr('A TV não respondeu.', 'The TV did not answer.', 'La tele no respondió.');
+          if (communityShown()) renderCommunity();
+          return;
+        }
+        svcPoll(app);
+      });
+      return;
+    }
     storeCall('POST', '/install?id=' + encodeURIComponent(app.id) + (flag ? '&flag=' + flag : ''), function (err) {
       if (err) { store.flow = 'failed'; store.message = err.message === 'no connection' ? tr('Sem conexão com o computador.', 'No connection to the computer.', 'Sin conexión con el ordenador.') : err.message; store.conn = 'off'; if (communityShown()) renderCommunity(); return; }
       storePoll(app);
@@ -690,6 +741,32 @@
     });
   }
 
+  function svcPoll(app) {
+    clearTimeout(storeTimer);
+    svcCall('job', {}, function (r) {
+      var j = r && r.job;
+      if (!j) {
+        if (++store.misses > 10) { store.flow = 'failed'; store.message = tr('A TV parou de responder.', 'The TV stopped answering.', 'La tele dejó de responder.'); if (communityShown()) renderCommunity(); return; }
+        storeTimer = setTimeout(function () { svcPoll(app); }, 2000);
+        return;
+      }
+      store.misses = 0;
+      if (j.id !== app.id) { storeTimer = setTimeout(function () { svcPoll(app); }, 1500); return; }
+      store.phase = j.phase;
+      store.note = j.note || '';
+      if (j.phase === 'done') {
+        store.flow = 'done';
+        toast(app.title + ': ' + tr('instalada', 'installed', 'instalada'));
+        svcApps(function () { loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); }); });
+      } else if (j.phase === 'failed') {
+        store.flow = 'failed';
+        store.message = j.message || '';
+        toast(app.title + ': ' + tr('não foi instalada', 'was not installed', 'no se instaló'));
+      } else storeTimer = setTimeout(function () { svcPoll(app); }, 1500);
+      if (communityShown()) renderCommunity();
+    });
+  }
+
   function openCommunity() {
     setClass($('settings'), 'open', false);
     st.zone = Z.COMM;
@@ -699,6 +776,7 @@
     renderCommunity();
     setClass($('community'), 'open', true);
     updateFocus();
+    svcCheck();
     storeCheck();
     if (commList.length) return;
     Data.getJson(CATALOGUE, function (err, data) {
@@ -724,7 +802,9 @@
   }
 
   function phaseText(phase) {
-    return phase === 'downloading' ? tr('Baixando o pacote no computador…', 'Downloading the package on the computer…', 'Descargando el paquete en el ordenador…')
+    var onTv = store.via === 'tv';
+    return phase === 'downloading' ? (onTv ? tr('Baixando o pacote na TV…', 'Downloading the package on the TV…', 'Descargando el paquete en la tele…')
+        : tr('Baixando o pacote no computador…', 'Downloading the package on the computer…', 'Descargando el paquete en el ordenador…'))
         : phase === 'verifying' ? tr('Conferindo o hash SHA-256…', 'Checking the SHA-256 hash…', 'Comprobando el hash SHA-256…')
         : phase === 'installing' ? tr('Instalando na TV…', 'Installing on the TV…', 'Instalando en la tele…')
         : tr('Preparando…', 'Getting ready…', 'Preparando…');
@@ -736,7 +816,10 @@
     commActs = [];
     line(box, '', '').appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
     if (mine === 'asking') {
-      line(box, '', tr('O computador baixa o pacote, confere o hash SHA-256 e instala na TV. Leva alguns minutos.',
+      if (store.svc === 'ok') line(box, '', tr('A própria TV baixa o pacote, confere o hash SHA-256 e instala. Não precisa do computador. Leva alguns minutos.',
+          'The TV itself downloads the package, checks its SHA-256 hash and installs it. No computer needed. It takes a few minutes.',
+          'La propia tele descarga el paquete, comprueba su hash SHA-256 y lo instala. No hace falta el ordenador. Tarda unos minutos.'));
+      else line(box, '', tr('O computador baixa o pacote, confere o hash SHA-256 e instala na TV. Leva alguns minutos.',
           'Your computer downloads the package, checks its SHA-256 hash and installs it on the TV. It takes a few minutes.',
           'Tu ordenador descarga el paquete, comprueba su hash SHA-256 y lo instala en la tele. Tarda unos minutos.'));
       if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
@@ -748,7 +831,8 @@
       else { action(box, go, function () { storeInstall(a); }); action(box, stop, function () { store.flow = 'idle'; commAct = 0; renderCommunity(); }); }
     } else if (mine === 'working') {
       line(box, '', phaseText(store.phase));
-      line(box, '', tr('Não desligue a TV nem o computador. Voltar deixa a instalação continuar.', 'Do not turn off the TV or the computer. Back lets the install carry on.', 'No apagues la tele ni el ordenador. Atrás deja que siga instalándose.'));
+      line(box, '', store.via === 'tv' ? tr('Não desligue a TV. Voltar deixa a instalação continuar.', 'Do not turn the TV off. Back lets the install carry on.', 'No apagues la tele. Atrás deja que siga instalándose.')
+          : tr('Não desligue a TV nem o computador. Voltar deixa a instalação continuar.', 'Do not turn off the TV or the computer. Back lets the install carry on.', 'No apagues la tele ni el ordenador. Atrás deja que siga instalándose.'));
     } else if (mine === 'done' || mine === 'failed') {
       if (mine === 'done') line(box, '', tr('Pronto: instalada. Procure em «Todos os Apps».', 'Done: installed. Look for it in "All Apps".', 'Listo: instalada. Búscala en «Todas las apps».'));
       else line(box, 'warn', tr('Não foi possível instalar: ', 'Could not install: ', 'No se pudo instalar: ') + store.message);
@@ -767,17 +851,19 @@
       if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
       if (m.sourceUrl) line(box, '', tr('Código: ', 'Code: ', 'Código: ') + m.sourceUrl);
       if (m.rootRequired) line(box, 'warn', tr('Precisa de root: o FreeTV não instala isto.', 'Needs root: FreeTV does not install this.', 'Necesita root: FreeTV no la instala.'));
-      else if (store.conn === 'ok' && store.flow === 'working') line(box, '', tr('Há outra instalação em andamento.', 'Another install is in progress.', 'Hay otra instalación en marcha.'));
-      else if (store.conn === 'ok') {
+      else if ((store.svc === 'ok' || store.conn === 'ok') && store.flow === 'working') line(box, '', tr('Há outra instalação em andamento.', 'Another install is in progress.', 'Hay otra instalación en marcha.'));
+      else if (store.svc === 'ok' || store.conn === 'ok') {
         action(box, tr('Instalar nesta TV', 'Install on this TV', 'Instalar en esta tele'), function () {
           store.flow = 'asking'; store.id = a.id; commAct = 0; renderCommunity();
         });
-      } else if (store.conn === 'checking') line(box, '', tr('Procurando o computador…', 'Looking for the computer…', 'Buscando el ordenador…'));
+      } else if (store.svc === 'checking' || store.conn === 'checking') line(box, '', tr('Preparando a instalação…', 'Getting the install ready…', 'Preparando la instalación…'));
       else {
-        line(box, '', store.conn === 'off' ? tr('Não encontro o computador. No computador, com o FreeTV instalado, execute:', 'Cannot reach the computer. On the computer, with FreeTV installed, run:', 'No encuentro el ordenador. En el ordenador, con FreeTV instalado, ejecuta:')
-            : tr('Para instalar daqui, no computador execute:', 'To install from here, on the computer run:', 'Para instalar desde aquí, en el ordenador ejecuta:'));
+        line(box, '', store.svc === 'off' ? tr('A loja da TV está instalada, mas não consegue abrir o Modo Desenvolvedor. Ele está ligado? Se a chave mudou, no computador execute:', 'The TV store is installed but cannot open Developer Mode. Is it on? If the key changed, on the computer run:', 'La tienda de la tele está instalada pero no consigue abrir el Modo Desarrollador. ¿Está activado? Si la clave cambió, en el ordenador ejecuta:')
+            : tr('Para instalar daqui, sem o computador, execute uma vez no computador (e diga que sim à loja):', 'To install from here with no computer, run once on the computer (and say yes to the store):', 'Para instalar desde aquí, sin ordenador, ejecuta una vez en el ordenador (y di que sí a la tienda):'));
+        line(box, 'code', 'bash install.sh <IP>');
+        line(box, '', tr('Ou, com o computador ligado, execute:', 'Or, with the computer on, run:', 'O, con el ordenador encendido, ejecuta:'));
         line(box, 'code', cmd);
-        action(box, tr('Verificar de novo', 'Check again', 'Comprobar de nuevo'), function () { storeCheck(); renderCommunity(); });
+        action(box, tr('Verificar de novo', 'Check again', 'Comprobar de nuevo'), function () { svcCheck(); storeCheck(); renderCommunity(); });
       }
     }
     if (commAct >= commActs.length) commAct = 0;
@@ -798,7 +884,9 @@
       return;
     }
     if (commOpen >= 0) { renderDetail(box); return; }
-    el('div', 'hint', box, store.conn === 'ok'
+    el('div', 'hint', box, store.svc === 'ok'
+        ? tr('Pronto: na ficha de cada app (sem root) a TV instala sozinha, sem computador.', 'Ready: each app without root is installed by the TV itself from its page, no computer.', 'Listo: en la ficha de cada app (sin root) la propia tele la instala, sin ordenador.')
+        : store.conn === 'ok'
         ? tr('Computador conectado: na ficha de cada app (sem root) dá para instalar.', 'Computer connected: each app without root can be installed from its page.', 'Ordenador conectado: en la ficha de cada app (sin root) se puede instalar.')
         : tr('Do catálogo webOS Homebrew. Para instalar daqui, conecte o computador (veja qualquer ficha).',
             'From the webOS Homebrew catalogue. To install from here, connect the computer (see any app page).',

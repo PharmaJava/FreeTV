@@ -156,6 +156,15 @@ var TV = (function () {
       if (!a.id || a.id === self || HIDDEN.test(a.id)) continue;
       out.push({id: a.id, title: a.title || a.id, icon: a.icon || '', color: a.iconColor || ''});
     }
+    // Apps installed from FreeTV's own store since the list was read (the store service keeps them in localStorage).
+    var extra = [];
+    try { extra = JSON.parse(localStorage.getItem('fmtv.devApps')) || []; } catch (e) {}
+    for (var j = 0; j < extra.length; j++) {
+      var x = extra[j], known = false;
+      if (!x || !x.id || x.id === self || HIDDEN.test(x.id)) continue;
+      for (var k = 0; k < out.length; k++) if (out[k].id === x.id) known = true;
+      if (!known) out.push({id: x.id, title: x.title || x.id, icon: x.icon || '', color: x.color || ''});
+    }
     return out;
   }
 

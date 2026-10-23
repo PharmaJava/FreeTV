@@ -170,7 +170,7 @@ def free_space_mb(ip):
     """Free megabytes on the TV's apps partition, or None when it can't be read (best effort)."""
     try:
         out = subprocess.run([ares('ares-novacom', False), '-d', device(ip), '--run',
-                              'df -m /media/cryptofs/apps | tail -1'], capture_output=True, text=True, timeout=60).stdout
+                              'df -m /media/developer | tail -1'], capture_output=True, text=True, timeout=60).stdout
         return int(out.split()[3])
     except Exception:
         return None
