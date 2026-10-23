@@ -174,7 +174,8 @@ Y puedes revisar todo el historial cuando quieras con `python3 tools/check_secre
 ## Apps de la comunidad (YouTube sin anuncios, Kodi, Jellyfin…)
 
 *Ajustes de inicio → Apps de la comunidad* muestra el catálogo de webOS Homebrew, y `python3 tools/community.py install <id> <IP>`
-instala **las que no necesitan root** (36 de 56), comprobando su hash antes. Con `python3 tools/community.py serve <IP>` en el ordenador,
+instala **las que no necesitan root** (36 de 56), comprobando su hash antes. Hay un icono **Tienda** en el estante: **la propia tele
+descarga e instala, sin ordenador** (si lo activas al instalar FreeTV; ver COMUNIDAD). Con `python3 tools/community.py serve <IP>` en el ordenador,
 la propia pantalla de la tele las instala (botón **Instalar en esta tele**). YouTube sin anuncios, Kodi, Jellyfin, Moonlight,
 Plex nativo, RetroArch, IPTV… Lo que pide root **no se instala**: FreeTV no hace root. Todo en [docs/COMUNIDAD.md](docs/COMUNIDAD.md).
 

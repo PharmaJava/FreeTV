@@ -42,6 +42,8 @@ var STATE = '/media/developer/apps/usr/palm/services/com.gathin.tvhome.store/sta
     await new Promise(function (resolve, reject) {
       conn.exec('umask 027; cat > ' + STATE + '/.key.tmp', function (err, stream) {
         if (err) { reject(err); return; }
+        stream.on('data', function () {});            // unread output keeps a stream from ever closing on a modern Node
+        stream.stderr.on('data', function () {});
         stream.on('close', function (code) { (code === 0 || code === null || code === undefined) ? resolve() : reject(new Error('cat terminó con ' + code)); });
         stream.end(plain);
       });

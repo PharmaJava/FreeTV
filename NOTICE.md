@@ -8,6 +8,7 @@ FreeTV stands on other people's work. Thank you.
 | The Samsung packaging and installer (`tizen/`, `assets/samsung-icons/`) and the whole Android app (`android/`), **included as Free My TV made them** | [Free My TV](https://freemytv.io) contributors | MIT | `licenses/Free-My-TV-MIT.txt` |
 | The Home button helper, its Developer Mode renewal service and the recovery code (`home/helper-control.js`). **Downloaded by `install.sh`, not copied here** | [Razdva122/clean-your-tv-lg-webos](https://github.com/Razdva122/clean-your-tv-lg-webos) | MIT | `licenses/clean-your-tv-lg-webos-MIT.txt` |
 | The list of community apps (read at run time, **nothing of it is bundled**) | [webOS Homebrew Project](https://www.webosbrew.org) | Each app has its own license (youtube-webos is GPL-3.0) | `https://repo.webosbrew.org` |
+| `ssh2` 0.8.9 and its dependencies (`ssh2-streams`, `asn1`, `bcrypt-pbkdf`, `safer-buffer`, `streamsearch`, `tweetnacl`), in the TV-side store service. Installed from `package-lock.json` by `install.sh`, not copied here | Brian White and contributors, and the others' authors | MIT / BSD-3-Clause / Unlicense | `store-service/package-lock.json` |
 | `ws` 7.5.10, a WebSocket library, swapped into the helper so it runs on TVs with Node 8 | Einar Otto Stangvik and contributors | MIT | `third_party/ws/LICENSE` |
 | Inter, the font | The Inter Project Authors | SIL OFL 1.1 | `assets/fonts/OFL.txt` |
 | Material Symbols, the small icons | Google | Apache 2.0 | `assets/symbols/LICENSE-material-symbols.txt` |

@@ -46,6 +46,10 @@ ejecutar `serve` (se lo cuenta a la tele). Mira [COMUNIDAD.md](COMUNIDAD.md).
 **YouTube sin anuncios: «Success» pero no se instala, y desaparece el acceso de YouTube del inicio de LG.** Instalaste con el YouTube
 oficial puesto. Reinicia la tele (el acceso suele volver), **bórralo tú en la tele** y vuelve a instalar con `--official-removed`.
 
+**La tienda dice «no consigue abrir el Modo Desarrollador».** El Modo Desarrollador de la tele tiene que estar activado (si caduca, la
+tele borra las apps de desarrollador, también la tienda). Si lo reinstalaste, la clave cambió: vuelve a ejecutar `bash install.sh <IP>`
+y di que sí a la tienda. Para quitarle el permiso: `node tools/provision_store.js <IP> --forget`.
+
 ## En el ordenador
 
 **`./install.sh` dice que falta `node`, `python3` o `git`.** Instálalos como en el [README](../README.md). El instalador

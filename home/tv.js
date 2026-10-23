@@ -301,6 +301,8 @@ var TV = (function () {
       this.appsOnly(function (list) {
         if (webos) {
           list.push({id: 'com.webos.app.livetv', title: tr('TV em direto', 'Live TV', 'TV en directo'), icon: '', color: '#1C7BFF', symbol: 'live_tv'});
+          // FreeTV's own store (Community apps): an icon like any other, which opens that screen instead of an app.
+          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps'});
         }
         done(list);
       });

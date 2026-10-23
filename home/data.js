@@ -53,6 +53,8 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** The Store icon is added to a saved shelf once; after that it is the person's to keep or take away. */
+    storeOffered: function () { return pick('storeOffered', false); },
     /** Where the computer that installs community apps is ("192.168.1.20:8777"): told by `community.py serve`, or community_host. */
     storeHost: function () { return pick('storeHost', CONFIG.communityHost || ''); },
     storeNonce: function () { return pick('storeNonce', ''); },

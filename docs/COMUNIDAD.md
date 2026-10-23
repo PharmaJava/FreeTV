@@ -7,28 +7,57 @@ FreeTV lee el catálogo de [webOS Homebrew](https://repo.webosbrew.org) (el proy
   qué necesita, dónde está su código y, si tu ordenador está conectado (siguiente apartado), el botón **Instalar en esta tele**.
 - **En el ordenador:** `python3 tools/community.py` (solo necesita Python 3).
 
-## Instalar desde la tele (la «tienda»)
+## Instalar desde la tele (la «tienda»), sin ordenador
 
-Una app de la tele **no puede instalar paquetes sin root** (el instalador que hay dentro de la tele es el de Homebrew, que es root).
-Por eso la tele le pide la instalación a **tu ordenador**, que hace el trabajo de siempre (descarga, hash, instalación):
+En el estante de FreeTV hay un icono **Tienda** (la app número 9: se añade una sola vez a tu estante, y lo puedes quitar o
+moverlo como cualquier otro). También está en *Ajustes de inicio → Apps de la comunidad*. Abre la lista; con OK ves la ficha de
+una app y, si no pide root, el botón **Instalar en esta tele**. Te pide confirmación (las apps con aviso enseñan su aviso y la
+pantalla empieza en **Cancelar**), y **la propia tele** descarga el paquete, comprueba su hash SHA-256 y lo instala. Mientras
+instala va diciendo cada paso, y la app nueva aparece al momento en FreeTV.
+
+**Cómo es posible sin root.** Una app o un servicio de la tele **no tienen permiso para llamar al instalador de LG** (la tele responde
+`Denied method call`; lo medimos). Pero una sesión de Modo Desarrollador **sí**: es lo que usa `ares-install` desde el ordenador. Y
+el SSH del Modo Desarrollador de tu tele también contesta *desde la propia tele* (`127.0.0.1:9922`). El servicio de la tienda
+(`store-service/`, dentro del paquete de FreeTV) abre esa sesión consigo mismo y ejecuta los mismos comandos que `ares-install`: el
+`curl` de la tele descarga, `sha256sum` comprueba, `luna-send-pub` instala, y se mira la lista de apps para confirmar que está.
+
+**Qué hay que darle, una sola vez.** Para abrir esa sesión el servicio necesita **la clave del Modo Desarrollador de esa tele**,
+la misma que ya usa tu ordenador. `bash install.sh <IP>` te lo **pregunta** (por defecto, no) con la explicación. Si dices que sí,
+`tools/provision_store.js` la copia por el canal SSH cifrado a la carpeta del servicio (`.../com.gathin.tvhome.store/state/key.pem`,
+legible solo por el grupo de Modo Desarrollador), la comprueba por hash y **no la imprime nunca**; la contraseña de la clave no sale
+del ordenador. Para retirarla:
+
+```bash
+node tools/provision_store.js 192.168.1.140 --forget
+```
+
+Qué puede hacer quien tuviera esa clave en la tele: lo mismo que hace tu ordenador (instalar y quitar apps del Modo Desarrollador),
+no más. Si no la das, la tienda funciona igual **a través del ordenador** (siguiente apartado).
+
+**Qué rechaza** (probado en una tele real): apps que piden root; un paquete sin hash o con hash distinto; un id que no está en el
+catálogo; caracteres de shell en el id; una dirección de descarga con comillas; un aviso sin confirmar; y una segunda instalación a la vez.
+
+Si dice que no puede abrir el Modo Desarrollador: comprueba que está **activado** (si caducó, la tele borra las apps de desarrollador)
+y, si lo reinstalaste, vuelve a ejecutar `bash install.sh <IP>`: la clave cambia con él.
+
+### Alternativa: a través del ordenador (`serve`)
+
+Si no quieres dar la clave a la tele, puedes dejar el ordenador encendido y que la tele le pida las instalaciones. El ordenador hace el
+trabajo de siempre (descarga, hash, `ares-install`):
 
 ```bash
 python3 tools/community.py serve 192.168.1.140     # la IP de tu tele; déjalo abierto mientras instalas
 ```
 
 1. El comando abre en la tele la pantalla *Apps de la comunidad* y le dice dónde está el ordenador (nadie escribe direcciones con el mando).
-2. En la ficha de una app **sin root** aparece **Instalar en esta tele**. Al pulsarlo te pide confirmación; las apps con aviso
-   (YouTube AdFree, las «sensibles») enseñan su aviso y la pantalla empieza en **Cancelar**.
-3. El ordenador descarga el paquete, comprueba el SHA-256 y lo instala; la tele va mostrando cada paso y el resultado.
+2. En la ficha de una app **sin root** aparece **Instalar en esta tele**; el resto es igual.
 
-Qué hace para ser seguro, además de lo de abajo: solo atiende a **la dirección de la tele**; exige una cabecera que una página web no
-puede mandar por su cuenta; la tele solo manda el **identificador** (el ordenador busca la app en el catálogo, nunca descarga una dirección
-que le dé la tele); una instalación cada vez; y **no instala sin que lo confirmes tú en la tele**. Con `--no-launch` no abre la tele
-al arrancar; con `--port N` cambia el puerto (8777).
+Solo atiende a **la dirección de la tele**; exige una cabecera que una página web no puede mandar por su cuenta; la tele solo manda el
+**identificador** (el ordenador busca la app en el catálogo); una instalación cada vez. Con `--no-launch` no abre la tele al
+arrancar; con `--port N` cambia el puerto (8777). Si la tele no encuentra el ordenador, puedes poner su dirección en `community_host=`
+de `config.properties` y volver a ejecutar `bash install.sh <IP>`; el cortafuegos del ordenador debe dejar entrar al puerto 8777.
 
-Si la tele no encuentra el ordenador, la ficha lo dice y enseña el comando. Si tu ordenador tiene una dirección fija, puedes ponerla en
-`community_host=` de `config.properties` y volver a ejecutar `bash install.sh <IP>`. El ordenador y la tele tienen que estar en la misma
-red, y el cortafuegos del ordenador debe dejar entrar al puerto 8777 desde la tele.
+### Con la línea de comandos
 
 ```bash
 python3 tools/community.py list                          # las que se pueden instalar sin root

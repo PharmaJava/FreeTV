@@ -69,6 +69,7 @@
     ['disney', /disney/, /disney/i, ['#173584', '#08143F']],
     ['max', /hbo|wbd/, /^(hbo )?max$|hbo max/i, ['#5C30E8', '#221684']],
     ['live', /^com\.webos\.app\.livetv$/, /tv em direto|live tv|tv en directo/i, ['#2A8CFF', '#0A3FA8']],
+    ['store', /^freetv\.store$/, /^(loja|store|tienda)$/i, ['#FF6B8A', '#E0245E']],
     ['hulu', /^hulu/, /hulu/i, ['#1CE783', '#0B8F4E']],
     ['paramount', /paramount|cbs/, /paramount/i, ['#0064FF', '#002A86']],
     ['peacock', /peacock/, /peacock/i, ['#1C1C1E', '#000000']],
@@ -117,7 +118,13 @@
   var apps = [], shelf = [], others = [], inputs = [];
 
   function pickShelf() {
-    var chosen = Prefs.shelf(), out = [];
+    var chosen = Prefs.shelf(), out = [], hasStore = false, a0;
+    for (a0 = 0; a0 < apps.length; a0++) if (apps[a0].id === 'freetv.store') hasStore = true;
+    if (chosen && hasStore && !Prefs.storeOffered() && chosen.indexOf('freetv.store') < 0 && chosen.length < MAX_SHELF) {
+      chosen = chosen.concat(['freetv.store']);   // a shelf saved before the Store existed gets its icon, at the end, once
+      Prefs.set('shelf', chosen);
+    }
+    if (hasStore && !Prefs.storeOffered()) Prefs.set('storeOffered', true);
     if (chosen) {
       for (var i = 0; i < chosen.length && out.length < MAX_SHELF; i++) {
         for (var j = 0; j < apps.length; j++) if (apps[j].id === chosen[i]) out.push(apps[j]);
@@ -767,7 +774,10 @@
     });
   }
 
-  function openCommunity() {
+  var commFromShelf = false;
+
+  function openCommunity(fromShelf) {
+    commFromShelf = fromShelf === true;
     setClass($('settings'), 'open', false);
     st.zone = Z.COMM;
     st.comm = 0;
@@ -1027,6 +1037,7 @@
 
   function launcher(id, name) {
     return function () {
+      if (id === 'freetv.store') { openCommunity(true); return; }
       TV.launch(id, null, function (ok) {
         if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + (name || id));
       });
@@ -1156,6 +1167,7 @@
         return;
       }
       setClass($('community'), 'open', false);
+      if (commFromShelf) { commFromShelf = false; st.zone = Z.SHELF; updateFocus(); return; }   // opened from its icon: back to the shelf
       openSettings();
       for (var c = 0; c < rowsNow.length; c++) if (rowsNow[c].label === commTitle()) st.row = c;
       updateFocus();
