@@ -90,7 +90,7 @@ Guarda con `Ctrl+O`, `Enter`, `Ctrl+X`. Este archivo no sale de tu ordenador (es
 ### 4. Instala
 
 ```bash
-./install.sh 192.168.1.140
+bash install.sh 192.168.1.140
 ```
 
 (con la IP de **tu** tele). El instalador construye la pantalla, descarga el ayudante del botón Home, lo prepara y lo
@@ -116,11 +116,11 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 
 **Importante: el Modo Desarrollador de LG caduca a los unos 40 días.** Si caduca, la tele borra FreeTV (y el inicio de LG
 vuelve a ser el de siempre). Pulsa **EXTEND** en la app *Developer Mode* de vez en cuando, o vuelve a ejecutar
-`./install.sh <IP>`: lo reinstala todo con tus ajustes.
+`bash install.sh <IP>`: lo reinstala todo con tus ajustes.
 
 ## Actualizar o cambiar tus ajustes
 
-Edita `config.properties` y vuelve a ejecutar `./install.sh <IP>`. Para bajar novedades de FreeTV: `git pull` y lo mismo.
+Edita `config.properties` y vuelve a ejecutar `bash install.sh <IP>`. Para bajar novedades de FreeTV: `git pull` y lo mismo.
 
 ## Desinstalar
 

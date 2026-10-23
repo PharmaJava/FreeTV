@@ -11,7 +11,7 @@ passphrase (seis caracteres) está en pantalla. Cambia cuando reinicias el Key S
 
 **Pulso Home y me lleva al inicio de LG, no a FreeTV.** El ayudante del botón Home no está funcionando. Lo más
 habitual en teles con webOS algo antiguo es que **no arranque** porque el Node de la tele es viejo; FreeTV ya lo arregla, pero
-si instalaste otra versión del ayudante, vuelve a ejecutar `./install.sh <IP>`. Si lo pulsaste 2 segundos, está parado
+si instalaste otra versión del ayudante, vuelve a ejecutar `bash install.sh <IP>`. Si lo pulsaste 2 segundos, está parado
 a propósito: abre *Ajustes de inicio → Reactivar el botón Home* (o abre la app **Home Helper** de la lista de apps de LG).
 
 **Con Atrás sigo viendo el inicio de LG.** Al salir de una app, LG pone su inicio un instante después de que FreeTV
@@ -23,10 +23,10 @@ dejan abrirlo a tiempo; si pasa siempre, pulsa **Home** una vez. En *Ajustes de 
 *Auto launch* si tu modelo la tiene (cambia según el modelo).
 
 **Desapareció FreeTV de la tele.** El Modo Desarrollador caducó (a los ~40 días) y la tele borra las apps de desarrollador.
-Vuelve a activar el *Dev Mode Status* y ejecuta otra vez `./install.sh <IP>`.
+Vuelve a activar el *Dev Mode Status* y ejecuta otra vez `bash install.sh <IP>`.
 
 **No se ven mis apps / faltan iconos.** La lista de apps se lee al instalar. Si instalas o quitas apps, vuelve a ejecutar
-`./install.sh <IP>`.
+`bash install.sh <IP>`.
 
 **No salen recomendaciones.** Falta la clave de TMDB en `config.properties` (`tmdb_key=`), o los servicios están apagados en
 *Ajustes de inicio → Recomendar de…*. Con la clave puesta, tarda uno o dos minutos la primera vez.
@@ -49,7 +49,7 @@ todo **dentro de Ubuntu (WSL)**, en tu carpeta personal, no en `/mnt/c`.
 de Ubuntu**, no lo copies desde Windows. Para arreglarlo en el sitio: `sed -i 's/\r$//' install.sh tools/*.py`.
 
 **`this helper version is not the one FreeTV was made for`.** El ayudante descargado no es la versión que usa FreeTV.
-Borra la carpeta `work/` y vuelve a ejecutar `./install.sh <IP>` (descarga la versión exacta).
+Borra la carpeta `work/` y vuelve a ejecutar `bash install.sh <IP>` (descarga la versión exacta).
 
 ## Mirar qué hace el ayudante (para pedir ayuda)
 

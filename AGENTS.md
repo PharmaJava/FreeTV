@@ -14,8 +14,8 @@ Read [`docs/GUIA-IA.md`](docs/GUIA-IA.md) first: it is written for exactly this.
 3. Check tools: `git`, `python3` 3.9+, `node` 20+ with `npm`. On Windows everything runs inside **WSL (Ubuntu)**, in the
    Linux home folder, never in `/mnt/c` (CRLF line endings break the scripts).
 4. `cp config.example.properties config.properties`, fill it (the TMDB key they paste themselves), never commit it.
-5. `./install.sh <IP>` (it prompts for the passphrase on a terminal you cannot type into: ask them to run it).
-   `FREETV_PREPARE_ONLY=1 ./install.sh <IP>` runs everything except the TV part and is safe to run yourself.
+5. `bash install.sh <IP>` (it prompts for the passphrase on a terminal you cannot type into: ask them to run it).
+   `FREETV_PREPARE_ONLY=1 bash install.sh <IP>` runs everything except the TV part and is safe to run yourself.
 6. Check: `ares-novacom ... tail controller.log` (see `docs/PROBLEMAS.md`).
 
 ## Rules

@@ -69,7 +69,7 @@ stays on your computer (it is in `.gitignore`).
 **4. Install.**
 
 ```bash
-./install.sh 192.168.1.140
+bash install.sh 192.168.1.140
 ```
 
 (with **your** TV's IP). It builds the home screen, downloads the Home button helper, patches it and installs it. It asks
@@ -87,7 +87,7 @@ for the **passphrase** (you type it) and the TV shows a **pairing prompt** you a
 | Turn the Home button back on | *Home Settings → Turn the Home button back on* |
 
 **Developer Mode expires after about 40 days**: press **EXTEND** in the *Developer Mode* app now and then, or run
-`./install.sh <IP>` again. To change settings, edit `config.properties` and run `./install.sh <IP>` again. To update
+`bash install.sh <IP>` again. To change settings, edit `config.properties` and run `bash install.sh <IP>` again. To update
 FreeTV: `git pull`, then the same.
 
 Uninstall (from the `FreeTV` folder):

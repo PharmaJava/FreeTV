@@ -28,7 +28,7 @@ qué ha salido.
 >
 > Empieza preguntándome: qué sistema tiene mi ordenador (Windows, Mac o Linux), la IP de mi tele, mi ciudad y mi país, y si
 > ya hice el Modo Desarrollador en la tele. Luego guíame por el README: Modo Desarrollador, preparar el ordenador
-> (Windows necesita WSL con Ubuntu), clonar el repositorio, rellenar `config.properties` y ejecutar `./install.sh <IP>`.
+> (Windows necesita WSL con Ubuntu), clonar el repositorio, rellenar `config.properties` y ejecutar `bash install.sh <IP>`.
 
 ## Paso 2. Qué le contestas
 
@@ -56,7 +56,7 @@ Si la IA no lo resuelve, abre una *Issue* en https://github.com/PharmaJava/FreeT
 Cualquier IA con acceso a archivos puede leer [`AGENTS.md`](../AGENTS.md) (un resumen técnico del proyecto) y
 [`COMO-FUNCIONA.md`](COMO-FUNCIONA.md). Con eso puede ayudarte a cambiar colores, el número de apps del estante, el
 texto, etc. Cualquier cambio en la pantalla es solo HTML, CSS y JavaScript en `home/`, y se aplica volviendo a ejecutar
-`./install.sh <IP>`.
+`bash install.sh <IP>`.
 
 ## Si todo sale mal
 
