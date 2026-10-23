@@ -27,6 +27,14 @@ de LG, y **todo se puede deshacer**.
 - **Mercados en dólares:** Bitcoin, Ethereum, Solana y **XRP (Ripple)** (Binance), y el **S&P 500** y el **NASDAQ 100** de
   iShares (CSPX y CNDX, en dólares). Cada uno se puede apagar en Ajustes. Son datos informativos, no un consejo de inversión.
 - **El tiempo** de tu ciudad, con amanecer y atardecer; la pantalla se oscurece de noche.
+- **Una tienda de apps, en la propia tele.** El icono **Tienda** del estante (y *Ajustes de inicio → Apps de la comunidad*) abre el
+  catálogo de [webOS Homebrew](https://repo.webosbrew.org): YouTube sin anuncios, Kodi, Jellyfin, Moonlight, Plex nativo, RetroArch… Con
+  OK en una app ves su ficha y, si **no pide root**, el botón **Instalar en esta tele**: la tele descarga el paquete, comprueba su
+  hash SHA-256 y lo instala, sin ordenador (si lo activas al instalar FreeTV). Lo que pide root **no se instala**. Ver
+  [Apps de la comunidad](#apps-de-la-comunidad-youtube-sin-anuncios-kodi-jellyfin).
+- **Salvapantallas propio.** Tras cinco minutos sin tocar el mando, fotos a pantalla completa con el reloj: paisajes de Sevilla,
+  Andalucía, España y Lituania (Wikimedia Commons, solo licencias libres, con autor y licencia en pantalla), las fotos de las
+  sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root.
 - **El botón Home de verdad.** Pulsas **Home** en cualquier app y vuelves a FreeTV, no al inicio de LG. Al salir de una
   app con **Atrás** también vuelves aquí: el ayudante espera algo más de un segundo a que LG se asiente y entonces abre
   FreeTV, una sola vez, sin ir y venir. Al encender la tele, el ayudante abre FreeTV (en algunas teles se ve el inicio de LG un par de segundos antes).
@@ -41,11 +49,8 @@ de LG, y **todo se puede deshacer**.
   con Apple o Google, la tele no podrá iniciar sesión: usa «¿Olvidaste tu contraseña?» para ponerle una).
 - Un **ordenador** en la misma red wifi que la tele, con **Linux, macOS o Windows con WSL**, y estas herramientas:
   `git`, `python3` (3.9 o más) y `node` (20 o más) con `npm`.
-- Opcional: una **clave gratuita de TMDB** (themoviedb.org → Ajustes → API) para las recomendaciones y las fotos del
-  salvapantallas. Es tuya y secreta.
-
-> **Salvapantallas.** FreeTV trae uno propio con fotos de Sevilla, España y Lituania (licencias libres, con crédito del autor), sin root.
-> Ver `docs/COMUNIDAD.md`.
+- Opcional: una **clave gratuita de TMDB** (themoviedb.org → Ajustes → API) para las recomendaciones (y las fotos de las
+  sugerencias en el salvapantallas). Es tuya y secreta. Los paisajes del salvapantallas y la tienda no la necesitan.
 
 ## Instalación paso a paso
 
@@ -107,6 +112,11 @@ bash install.sh 192.168.1.140
 instala. Te pedirá la **passphrase**, que escribes tú, y la tele te enseñará un **aviso de emparejamiento** que aceptas
 con el mando. Tarda unos minutos la primera vez.
 
+Al final te hace **una pregunta** (en inglés, `Turn it on? [y/N]`) sobre instalar apps desde la propia tele, sin ordenador. Si dices que sí (`y`), la tele guarda
+la clave del Modo Desarrollador de **esa** tele en una carpeta que solo lee el servicio de la tienda, para poder instalar por sí
+misma. Por defecto es **no**, y la tienda funciona igual a través del ordenador. Puedes retirar la clave cuando quieras:
+`node tools/provision_store.js <IP> --forget`. Para contestar de antemano: `FREETV_STORE=1 bash install.sh <IP>` (sí) o `FREETV_STORE=0` (no).
+
 Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 
 ## Cómo se usa
@@ -119,6 +129,8 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 | Elegir qué apps van en el estante | *Ajustes de inicio → Estante* |
 | Ver más sugerencias | En el explorador, ▶ (se desliza); cada una dice su plataforma |
 | Ver todas las apps | Baja con ▼ y abre *Todas las apps* |
+| Instalar una app de la comunidad | Icono **Tienda** del estante → elige la app → **OK** → *Instalar en esta tele* → confirma |
+| Cambiar el salvapantallas | *Ajustes de inicio → Salvapantallas* (paisajes, sugerencias o ambos) |
 | Elegir de qué servicios sugerir, animación y cuántas | *Ajustes de inicio → Sugerencias* |
 | Quitar o poner las cotizaciones | *Ajustes de inicio* (Bitcoin, Ethereum, Solana, XRP, S&P 500, NASDAQ 100) |
 | Renovar el Modo Desarrollador | *Ajustes de inicio → Renovación del Modo Desarrollador* (o **EXTEND** en la app Developer Mode) |
@@ -149,12 +161,15 @@ Si algo va mal antes: **mantén Home 2 segundos**.
 
 ## Qué se instala en tu tele, y qué no
 
-- Tres cosas dentro de la zona de apps del Modo Desarrollador: la pantalla **FreeTV** (`com.gathin.tvhome`), el servicio de
-  renovación que va con ella y el ayudante **Home Helper** (`com.local.nativehome`), que escucha el botón Home.
+- Tres cosas dentro de la zona de apps del Modo Desarrollador: la pantalla **FreeTV** (`com.gathin.tvhome`), con sus servicios (el de
+  renovación y el de la **tienda**) y el ayudante **Home Helper** (`com.local.nativehome`), que escucha el botón Home.
+- Solo si dices que sí a la pregunta del final: la **clave del Modo Desarrollador** de tu tele, en la carpeta del servicio de la
+  tienda. Permite lo mismo que hace tu ordenador (instalar y quitar apps del Modo Desarrollador), no más. Se retira con `--forget`.
 - **No** se roota la tele, **no** se cambia el firmware, **no** se toca la imagen, el sonido ni la red, y **no** se borra
   nada de LG.
 - Lo que sale de tu tele: peticiones a TMDB (recomendaciones), Open-Meteo (tiempo), Binance y Yahoo Finance
-  (cotizaciones). Nada de tus datos se envía a ningún servidor de FreeTV: no hay.
+  (cotizaciones), Wikimedia Commons (fotos del salvapantallas) y, si usas la tienda, `repo.webosbrew.org` y la dirección de cada
+  paquete. Nada de tus datos se envía a ningún servidor de FreeTV: no hay.
 
 ## ¿No tienes Claude Code? Hazlo con cualquier IA
 
@@ -176,11 +191,18 @@ Y puedes revisar todo el historial cuando quieras con `python3 tools/check_secre
 
 ## Apps de la comunidad (YouTube sin anuncios, Kodi, Jellyfin…)
 
-*Ajustes de inicio → Apps de la comunidad* muestra el catálogo de webOS Homebrew, y `python3 tools/community.py install <id> <IP>`
-instala **las que no necesitan root** (36 de 56), comprobando su hash antes. Hay un icono **Tienda** en el estante: **la propia tele
-descarga e instala, sin ordenador** (si lo activas al instalar FreeTV; ver COMUNIDAD). Con `python3 tools/community.py serve <IP>` en el ordenador,
-la propia pantalla de la tele las instala (botón **Instalar en esta tele**). YouTube sin anuncios, Kodi, Jellyfin, Moonlight,
-Plex nativo, RetroArch, IPTV… Lo que pide root **no se instala**: FreeTV no hace root. Todo en [docs/COMUNIDAD.md](docs/COMUNIDAD.md).
+El icono **Tienda** del estante (o *Ajustes de inicio → Apps de la comunidad*) muestra el catálogo de webOS Homebrew y deja
+instalar **las que no necesitan root** (36 de 56): YouTube sin anuncios, Kodi, Jellyfin, Moonlight, Plex nativo, RetroArch, IPTV…
+Hay tres maneras de instalar, todas con el hash SHA-256 comprobado y con tu confirmación:
+
+1. **Desde la propia tele, sin ordenador** (si contestaste que sí a la pregunta del final de `install.sh`): botón **Instalar en esta tele**.
+2. **A través del ordenador:** deja `python3 tools/community.py serve <IP>` abierto y usa el mismo botón en la tele.
+3. **Desde la terminal:** `python3 tools/community.py install <id> <IP>`.
+
+Lo que pide root **no se instala**: FreeTV no hace root. Algunas apps tienen un aviso que hay que aceptar a propósito (YouTube sin
+anuncios exige borrar antes el YouTube oficial, y eso solo se puede hacer en la tele). También hay una extra **no oficial** (RezkaTV,
+de un tercero) detrás de una confirmación aparte. El catálogo y las apps las hacen otras personas: léelas antes. Todo en
+[docs/COMUNIDAD.md](docs/COMUNIDAD.md).
 
 ## Otras teles
 
@@ -198,6 +220,10 @@ Plex nativo, RetroArch, IPTV… Lo que pide root **no se instala**: FreeTV no ha
 - Probado en una **LG OLED** (webOS con Node 8.12 y Chrome 79). En esa tele se comprobaron el botón Home, la vuelta con
   **Atrás** (con el reintento), el reordenado, las cotizaciones y las recomendaciones. El arranque en frío depende de tu
   tele y de su firmware: si no abre FreeTV al encender, mira [Problemas](docs/PROBLEMAS.md).
+- La **tienda** se probó en esa LG OLED (sin root): el servicio de la tele abre su sesión, instala un paquete con el hash
+  comprobado y rechaza los casos peligrosos (root, hash malo, id fuera del catálogo, aviso sin confirmar…), y se usa con el mando.
+  La variante `serve` (a través del ordenador) se probó con herramientas simuladas, no en una tele. Kodi no cupo por falta de
+  espacio libre en la tele. Las apps de la comunidad las hacen otros: FreeTV no las revisa.
 - Otras LG (sobre todo modelos antiguos o muy nuevos) pueden comportarse distinto. El ayudante del botón Home es de otra
   persona y su autor lo probó en otras dos teles; FreeTV añade dos arreglos (ver [cómo funciona](docs/COMO-FUNCIONA.md)).
 - Samsung y Android TV: ver la tabla de arriba; en esas teles no hemos probado FreeTV.

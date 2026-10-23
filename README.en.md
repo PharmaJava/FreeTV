@@ -27,6 +27,14 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
 - **Markets in dollars:** Bitcoin, Ethereum, Solana and **XRP (Ripple)** (Binance), and iShares **S&P 500** and **NASDAQ 100**
   (CSPX and CNDX, in dollars). Each one can be switched off. Information only, not investment advice.
 - **Weather** for your city, with sunrise and sunset; the screen goes dark at night.
+- **An app store, on the TV itself.** The **Store** icon on the shelf (and *Home Settings → Community apps*) opens the
+  [webOS Homebrew](https://repo.webosbrew.org) catalogue: ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex, RetroArch…
+  Press OK on an app for its page and, if it **needs no root**, an **Install on this TV** button: the TV downloads the package,
+  checks its SHA-256 hash and installs it, no computer (if you turn that on while installing FreeTV). Anything that needs root
+  is **not installed**. See [Community apps](#community-apps-ad-free-youtube-kodi-jellyfin).
+- **Its own screensaver.** After five idle minutes, full-screen photos with the clock: landscapes of Seville, Andalusia, Spain
+  and Lithuania (Wikimedia Commons, free licences only, author and licence on screen), the picks' photos, or both. Chosen in
+  *Home Settings → Screensaver*. No root needed.
 - **A real Home button.** Press **Home** in any app and you come back to FreeTV, not LG's home. Leaving an app with
   **Back** brings you here too: the helper waits a bit over a second for LG to settle, then opens FreeTV once, with no
   back and forth. When the TV turns on, the helper opens FreeTV (on some TVs LG's home shows for a couple of
@@ -42,10 +50,8 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   or Google the TV cannot log in: use "forgot password" to set one).
 - A **computer** on the same Wi-Fi as the TV, with **Linux, macOS or Windows with WSL**, and `git`, `python3` (3.9+) and
   `node` (20+) with `npm`.
-- Optional: a **free TMDB key** (themoviedb.org → Settings → API) for the picks. It is yours and secret.
-
-> **Screensaver.** FreeTV has its own, with photos of Seville, Spain and Lithuania (free licences, author credited), no root needed.
-> See `docs/COMUNIDAD.md`.
+- Optional: a **free TMDB key** (themoviedb.org → Settings → API) for the picks (and the picks' photos in the screensaver).
+  It is yours and secret. The landscape screensaver and the store do not need it.
 
 ## Install, step by step
 
@@ -85,6 +91,11 @@ bash install.sh 192.168.1.140
 (with **your** TV's IP). It builds the home screen, downloads the Home button helper, patches it and installs it. It asks
 for the **passphrase** (you type it) and the TV shows a **pairing prompt** you accept with the remote.
 
+At the end it asks **one question**: *"Turn it on? [y/N]"*, about installing apps from the TV itself, with no computer. If you
+say yes, the TV keeps this TV's Developer Mode key in a folder only the store service reads, so it can install by itself. The
+default is **no**, and the store still works through the computer. You can take the key back any time:
+`node tools/provision_store.js <IP> --forget`. To answer in advance: `FREETV_STORE=1 bash install.sh <IP>` (yes) or `FREETV_STORE=0` (no).
+
 ## Using it, updating, uninstalling
 
 | You want to… | Do this |
@@ -93,6 +104,8 @@ for the **passphrase** (you type it) and the TV shows a **pairing prompt** you a
 | Move an icon on the shelf | Hold **OK** on it, ◀ ▶ to move, **OK** to drop |
 | Choose the shelf apps | *Home Settings → Shelf* |
 | Choose which services to suggest from, animation, how many | *Home Settings → Suggestions* |
+| Install a community app | **Store** icon on the shelf → pick the app → **OK** → *Install on this TV* → confirm |
+| Change the screensaver | *Home Settings → Screensaver* (landscapes, picks or both) |
 | Go back to LG's home | Hold **Home** for 2 seconds |
 | Turn the Home button back on | *Home Settings → Turn the Home button back on* |
 
@@ -111,9 +124,12 @@ ares-install -d clean-your-tv-192-168-1-140 -r com.local.nativehome
 
 ## What it installs, and what it doesn't
 
-Three things in the Developer Mode apps area: the **FreeTV** screen, its renewal service and **Home Helper**, which listens
-for the Home button. It does **not** root the TV, change firmware, touch picture, sound or network, or delete anything of
-LG's. Your TV talks to TMDB, Open-Meteo, Binance and Yahoo Finance; nothing goes to any FreeTV server (there is none).
+Three things in the Developer Mode apps area: the **FreeTV** screen with its services (renewal and the **store**), and **Home
+Helper**, which listens for the Home button. Only if you say yes to the question at the end: this TV's **Developer Mode key**, in
+the store service's folder; it allows what your computer does (install and remove Developer Mode apps), nothing more, and
+`--forget` takes it away. It does **not** root the TV, change firmware, touch picture, sound or network, or delete anything of
+LG's. Your TV talks to TMDB, Open-Meteo, Binance, Yahoo Finance, Wikimedia Commons (screensaver) and, if you use the store,
+`repo.webosbrew.org` and each package's address; nothing goes to any FreeTV server (there is none).
 
 ## No coding assistant? Use any AI
 
@@ -128,11 +144,18 @@ Your `config.properties` (with your TMDB key) is **never** uploaded: it is in `.
 
 ## Community apps (ad-free YouTube, Kodi, Jellyfin…)
 
-*Home Settings → Community apps* shows the webOS Homebrew catalogue, and `python3 tools/community.py install <id> <IP>` installs
-**the ones that don't need root** (36 of 56), checking their hash first. There is a **Store** icon on the shelf: **the TV
-downloads and installs by itself, no computer** (if you turn it on when installing FreeTV; see COMUNIDAD). Ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex,
-RetroArch, IPTV… With `python3 tools/community.py serve <IP>` running on the computer, the TV's own screen installs them
-(**Install on this TV** button). Anything that needs root is **not installed**: FreeTV does not root TVs. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
+The **Store** icon on the shelf (or *Home Settings → Community apps*) shows the webOS Homebrew catalogue and installs **the apps
+that don't need root** (36 of 56): ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex, RetroArch, IPTV… Three ways to
+install, all with the SHA-256 hash checked and your confirmation:
+
+1. **From the TV itself, no computer** (if you said yes to the question at the end of `install.sh`): the **Install on this TV** button.
+2. **Through the computer:** keep `python3 tools/community.py serve <IP>` running and use the same button on the TV.
+3. **From the terminal:** `python3 tools/community.py install <id> <IP>`.
+
+Anything that needs root is **not installed**: FreeTV does not root TVs. Some apps carry a warning you must accept on purpose
+(ad-free YouTube requires deleting the official YouTube first, which can only be done on the TV). There is also one **unofficial**
+extra (RezkaTV, by a third party) behind its own confirmation. The catalogue and the apps are made by other people: read before
+installing. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
 
 ## Other TVs
 
@@ -147,8 +170,10 @@ Got one of these? Tell us how it went in an [Issue](https://github.com/PharmaJav
 
 ## Tested, and limits
 
-Tested on **one LG OLED** (Samsung and Android TV: see the table above) (webOS with Node 8.12 and Chrome 79): Home button, return after **Back**, reordering, quotes and
-picks. Cold boot depends on your TV and firmware. Other LG models may differ. **Samsung and other brands are not supported
+Tested on **one LG OLED** (Samsung and Android TV: see the table above) (webOS with Node 8.12 and Chrome 79): Home button, return after **Back**, reordering, quotes,
+picks and the **store** (the TV's service opens its session, installs a package with its hash checked and refuses the dangerous
+cases: root, wrong hash, an id outside the catalogue, an unconfirmed warning…). The `serve` variant (through the computer) was
+tested with simulated tools, not on a TV. Kodi did not fit for lack of free space on the TV. Cold boot depends on your TV and firmware. Other LG models may differ. **Samsung and other brands are not supported
 here.** Renewal is **beta** and unconfirmed on TVs without root.
 
 ## Credits
