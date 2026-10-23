@@ -36,6 +36,12 @@ Vuelve a activar el *Dev Mode Status* y ejecuta otra vez `bash install.sh <IP>`.
 **Las cotizaciones salen con «—».** Hay que tener internet. Los precios vienen de Binance (cripto) y de Yahoo Finance
 (S&P 500 y NASDAQ 100); si Yahoo no responde, se usa justETF. Si fallan los dos, se muestra el último precio guardado.
 
+**Una app de la comunidad dice «no available space».** La tele tiene poco espacio para apps. Borra en la tele las que no uses
+(mantén OK sobre ellas en el inicio de LG): desde el ordenador no se puede. Mira [COMUNIDAD.md](COMUNIDAD.md).
+
+**YouTube sin anuncios: «Success» pero no se instala, y desaparece el acceso de YouTube del inicio de LG.** Instalaste con el YouTube
+oficial puesto. Reinicia la tele (el acceso suele volver), **bórralo tú en la tele** y vuelve a instalar con `--official-removed`.
+
 ## En el ordenador
 
 **`./install.sh` dice que falta `node`, `python3` o `git`.** Instálalos como en el [README](../README.md). El instalador

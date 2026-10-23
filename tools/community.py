@@ -30,9 +30,12 @@ WORK = os.path.join(ROOT, 'work', 'community')
 
 # Said before installing, with a flag that must be given on purpose.
 CAUTION = {
-    'youtube.leanback.v4': ('replace', 'Reemplaza la app oficial de YouTube (tiene su mismo identificador). Antes hay que desinstalar la oficial en '
-                            'la tele (mantén OK sobre ella y elige Eliminar); luego se puede volver a poner desde la LG Content Store. '
-                            'Quita anuncios, y eso puede ir contra las condiciones de uso de YouTube: es tu decisión.'),
+    'youtube.leanback.v4': ('official-removed', 'Reemplaza la app oficial de YouTube (tiene su mismo identificador). LG NO deja quitar la oficial '
+                            'desde el ordenador: tienes que borrarla TÚ en la tele ANTES (inicio de LG, mantén OK sobre YouTube y elige '
+                            'Eliminar; se puede volver a poner desde la LG Content Store). Si se instala con la oficial puesta, la tele dice '
+                            '«Success» pero deja a la oficial sin su acceso directo y la versión nueva no se instala (nos pasó). '
+                            'Cuando la hayas borrado, añade --official-removed. Quita anuncios, y eso puede ir contra las condiciones '
+                            'de uso de YouTube: es tu decisión.'),
     'com.open.hidden.menu': ('sensitive', 'Abre el menú de servicio oculto de LG. Cambiar ahí ajustes puede estropear la tele y anular la '
                              'garantía. Instálala solo si sabes exactamente qué vas a tocar.'),
     'com.pirate.refresh': ('sensitive', 'Renueva el Modo Desarrollador por su cuenta, sin pasar por LG. FreeTV ya trae un panel de renovación (beta): '
@@ -142,6 +145,16 @@ def device(ip):
     return 'clean-your-tv-' + ip.replace('.', '-')
 
 
+def free_space_mb(ip):
+    """Free megabytes on the TV's apps partition, or None when it can't be read (best effort)."""
+    try:
+        out = subprocess.run([ares('ares-novacom', False), '-d', device(ip), '--run',
+                              'df -m /media/cryptofs/apps | tail -1'], capture_output=True, text=True, timeout=60).stdout
+        return int(out.split()[3])
+    except Exception:
+        return None
+
+
 def cmd_install(app_id, ip, args):
     a = find(catalogue(), app_id)
     m = a['manifest']
@@ -153,6 +166,13 @@ def cmd_install(app_id, ip, args):
     if caution and ('--%s' % caution[0]) not in args:
         sys.exit('Esta app necesita un aviso extra. Léelo arriba y, si de verdad quieres seguir, añade --%s al comando.' % caution[0])
     path = download(a)
+    size_mb = (m.get('ipkSize') or os.path.getsize(path)) / 1048576.0
+    free = free_space_mb(ip)
+    if free is not None:
+        say('Ocupa unos %.0f MB en el paquete y la tele tiene %d MB libres para apps.' % (size_mb, free))
+        if free < size_mb * 2.2:
+            say('AVISO: descomprimida ocupa bastante más que el paquete; quizá no quepa. Si falla con «no available space», '
+                'libera espacio borrando apps que no uses EN LA TELE (desde el ordenador no se pueden quitar las de LG).')
     if '--yes' not in args:
         if not sys.stdin.isatty():
             sys.exit('Sin terminal para preguntarte: añade --yes si quieres instalarla de todos modos.')

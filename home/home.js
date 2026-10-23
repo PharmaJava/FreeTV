@@ -583,7 +583,7 @@
 
   /** Apps that need a word of warning before installing (kept in step with tools/community.py). */
   var COMM_CAUTION = {
-    'youtube.leanback.v4': ['Substitui o YouTube oficial: é preciso desinstalá-lo antes.', 'Replaces the official YouTube: uninstall it first.', 'Reemplaza el YouTube oficial: hay que desinstalar antes el oficial.'],
+    'youtube.leanback.v4': ['Substitui o YouTube oficial: apague-o você na TV antes (o computador não consegue).', 'Replaces the official YouTube: delete it yourself on the TV first (the computer cannot).', 'Reemplaza el YouTube oficial: bórralo tú en la tele antes (desde el ordenador no se puede).'],
     'com.open.hidden.menu': ['Abre o menu de serviço da LG: pode danificar a TV.', "Opens LG's service menu: it can break the TV.", 'Abre el menú de servicio de LG: puede estropear la tele.'],
     'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.']
   };
@@ -634,7 +634,7 @@
       else line(box, '', tr('Sem root: dá para instalar pelo computador.', 'No root: it can be installed from the computer.', 'Sin root: se instala desde el ordenador.'));
       if (COMM_CAUTION[a.id]) { var cw = COMM_CAUTION[a.id]; line(box, 'warn', tr(cw[0], cw[1], cw[2])); }
       if (m.sourceUrl) line(box, '', tr('Código: ', 'Code: ', 'Código: ') + m.sourceUrl);
-      if (!m.rootRequired) line(box, 'code', 'python3 tools/community.py install ' + a.id + ' <IP>');
+      if (!m.rootRequired) line(box, 'code', 'python3 tools/community.py install ' + a.id + ' <IP>' + (a.id === 'youtube.leanback.v4' ? ' --official-removed' : ''));
       el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));
       updateFocus();
       return;

@@ -49,15 +49,28 @@ Mira la lista completa con `python3 tools/community.py list`.
 
 ## Los tres avisos extra
 
-- **`--replace` (YouTube AdFree).** Usa el mismo identificador que el YouTube de LG, así que **hay que desinstalar antes el oficial**:
-  en la tele, mantén **OK** sobre YouTube y elige *Eliminar* (se puede volver a poner desde la **LG Content Store**). Quita
-  anuncios, y eso puede ir contra las condiciones de uso de YouTube: es tu decisión. Ejemplo:
-  `python3 tools/community.py install youtube.leanback.v4 <IP> --replace`
+- **`--official-removed` (YouTube AdFree).** Usa el mismo identificador que el YouTube de LG, así que **antes hay que borrar el
+  oficial, y solo se puede hacer en la tele**: en el inicio de LG, mantén **OK** sobre YouTube y elige *Eliminar* (se puede volver
+  a poner desde la **LG Content Store**). **Desde el ordenador no se puede**, y si instalas con la oficial puesta la tele dice
+  «Success» pero la oficial se queda sin su acceso directo y la nueva no se instala (nos pasó). Cuando la hayas borrado:
+  `python3 tools/community.py install youtube.leanback.v4 <IP> --official-removed`. Quita anuncios, y eso puede ir contra las
+  condiciones de uso de YouTube: es tu decisión. Al abrirla, la **tecla verde** del mando abre su configuración.
 - **`--sensitive` (Open Service Menu).** Abre el menú de servicio oculto de LG; cambiar ahí cosas puede estropear la tele y anular
   la garantía.
 - **`--sensitive` (Auto Dev Token Refresh).** Renueva el Modo Desarrollador por su cuenta. FreeTV ya trae su propio panel de
   renovación (beta): no hace falta usar los dos.
 - **`--sensitive` (Homebrew Channel).** Ver siguiente apartado.
+
+## Espacio, y borrar apps de LG
+
+Las apps ocupan la partición de apps de la tele, que suele estar casi llena (en nuestra LG OLED B1: 2,3 GB con 53 MB libres).
+**Kodi** (paquete de 94 MB, bastante más ya descomprimido) **no cupo ni con 159 MB libres**: la tele responde «There is no
+available space to install App». Jellyfin, YouTube AdFree y casi todas las demás son pequeñas.
+
+**Las apps de LG y las de la tienda no se pueden quitar desde el ordenador** (`FAILED_REMOVE`): hay que borrarlas en la tele,
+manteniendo **OK** sobre ellas en el inicio de LG. Candidatas habituales: apps promocionales (8 Ball Pool, SkyShowtime, LG Sports
+Playbook, LG Gaming Portal, LG Radio+, LG Movies & TV, RT News…) y las que no uses (Apple TV ocupa 48 MB).
+`tools/community.py` te avisa del espacio libre antes de instalar.
 
 ## Lo que NO se instala: root y el Homebrew Channel
 
