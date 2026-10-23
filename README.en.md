@@ -1,6 +1,8 @@
 # FreeTV
 
-**A clean, ad-free home screen for LG (webOS) TVs, and a Home button that always takes you to it.**
+**A clean, ad-free home screen for your TV, and a Home button that always takes you to it.**
+
+**LG (webOS): tested** · Samsung (Tizen 2017+): experimental · Android TV and Google TV: Free My TV's app included · [what there is for each TV](docs/OTRAS-TELES.md)
 
 [Versión en español](README.md) · [Guide to do it with any AI](docs/GUIA-IA.md) · [Troubleshooting](docs/PROBLEMAS.md)
 (the guides are in Spanish for now; any AI can translate them for you)
@@ -121,9 +123,20 @@ Your `config.properties` (with your TMDB key) is **never** uploaded: it is in `.
 **blocks a commit** that would publish a key or a private file. If you plan to change FreeTV and push, turn it on once:
 `git config core.hooksPath .githooks`. Check the whole history any time with `python3 tools/check_secrets.py --all`.
 
+## Other TVs
+
+| TV | What there is | Status |
+|---|---|---|
+| **LG (webOS)** | Full FreeTV (this guide) | **Tested** on an LG OLED |
+| **Samsung (2017+)** | The same screen, packaged in `tizen/`: [guide](docs/SAMSUNG.md) | **Experimental**: not tested by us on a Samsung |
+| **Android TV / Google TV** | Free My TV's Android app in `android/`: [guide](docs/ANDROID-TV.md) | Included unchanged; not built or tested here; no FreeTV extras |
+| Samsung up to 2016, Fire TV, Roku… | Nothing | [Alternative: a Google TV streamer on HDMI](docs/OTRAS-TELES.md) |
+
+Got one of these? Tell us how it went in an [Issue](https://github.com/PharmaJava/FreeTV/issues).
+
 ## Tested, and limits
 
-Tested on **one LG OLED** (webOS with Node 8.12 and Chrome 79): Home button, return after **Back**, reordering, quotes and
+Tested on **one LG OLED** (Samsung and Android TV: see the table above) (webOS with Node 8.12 and Chrome 79): Home button, return after **Back**, reordering, quotes and
 picks. Cold boot depends on your TV and firmware. Other LG models may differ. **Samsung and other brands are not supported
 here.** Renewal is **beta** and unconfirmed on TVs without root.
 

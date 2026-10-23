@@ -5,6 +5,7 @@ FreeTV stands on other people's work. Thank you.
 | What | Who | License | Where in this repo |
 |---|---|---|---|
 | The home screen's design and code (`home/`, started from it) | [Free My TV](https://freemytv.io) contributors | MIT | `licenses/Free-My-TV-MIT.txt` |
+| The Samsung packaging and installer (`tizen/`, `assets/samsung-icons/`) and the whole Android app (`android/`), **included as Free My TV made them** | [Free My TV](https://freemytv.io) contributors | MIT | `licenses/Free-My-TV-MIT.txt` |
 | The Home button helper, its Developer Mode renewal service and the recovery code (`home/helper-control.js`). **Downloaded by `install.sh`, not copied here** | [Razdva122/clean-your-tv-lg-webos](https://github.com/Razdva122/clean-your-tv-lg-webos) | MIT | `licenses/clean-your-tv-lg-webos-MIT.txt` |
 | `ws` 7.5.10, a WebSocket library, swapped into the helper so it runs on TVs with Node 8 | Einar Otto Stangvik and contributors | MIT | `third_party/ws/LICENSE` |
 | Inter, the font | The Inter Project Authors | SIL OFL 1.1 | `assets/fonts/OFL.txt` |

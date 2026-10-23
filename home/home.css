@@ -312,6 +312,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.3s;
   transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.3s;
 }
+/* Samsung's logos are not squares with their own background: they sit inside the tile, on its brand color. */
+.tv-tizen .tile img.ico, .tv-tizen .cell .face img.ico { left: 12%; top: 12%; width: 76%; height: 76%; -o-object-fit: contain; object-fit: contain; }
 /* An app that is a symbol, like Live TV. */
 .tile .bigsym, .cell .face .bigsym { position: absolute; left: 50%; top: 50%; width: 56%; height: 56%; color: #FFF; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); }
 /* LG's icons are squares with their own background: they fill the tile. */

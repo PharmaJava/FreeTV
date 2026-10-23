@@ -1,6 +1,8 @@
 # FreeTV
 
-**Una pantalla de inicio limpia, sin anuncios, para televisores LG (webOS), y un botón Home que te lleva siempre a ella.**
+**Una pantalla de inicio limpia, sin anuncios, para tu tele, y un botón Home que te lleva siempre a ella.**
+
+**LG (webOS): probado** · Samsung (Tizen 2017+): experimental · Android TV y Google TV: app de Free My TV incluida · [qué hay para cada tele](docs/OTRAS-TELES.md)
 
 [English version](README.en.md) · [Guía para hacerlo con cualquier IA](docs/GUIA-IA.md) · [Problemas y soluciones](docs/PROBLEMAS.md)
 
@@ -169,6 +171,17 @@ git config core.hooksPath .githooks
 
 Y puedes revisar todo el historial cuando quieras con `python3 tools/check_secrets.py --all`.
 
+## Otras teles
+
+| Tele | Qué hay | Estado |
+|---|---|---|
+| **LG (webOS)** | FreeTV completo (esta guía) | **Probado** en una LG OLED |
+| **Samsung (2017 o más)** | La misma pantalla, empaquetada en `tizen/`: [guía](docs/SAMSUNG.md) | **Experimental**: no probado por nosotros en Samsung |
+| **Android TV / Google TV** | La app de Free My TV en `android/`: [guía](docs/ANDROID-TV.md) | Incluida sin cambios; no compilada ni probada aquí; sin las novedades de FreeTV |
+| Samsung hasta 2016, Fire TV, Roku… | Nada | [Alternativa: un reproductor Google TV por HDMI](docs/OTRAS-TELES.md) |
+
+¿Tienes una de estas teles? Cuéntanos cómo te fue en una [Issue](https://github.com/PharmaJava/FreeTV/issues).
+
 ## Probado y límites
 
 - Probado en una **LG OLED** (webOS con Node 8.12 y Chrome 79). En esa tele se comprobaron el botón Home, la vuelta con
@@ -176,7 +189,7 @@ Y puedes revisar todo el historial cuando quieras con `python3 tools/check_secre
   tele y de su firmware: si no abre FreeTV al encender, mira [Problemas](docs/PROBLEMAS.md).
 - Otras LG (sobre todo modelos antiguos o muy nuevos) pueden comportarse distinto. El ayudante del botón Home es de otra
   persona y su autor lo probó en otras dos teles; FreeTV añade dos arreglos (ver [cómo funciona](docs/COMO-FUNCIONA.md)).
-- **Samsung (Tizen)** y otras marcas **no** están soportadas aquí.
+- Samsung y Android TV: ver la tabla de arriba; en esas teles no hemos probado FreeTV.
 - La renovación automática del Modo Desarrollador es **beta** y sin confirmar en teles sin root: sigue mirando el
   contador y usa **EXTEND**.
 - Al salir de una app con **Atrás** se ve el inicio de LG algo más de un segundo antes de que aparezca FreeTV; es lo que tarda

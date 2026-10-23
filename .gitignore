@@ -1,11 +1,14 @@
 # Your settings (they can hold your TMDB key) and everything the installer creates stay on your computer
+*.apk
+*.ipk
+*.keystore
+*.wgt
+.lgtv-key.json
+.venv/
+__pycache__/
+android/out/
 config.properties
+dist/
+node_modules/
 out/
 work/
-dist/
-*.ipk
-.lgtv-key.json
-*.keystore
-.venv/
-node_modules/
-__pycache__/

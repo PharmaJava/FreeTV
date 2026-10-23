@@ -39,7 +39,9 @@ Read [`docs/GUIA-IA.md`](docs/GUIA-IA.md) first: it is written for exactly this.
 | `assets/`, `third_party/ws/` | Icons, font, and ws 7.5.10 |
 | `tools/build_home.py` | Builds `out/home` from `home/` and `config.properties` |
 | `tools/patch_helper.py` | The two helper fixes |
-| `install.sh` | The whole install |
+| `install.sh` | The whole install (LG) |
+| `tizen/` | Samsung: `build.py` (unsigned/signed .wgt), `install.py` (SDB over Wi-Fi). Experimental, untested by us on a Samsung |
+| `android/` | Free My TV's Android app, unchanged (`build.sh`, `app/`). Not built or tested by us. Never commit its `config.properties`, `*.keystore` or `*.apk` |
 
 ## Debugging the live screen
 

@@ -51,6 +51,7 @@
   }
 
   var stage = $('stage'), body = document.body;
+  setClass(body, 'tv-' + TV.name, true);   // 'tv-webos', 'tv-tizen' or 'tv-browser', for the few differences
 
   /** The 1920 × 1080 stage fills the window (on the TV it already is 1920 × 1080). */
   function fit() {
