@@ -287,8 +287,17 @@ var TV = (function () {
   return {
     name: webos ? 'webos' : samsung ? 'tizen' : 'browser',
 
-    /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]. */
+    /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]; on LG, Live TV is one more. */
     apps: function (done) {
+      this.appsOnly(function (list) {
+        if (webos) {
+          list.push({id: 'com.webos.app.livetv', title: tr('TV em direto', 'Live TV', 'TV en directo'), icon: '', color: '#1C7BFF', symbol: 'live_tv'});
+        }
+        done(list);
+      });
+    },
+
+    appsOnly: function (done) {
       if (samsung) { samsungApps(done); return; }
       if (!webos) {
         done(SAMPLE.map(function (s) { return {id: s[0], title: s[1], icon: '', color: s[2]}; }));

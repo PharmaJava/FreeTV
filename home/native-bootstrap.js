@@ -22,6 +22,14 @@
       release();
     }
   }
-  document.addEventListener('webOSRelaunch', start);
-  start();
+  // The page is not reloaded when it is opened again (handlesRelaunch), so ask for the helper then too, but not in a rush.
+  var last = 0;
+  function startSoon() {
+    var now = new Date().getTime();
+    if (now - last < 20000) return;
+    last = now;
+    start();
+  }
+  document.addEventListener('webOSRelaunch', startSoon);
+  startSoon();
 }());

@@ -20,7 +20,8 @@ Read [`docs/GUIA-IA.md`](docs/GUIA-IA.md) first: it is written for exactly this.
 
 ## Rules
 
-- Never commit `config.properties`, keys, `work/`, `out/` or `*.ipk`.
+- Never commit `config.properties`, keys, `work/`, `out/` or `*.ipk`. `tools/check_secrets.py` (pre-commit hook in `.githooks`)
+  blocks commits that would publish a key; run `python3 tools/check_secrets.py --all` before pushing.
 - Do not root the TV, change firmware or touch picture, sound or network settings. Everything is reversible:
   hold Home 2 s (emergency exit), `ares-install -r <app id>` (uninstall).
 - The home screen is **ES5 + CSS without variables or grid** (old TVs). Only transform and opacity animate. No new

@@ -40,7 +40,7 @@ La IA te preguntará cosas. Tienes que saber:
 | **IP de la tele** | En la app *Developer Mode* de la tele, con el Key Server en ON, sale la IP. O en Ajustes → Red |
 | **Ciudad, latitud y longitud** | Busca tu ciudad en un mapa en línea y copia los números (ej. Sevilla: 37.3891 y -5.9845) |
 | **País** | Dos letras: ES, MX, AR, CO, US… |
-| **Servicios sin cuenta** | Por ejemplo `disney` si no tienes Disney+. Los nombres: netflix, prime, disney, hulu, paramount, peacock, max, appletv, crunchyroll, globoplay |
+| **Servicios sin cuenta** | Por ejemplo `disney,appletv` si no tienes Disney+ ni Apple TV (también se cambia en la tele, en *Ajustes de inicio → Sugerencias*). Los nombres: netflix, prime, disney, hulu, paramount, peacock, max, appletv, crunchyroll, globoplay |
 
 ## Paso 3. Cuando algo falla
 

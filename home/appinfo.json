@@ -1,6 +1,6 @@
 {
   "id": "com.gathin.tvhome",
-  "version": "1.4.0",
+  "version": "1.6.0",
   "vendor": "Free My TV",
   "type": "web",
   "main": "index.html",
@@ -11,8 +11,14 @@
   "iconColor": "#FF7A9E",
   "resolution": "1920x1080",
   "disableBackHistoryAPI": true,
-  "requiredACG": ["application.launcher", "network.query"],
-  "requiredPermissions": ["applications", "applications.launcher"],
+  "requiredACG": [
+    "application.launcher",
+    "network.query"
+  ],
+  "requiredPermissions": [
+    "applications",
+    "applications.launcher"
+  ],
   "supportGIP": true,
   "needNetworkToLaunchOnBoot": false
 }

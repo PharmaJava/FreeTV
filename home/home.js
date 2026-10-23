@@ -67,7 +67,7 @@
     ['prime', /^amazon$/, /prime video|amazon/i, ['#2AA8FF', '#0A68D4']],
     ['disney', /disney/, /disney/i, ['#173584', '#08143F']],
     ['max', /hbo|wbd/, /^(hbo )?max$|hbo max/i, ['#5C30E8', '#221684']],
-    ['appletv', /appletv|apple\.tv/, /apple tv/i, ['#1C1C1E', '#000000']],
+    ['live', /^com\.webos\.app\.livetv$/, /tv em direto|live tv|tv en directo/i, ['#2A8CFF', '#0A3FA8']],
     ['hulu', /^hulu/, /hulu/i, ['#1CE783', '#0B8F4E']],
     ['paramount', /paramount|cbs/, /paramount/i, ['#0064FF', '#002A86']],
     ['peacock', /peacock/, /peacock/i, ['#1C1C1E', '#000000']],
@@ -101,6 +101,7 @@
     var bottom = k ? k[3][1] : app.color ? darken(app.color, 0.62) : '#161618';
     box.style.background = '-webkit-linear-gradient(top, ' + top + ', ' + bottom + ')';
     box.style.background = 'linear-gradient(' + top + ', ' + bottom + ')';
+    if (app.symbol) { el('span', 'sym bigsym', box).style.webkitMaskImage = 'url(symbols/' + app.symbol + '.png)'; box.lastChild.style.maskImage = 'url(symbols/' + app.symbol + '.png)'; return; }
     var word = el('div', 'word', box, app.title);
     if (wordSize) word.style.fontSize = wordSize + 'px';
     if (app.icon) {
@@ -134,11 +135,11 @@
 
   // MARK: - Focus
 
-  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit'};
-  var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0};
+  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest'};
+  var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0};
   var cards = [];
 
-  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT; }
+  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG; }
 
   function updateFocus() {
     var i, list;
@@ -152,6 +153,12 @@
     setClass($('quotes'), 'hide', st.zone === Z.TOP && st.top >= 3);
     list = $('cards').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.CARDS && st.card === i);
+    if (st.zone === Z.CARDS) {
+      // keep the focused card inside the screen, and let the blurred background follow it
+      cardShift = st.card > 0 ? Math.max(0, cardLeft(st.card) + SMALL_W - 1840) : 0;
+      $('cards').style.webkitTransform = $('cards').style.transform = cardShift ? 'translateX(' + (-cardShift) + 'px)' : '';
+      if (cards[st.card] && cards[st.card] !== bgShown) { bgShown = cards[st.card]; backdrop(Data.image(bgShown.backdrop, 'w300')); }
+    }
     list = $('tiles').children;
     for (i = 0; i < list.length; i++) {
       setClass(list[i], 'focus', st.zone === Z.SHELF && st.shelf === i);
@@ -165,6 +172,7 @@
     $('apps').lastChild.style.webkitTransform = $('apps').lastChild.style.transform = 'translateY(' + (-first * APP_DY) + 'px)';
     focusRows($('settings'), st.row, st.zone === Z.SETTINGS);
     focusRows($('shelfedit'), st.edit, st.zone === Z.EDIT);
+    focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
   }
 
@@ -218,12 +226,15 @@
     }
   }
 
+  var QUOTE_TAGS = {4: 'XRP', 5: 'S&P', 6: 'NDX'};
+
   function renderQuotes() {
     var q = $('quotes'), coins = Data.activeCoins();
     q.innerHTML = '';
     for (var i = 0; i < coins.length; i++) {
       var item = el('span', 'q', q);
-      if (coins[i] >= 4) el('b', '', item, coins[i] === 4 ? 'S&P' : 'NDX');   // the funds have no logo
+      var tag = QUOTE_TAGS[coins[i]];
+      if (tag) el('b', '', item, tag);   // XRP and the funds have no logo
       else coin(coins[i], item);
       el('span', '', item, Data.compact(Data.prices[coins[i]]));
     }
@@ -231,28 +242,36 @@
 
   // MARK: - Picks and background
 
+  // One wide card, then as many tall ones as there are picks; the row slides sideways to keep the focused one in view.
+  var HERO_W = 1040, SMALL_W = 320, CARD_GAP = 40, cardShift = 0, bgShown = null;
+  function cardLeft(c) { return c === 0 ? 80 : 80 + HERO_W + CARD_GAP + (c - 1) * (SMALL_W + CARD_GAP); }
+
   function renderCards() {
     var list = Data.picks(TAB_KIND[st.tab]);
     var holder = $('cards');
     setClass(body, 'no-picks', !list.length);
     var same = list.length === cards.length;
-    for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta;
+    for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta && list[i].service === cards[i].service;
     if (same && holder.children.length === list.length) return;
     cards = list;
     holder.innerHTML = '';
-    var rects = [[80, 1040], [1160, 320], [1520, 320]];
+    cardShift = 0;
+    holder.style.webkitTransform = holder.style.transform = '';
     for (var c = 0; c < list.length; c++) {
       var p = list[c], card = el('div', 'card', holder);
-      card.style.left = rects[c][0] + 'px';
-      card.style.width = rects[c][1] + 'px';
+      card.style.left = cardLeft(c) + 'px';
+      card.style.width = (c === 0 ? HERO_W : SMALL_W) + 'px';
       var img = el('div', 'img', card);
       img.style.backgroundImage = 'url(' + Data.image(p.backdrop, c === 0 ? 'w1280' : 'w780') + ')';
       el('div', 'name', card, p.title);
-      if (c === 0 && p.meta) el('div', 'meta', card, p.meta);
+      // The wide card says everything; the others say what it is and where to watch it.
+      var meta = c === 0 ? p.meta : (p.kind === 'tv' ? tr('Série', 'Series', 'Serie') : tr('Filme', 'Movie', 'Película')) + (p.service ? ' · ' + p.service : '');
+      if (meta) el('div', 'meta', card, meta);
       hover(card, Z.CARDS, c);
     }
     st.card = Math.min(st.card, Math.max(0, list.length - 1));
     if (!list.length && st.zone === Z.CARDS) st.zone = Z.SHELF;
+    bgShown = list.length ? list[0] : null;
     backdrop(list.length ? Data.image(list[0].backdrop, 'w300') : '');
     updateFocus();
   }
@@ -414,7 +433,7 @@
     el('div', 'head', card, tr('Mercados', 'Markets', 'Mercados'));
     var stale = Data.staleness(Data.pricesAt, 5 * 60000);
     el('div', 'side', card, stale || tr('variação em 24 h', '24h change', 'variación en 24 h'));
-    var pitch = coins.length > 4 ? 44 : 52, first = coins.length > 4 ? 78 : 86;   // five rows still fit the panel
+    var pitch = coins.length > 4 ? 44 : 52, first = coins.length > 4 ? 78 : 86;   // up to six rows fit the panel
     for (var j = 0; j < coins.length; j++) {
       var i = coins[j], row = el('div', 'coin', card);
       row.style.top = (first + pitch * j) + 'px';
@@ -473,6 +492,7 @@
     setClass($('apps'), 'open', false);
     setClass($('settings'), 'open', false);
     setClass($('shelfedit'), 'open', false);
+    setClass($('suggest'), 'open', false);
     st.zone = Z.SHELF;
     updateFocus();
   }
@@ -498,7 +518,7 @@
     var count = Data.currency === 'BRL' ? 4 : 3;
     var shown = [];
     for (var c = 0; c < count; c++) shown.push(c);
-    shown.push(4, 5);   // the iShares S&P 500 and NASDAQ 100, in dollars
+    shown.push(4, 5, 6);   // XRP, then the iShares S&P 500 and NASDAQ 100 (dollars)
     for (var s = 0; s < shown.length; s++) {
       (function (i) {
         rows.push({label: i < 4 ? names[i] : Data.coinName(i), toggle: Prefs.quotes() && Prefs.coin(i), dim: !Prefs.quotes(),
@@ -506,11 +526,7 @@
       })(shown[s]);
     }
     rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
-    // Picks only come from the services switched on here (the ones where the person has an account).
-    Data.services().forEach(function (sv) {
-      rows.push({label: tr('Recomendar de ', 'Recommend from ', 'Recomendar de ') + sv.label, toggle: sv.on,
-        step: function () { Data.setService(sv.key, !sv.on); }});
-    });
+    rows.push({label: tr('Sugestões', 'Suggestions', 'Sugerencias'), value: '›', step: function (d) { if (d >= 0) openSuggest(); }});
     if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
     rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -551,6 +567,59 @@
     st.row = 0;
     renderSettings();
     setClass($('settings'), 'open', true);
+    updateFocus();
+  }
+
+  // MARK: - Suggestions: which services the picks come from, and how many
+
+  function suggestRows() {
+    var rows = [];
+    Data.services().forEach(function (sv) {
+      rows.push({label: sv.label, toggle: sv.on, step: function () { Data.setService(sv.key, !sv.on); }});
+    });
+    rows.push({label: tr('Animação e anime', 'Animation and anime', 'Animación y anime'), toggle: Data.animation(),
+      step: function () { Data.setAnimation(!Data.animation()); }});
+    var counts = [6, 9, 12, 18], n = Data.pickCount();
+    rows.push({label: tr('Quantas mostrar', 'How many to show', 'Cuántas mostrar'), value: String(n),
+      step: function (d) { Data.setPickCount(counts[(counts.indexOf(n) + (d || 1) + counts.length * 2) % counts.length]); }});
+    return rows;
+  }
+
+  var suggestNow = [];
+
+  function renderSuggest() {
+    var box = $('suggest').firstChild;
+    box.innerHTML = '';
+    var title = el('div', 'title', box);
+    sym('sparkles', title);
+    title.appendChild(document.createTextNode(tr('Sugestões', 'Suggestions', 'Sugerencias')));
+    el('div', 'hint', box, tr('Só se sugere o que está ligado: marque os serviços em que você tem conta.',
+        'Only what is on is suggested: switch on the services where you have an account.',
+        'Solo se sugiere lo que está activado: marca los servicios donde tienes cuenta.')).style.marginBottom = '14px';
+    var list = el('div', 'list', box), holder = el('div', 'rows', list);
+    suggestNow = suggestRows();
+    list.style.height = Math.min(suggestNow.length, 7) * 78 + 'px';
+    for (var i = 0; i < suggestNow.length; i++) {
+      var r = suggestNow[i], row = el('div', 'row', holder, r.label);
+      if (r.toggle !== undefined) setClass(el('div', 'toggle', row), 'on', r.toggle);
+      else {
+        var v = el('span', 'value', row);
+        el('span', 'chev', v, '‹');
+        v.appendChild(document.createTextNode(r.value));
+        el('span', 'chev', v, '›');
+      }
+      hover(row, Z.SUGG, i);
+    }
+    el('div', 'hint', box, tr('OK liga ou desliga · ← → mudam o número', 'OK switches on or off · ← → change the number', 'OK activa o desactiva · ← → cambian el número'));
+    updateFocus();
+  }
+
+  function openSuggest() {
+    setClass($('settings'), 'open', false);
+    st.zone = Z.SUGG;
+    st.sug = 0;
+    renderSuggest();
+    setClass($('suggest'), 'open', true);
     updateFocus();
   }
 
@@ -670,6 +739,9 @@
       case Z.EDIT:
         editShelf(0);
         return;
+      case Z.SUGG:
+        if (suggestNow[st.sug]) { var sr = suggestNow[st.sug]; sr.step(1); if (st.zone === Z.SUGG) renderSuggest(); }
+        return;
     }
   }
 
@@ -724,6 +796,10 @@
         if (dy) st.edit = Math.max(0, Math.min(apps.length - 1, st.edit + dy));
         else if (dx) editShelf(dx);
         break;
+      case Z.SUGG:
+        if (dy) st.sug = Math.max(0, Math.min(suggestNow.length - 1, st.sug + dy));
+        else if (dx && suggestNow[st.sug] && suggestNow[st.sug].toggle === undefined) { suggestNow[st.sug].step(dx); renderSuggest(); }
+        break;
     }
     updateFocus();
   }
@@ -731,6 +807,13 @@
   function back() {
     if (grabbed >= 0) { drop(); return; }
     if (st.zone === Z.EDIT) { setClass($('shelfedit'), 'open', false); openSettings(); st.row = rowsNow.length - 2; updateFocus(); return; }
+    if (st.zone === Z.SUGG) {
+      setClass($('suggest'), 'open', false);
+      openSettings();
+      for (var q = 0; q < rowsNow.length; q++) if (rowsNow[q].label === tr('Sugestões', 'Suggestions', 'Sugerencias')) st.row = q;
+      updateFocus();
+      return;
+    }
     if (sheetOpen()) { closeSheets(); return; }
     if (st.zone === Z.DRAWER) { closeDrawer(); return; }
     if (st.zone !== Z.SHELF && shelf.length) { st.zone = Z.SHELF; updateFocus(); return; }
@@ -740,7 +823,7 @@
   /** The pointer focuses what it's over (the Magic Remote, or a mouse when previewing). */
   function hover(node, zone, index) {
     node.onmouseover = function () {
-      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT))) return;
+      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
       if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
       if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
@@ -752,6 +835,7 @@
       else if (zone === Z.APPS) st.grid = index;
       else if (zone === Z.SETTINGS) st.row = index;
       else if (zone === Z.EDIT) st.edit = index;
+      else if (zone === Z.SUGG) st.sug = index;
       updateFocus();
     };
     node.onclick = function () { node.onmouseover(); activate(); };

@@ -13,16 +13,21 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
 
 ## What it does
 
-- **Real app icons.** The icons your TV provides, square and edge to edge, no frames.
+- **Real app icons.** The icons your TV provides, square and edge to edge, no frames. **Live TV** is one more icon on the
+  shelf (by default where Apple TV would be).
 - **Arrange your apps.** On the shelf, hold **OK** on an icon: it lifts; move it with ◀ ▶ and drop it with **OK**. The
   order is saved. The shelf holds 12; everything else is under *All Apps*.
-- **Picks only from your accounts.** Trending films and series from TMDB, only from the services you switch on in
-  *Home Settings → Recommend from…* (no Disney+ picks if you have no Disney+ account).
-- **Markets in dollars:** Bitcoin, Ethereum and Solana (Binance), and iShares **S&P 500** and **NASDAQ 100** (CSPX and
-  CNDX, in dollars). Each one can be switched off. Information only, not investment advice.
+- **Suggestions only from your accounts.** Trending films and series from TMDB, only from the services you switch on in
+  *Home Settings → Suggestions* (no Disney+ or Apple TV picks if you have no account there). There you also choose whether
+  to include animation and anime, and how many suggestions to show (6, 9, 12 or 18).
+- **Real exploring.** The suggestions row slides right with ▶, and **every card says what it is and where to watch it**
+  ("Series · Netflix", "Movie · Prime Video"). The first, wider one adds genre and length.
+- **Markets in dollars:** Bitcoin, Ethereum, Solana and **XRP (Ripple)** (Binance), and iShares **S&P 500** and **NASDAQ 100**
+  (CSPX and CNDX, in dollars). Each one can be switched off. Information only, not investment advice.
 - **Weather** for your city, with sunrise and sunset; the screen goes dark at night.
 - **A real Home button.** Press **Home** in any app and you come back to FreeTV, not LG's home. Leaving an app with
-  **Back** brings you here too. When the TV turns on, the helper opens FreeTV (on some TVs LG's home shows for a couple of
+  **Back** brings you here too: the helper waits a bit over a second for LG to settle, then opens FreeTV once, with no
+  back and forth. When the TV turns on, the helper opens FreeTV (on some TVs LG's home shows for a couple of
   seconds first).
 - **Developer Mode renewal** (beta): LG's Developer Mode expires after ~40 days; *Home Settings → Developer Mode
   renewal* has a panel to renew it from the TV itself.
@@ -82,7 +87,7 @@ for the **passphrase** (you type it) and the TV shows a **pairing prompt** you a
 | Go to FreeTV | **Home** button (or turn the TV on) |
 | Move an icon on the shelf | Hold **OK** on it, ◀ ▶ to move, **OK** to drop |
 | Choose the shelf apps | *Home Settings → Shelf* |
-| Choose which services to recommend from | *Home Settings → Recommend from…* |
+| Choose which services to suggest from, animation, how many | *Home Settings → Suggestions* |
 | Go back to LG's home | Hold **Home** for 2 seconds |
 | Turn the Home button back on | *Home Settings → Turn the Home button back on* |
 
@@ -109,6 +114,12 @@ LG's. Your TV talks to TMDB, Open-Meteo, Binance and Yahoo Finance; nothing goes
 
 [docs/GUIA-IA.md](docs/GUIA-IA.md) has a text to paste into ChatGPT, Gemini, Claude, Copilot… that guides you step by
 step. You press the remote and type your passphrase; the AI never needs it.
+
+## Your TMDB key and GitHub
+
+Your `config.properties` (with your TMDB key) is **never** uploaded: it is in `.gitignore`. The repository also has a check that
+**blocks a commit** that would publish a key or a private file. If you plan to change FreeTV and push, turn it on once:
+`git config core.hooksPath .githooks`. Check the whole history any time with `python3 tools/check_secrets.py --all`.
 
 ## Tested, and limits
 

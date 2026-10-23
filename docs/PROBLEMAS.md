@@ -14,9 +14,11 @@ habitual en teles con webOS algo antiguo es que **no arranque** porque el Node d
 si instalaste otra versión del ayudante, vuelve a ejecutar `bash install.sh <IP>`. Si lo pulsaste 2 segundos, está parado
 a propósito: abre *Ajustes de inicio → Reactivar el botón Home* (o abre la app **Home Helper** de la lista de apps de LG).
 
-**Con Atrás sigo viendo el inicio de LG.** Al salir de una app, LG pone su inicio un instante después de que FreeTV
-vuelva; el ayudante lo detecta y abre FreeTV otra vez (hasta cinco veces). Puede verse un parpadeo de unos segundos. Si no
-recupera nunca la pantalla, mira el registro (abajo) y abre una *Issue*.
+**Con Atrás veo el inicio de LG un momento.** Es normal: al salir de una app, LG pone su inicio y el ayudante espera algo
+más de un segundo a que se asiente antes de abrir FreeTV (si abre antes, LG lo tapa y se ve ir y venir). Si ves varios
+cambios seguidos o no recupera nunca la pantalla, mira el registro (abajo): debe salir un solo `return-after-exit` y un
+`launch`. Puedes cambiar la espera en `tools/patch_helper.py` (`RETURN_DELAY`) y volver a instalar. Abre una *Issue* si no
+mejora.
 
 **Al encender la tele sale el inicio de LG.** El ayudante lo abre pocos segundos después de encender. Algunas teles no
 dejan abrirlo a tiempo; si pasa siempre, pulsa **Home** una vez. En *Ajustes de la tele* busca *Iniciar con la última app* /
@@ -29,7 +31,7 @@ Vuelve a activar el *Dev Mode Status* y ejecuta otra vez `bash install.sh <IP>`.
 `bash install.sh <IP>`.
 
 **No salen recomendaciones.** Falta la clave de TMDB en `config.properties` (`tmdb_key=`), o los servicios están apagados en
-*Ajustes de inicio → Recomendar de…*. Con la clave puesta, tarda uno o dos minutos la primera vez.
+*Ajustes de inicio → Sugerencias*. Con la clave puesta, tarda uno o dos minutos la primera vez.
 
 **Las cotizaciones salen con «—».** Hay que tener internet. Los precios vienen de Binance (cripto) y de Yahoo Finance
 (S&P 500 y NASDAQ 100); si Yahoo no responde, se usa justETF. Si fallan los dos, se muestra el último precio guardado.

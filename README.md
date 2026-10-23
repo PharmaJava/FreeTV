@@ -13,16 +13,21 @@ de LG, y **todo se puede deshacer**.
 
 ## Qué hace
 
-- **Iconos de app de verdad.** Los iconos que da la tele, cuadrados y a todo el cuadro, sin marcos.
+- **Iconos de app de verdad.** Los iconos que da la tele, cuadrados y a todo el cuadro, sin marcos. En el estante, **TV en
+  directo** es un icono más (por defecto va donde iría Apple TV).
 - **Mueve tus apps a tu gusto.** En el estante, mantén **OK** sobre un icono: se levanta; muévelo con ◀ ▶ y suéltalo con
   **OK**. El orden se guarda. Caben 12 en el estante; el resto está en *Todas las apps* (↓ y luego el botón de apps).
-- **Recomendaciones solo de tus cuentas.** Películas y series en tendencia de TMDB, solo de los servicios que activas en
-  *Ajustes de inicio → Recomendar de…* (por ejemplo, sin Disney+ si no tienes cuenta). Si cambias de cuenta, lo cambias ahí.
-- **Mercados en dólares:** Bitcoin, Ethereum y Solana (Binance), y el **S&P 500** y el **NASDAQ 100** de iShares
-  (CSPX y CNDX, en dólares). Cada uno se puede apagar en Ajustes. Son datos informativos, no un consejo de inversión.
+- **Sugerencias solo de tus cuentas.** Películas y series en tendencia de TMDB, solo de los servicios que activas en
+  *Ajustes de inicio → Sugerencias* (por ejemplo, sin Disney+ ni Apple TV si no tienes cuenta). Ahí también eliges si
+  quieres animación y anime, y cuántas sugerencias ver (6, 9, 12 o 18). Si cambias de cuenta, lo cambias ahí.
+- **Explorar de verdad.** La fila de sugerencias se desliza hacia la derecha con ▶, y **cada tarjeta dice qué es y
+  dónde verla** («Serie · Netflix», «Película · Prime Video»). La primera, más grande, trae género y duración.
+- **Mercados en dólares:** Bitcoin, Ethereum, Solana y **XRP (Ripple)** (Binance), y el **S&P 500** y el **NASDAQ 100** de
+  iShares (CSPX y CNDX, en dólares). Cada uno se puede apagar en Ajustes. Son datos informativos, no un consejo de inversión.
 - **El tiempo** de tu ciudad, con amanecer y atardecer; la pantalla se oscurece de noche.
 - **El botón Home de verdad.** Pulsas **Home** en cualquier app y vuelves a FreeTV, no al inicio de LG. Al salir de una
-  app con **Atrás** también vuelves aquí. Al encender la tele, el ayudante abre FreeTV (en algunas teles se ve el inicio de LG un par de segundos antes).
+  app con **Atrás** también vuelves aquí: el ayudante espera algo más de un segundo a que LG se asiente y entonces abre
+  FreeTV, una sola vez, sin ir y venir. Al encender la tele, el ayudante abre FreeTV (en algunas teles se ve el inicio de LG un par de segundos antes).
 - **Renovación del Modo Desarrollador** (beta): el Modo Desarrollador de LG caduca a los ~40 días; en
   *Ajustes de inicio → Renovación del Modo Desarrollador* hay un panel para renovarlo desde la propia tele.
 - **Salida de emergencia:** mantén **Home** 2 segundos y vuelves al inicio de LG; FreeTV deja de interceptar el botón.
@@ -107,9 +112,10 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 | Abrir una app | Selecciónala y **OK** |
 | Mover un icono del estante | Mantén **OK** sobre él, ◀ ▶ para moverlo, **OK** para soltar |
 | Elegir qué apps van en el estante | *Ajustes de inicio → Estante* |
+| Ver más sugerencias | En el explorador, ▶ (se desliza); cada una dice su plataforma |
 | Ver todas las apps | Baja con ▼ y abre *Todas las apps* |
-| Elegir de qué servicios recomendar | *Ajustes de inicio → Recomendar de…* |
-| Quitar o poner las cotizaciones | *Ajustes de inicio* (Bitcoin, S&P 500, NASDAQ 100…) |
+| Elegir de qué servicios sugerir, animación y cuántas | *Ajustes de inicio → Sugerencias* |
+| Quitar o poner las cotizaciones | *Ajustes de inicio* (Bitcoin, Ethereum, Solana, XRP, S&P 500, NASDAQ 100) |
 | Renovar el Modo Desarrollador | *Ajustes de inicio → Renovación del Modo Desarrollador* (o **EXTEND** en la app Developer Mode) |
 | Volver al inicio de LG | Mantén **Home** 2 segundos |
 | Reactivar el botón Home tras esa pulsación larga | *Ajustes de inicio → Reactivar el botón Home* |
@@ -151,6 +157,18 @@ Lee [docs/GUIA-IA.md](docs/GUIA-IA.md): trae un texto para copiar y pegar en Cha
 te guía paso a paso y te dice qué copiar de la terminal cuando algo falla. Tú pulsas el mando y escribes tu passphrase;
 la IA nunca la necesita.
 
+## Tu clave de TMDB y GitHub
+
+Tu `config.properties` (con tu clave de TMDB) **nunca** se sube: está en `.gitignore`. Además, el repositorio trae una
+comprobación que **bloquea un commit** si va a publicar una clave o un archivo privado. Si piensas modificar FreeTV y subir
+cambios, actívala una vez:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Y puedes revisar todo el historial cuando quieras con `python3 tools/check_secrets.py --all`.
+
 ## Probado y límites
 
 - Probado en una **LG OLED** (webOS con Node 8.12 y Chrome 79). En esa tele se comprobaron el botón Home, la vuelta con
@@ -161,8 +179,8 @@ la IA nunca la necesita.
 - **Samsung (Tizen)** y otras marcas **no** están soportadas aquí.
 - La renovación automática del Modo Desarrollador es **beta** y sin confirmar en teles sin root: sigue mirando el
   contador y usa **EXTEND**.
-- Si vuelves a la pantalla de LG tras **Atrás**, puede verse un parpadeo de un par de segundos antes de que FreeTV
-  recupere la pantalla.
+- Al salir de una app con **Atrás** se ve el inicio de LG algo más de un segundo antes de que aparezca FreeTV; es lo que tarda
+  LG en asentarse. Con menos espera, LG volvía a ponerse delante y se veía ir y venir.
 
 ## Créditos y licencias
 

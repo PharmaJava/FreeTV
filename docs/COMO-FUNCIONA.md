@@ -19,14 +19,17 @@ FreeTV son **tres piezas** que trabajan juntas en tu tele:
 
 ## Qué añade FreeTV
 
-- **Pantalla (`home/`):** iconos cuadrados a todo el cuadro, estante de 12, reordenado manteniendo OK, cotizaciones de
-  Bitcoin, Ethereum, Solana, S&P 500 y NASDAQ 100 (dólares), y recomendaciones por servicio con interruptores.
+- **Pantalla (`home/`):** iconos cuadrados a todo el cuadro, estante de 12 con TV en directo, reordenado manteniendo OK,
+  cotizaciones de Bitcoin, Ethereum, Solana, XRP, S&P 500 y NASDAQ 100 (dólares), sugerencias por servicio con
+  interruptores, y una fila de hasta 18 sugerencias que se desliza, con la plataforma en cada tarjeta.
 - **Dos arreglos al ayudante** (`tools/patch_helper.py`, se aplican al instalar):
   1. **`ws` 7.5.10 en lugar de `ws` 8.** El ayudante lleva una librería de WebSocket que necesita Node 10; algunas LG traen
      Node 8 y el ayudante **nunca llega a arrancar** (`SyntaxError: Unexpected token {` en su registro). `ws` 7.5.10 funciona
      en Node 8 y en los nuevos.
-  2. **Reintento al volver de una app.** Al salir con **Atrás**, LG vuelve a poner su inicio un momento después de que el
-     ayudante abra FreeTV. El ayudante ahora mira otra vez y vuelve a abrir FreeTV (hasta cinco veces, cada segundo).
+  2. **Volver de una app sin ir y venir.** Al salir con **Atrás**, LG pone su inicio y, un momento después, lo vuelve a
+     poner por encima de lo que abras. Si el ayudante abría FreeTV al instante, LG lo tapaba y se veía «LG, FreeTV, LG,
+     FreeTV…». Ahora espera 1,2 s a que LG se asiente, abre FreeTV una vez, y si LG aun así lo tapa lo vuelve a abrir (hasta
+     cinco veces). Medido en la tele de pruebas: siete salidas seguidas, siete aperturas, ningún reintento.
 
 El instalador (`install.sh`) usa una versión **fija** del ayudante (el commit está en el propio script) para que estos
 arreglos encajen siempre; si el código del ayudante no es el esperado, el parche se detiene con un aviso.
@@ -37,11 +40,12 @@ arreglos encajen siempre; si el código del ayudante no es el esperado, el parch
 |---|---|
 | Cambiar colores, tamaños, estante | `home/home.css`, `home/home.js` (`renderShelf`, `SHELF_DROP`, `MAX_SHELF`) |
 | Cambiar las cotizaciones | `home/data.js` (`FUNDS` y la sección *Prices*) |
-| Cambiar de qué servicios se recomienda | `home/data.js` (`SERVICES`) |
+| Cambiar de qué servicios se sugiere | `home/data.js` (`SERVICES`), el menú en `home/home.js` (`suggestRows`) |
+| Cambiar cuánto espera el ayudante al volver | `tools/patch_helper.py` (`RETURN_DELAY`, o la variable `FREETV_RETURN_DELAY`) |
 | Cambiar la renovación o los avisos del botón Home | `home/renewal.js`, `home/extras.js` |
 | Cambiar cómo se instala | `install.sh`, `tools/build_home.py`, `tools/patch_helper.py` |
 
-Cada cambio se aplica volviendo a ejecutar `./install.sh <IP>`.
+Cada cambio se aplica volviendo a ejecutar `bash install.sh <IP>`.
 
 ## Detalles técnicos útiles
 

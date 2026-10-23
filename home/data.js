@@ -50,6 +50,9 @@ var Prefs = (function () {
     quotes: function () { return pick('quotes', CONFIG.showCrypto !== false); },
     coin: function (i) { var c = pick('coins', null); return c ? c[i] !== false : true; },
     shelf: function () { return pick('shelf', null); },
+    /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
+    animation: function () { return pick('animation', !CONFIG.hideAnimation); },
+    pickCount: function () { return pick('pickCount', 12); },
     /** Whether picks may come from a streaming service (the person has an account there). Off for hide_services. */
     service: function (key) {
       var s = pick('services', null);
@@ -64,7 +67,7 @@ var Prefs = (function () {
     },
     set: function (name, value) { v[name] = value; save(); this.version++; },
     setCoin: function (i, on) {
-      var c = (pick('coins', null) || [true, true, true, true, true, true]).slice();
+      var c = (pick('coins', null) || [true, true, true, true, true, true, true]).slice();
       c[i] = on;
       this.set('coins', c);
     }
@@ -151,7 +154,7 @@ var Data = (function () {
 
   // MARK: - Prices
 
-  var COINS = ['BTC', 'ETH', 'SOL', 'USDT'];
+  var COINS = ['BTC', 'ETH', 'SOL', 'USDT', 'XRP'];
   var CURRENCY = Place.currency;
   var QUOTE = CURRENCY === 'USD' ? 'USDT' : CURRENCY;
   /** Binance refuses the whole request when it has no pairs in the currency (INR...): the prices go in dollars then. */
@@ -164,22 +167,22 @@ var Data = (function () {
     CURRENCY = 'USD';
     QUOTE = 'USDT';
   }
-  var prices = [NaN, NaN, NaN, NaN, NaN, NaN], changes = [NaN, NaN, NaN, NaN, NaN, NaN], pricesAt = 0, fetchingPrices = false;
+  var prices = [NaN, NaN, NaN, NaN, NaN, NaN, NaN], changes = [NaN, NaN, NaN, NaN, NaN, NaN, NaN], pricesAt = 0, fetchingPrices = false;
 
-  // Two index funds after the coins (4 and 5): iShares Core S&P 500 (CSPX) and iShares NASDAQ 100 (CNDX), both UCITS and
+  // Two index funds after the coins (5 and 6): iShares Core S&P 500 (CSPX) and iShares NASDAQ 100 (CNDX), both UCITS and
   // accumulating, in dollars as the funds themselves are (their London listings). Yahoo Finance first, justETF if Yahoo
   // doesn't answer. (In euros they are SXR8.DE and SXRV.DE on Xetra.)
   var FUNDS = [
     {symbol: 'CSPX.L', isin: 'IE00B5BMR087', name: 'S&P 500 · iShares'},
     {symbol: 'CNDX.L', isin: 'IE00B53SZB19', name: 'NASDAQ 100 · iShares'}
   ];
-  var FIRST_FUND = 4, fundsAt = 0, fetchingFunds = false;
+  var FIRST_FUND = 5, fundsAt = 0, fetchingFunds = false;
 
   /** Indexes of the quotes that are on: the coins (the dollar only in Brazilian reais, where Binance lists it) and the funds. */
   function activeCoins() {
     var out = [];
     if (!Prefs.quotes()) return out;
-    for (var i = 0; i < COINS.length; i++) if (Prefs.coin(i) && (i < 3 || CURRENCY === 'BRL')) out.push(i);
+    for (var i = 0; i < COINS.length; i++) if (Prefs.coin(i) && (i !== 3 || CURRENCY === 'BRL')) out.push(i);   // the dollar only in reais
     for (var f = 0; f < FUNDS.length; f++) if (Prefs.coin(FIRST_FUND + f)) out.push(FIRST_FUND + f);
     return out;
   }
@@ -203,7 +206,7 @@ var Data = (function () {
 
   (function () {
     var p = stored('prices');
-    if (p && p.quote === QUOTE && parsePrices(p.body)) pricesAt = p.at;
+    if (p && p.v === 2 && p.quote === QUOTE && parsePrices(p.body)) pricesAt = p.at;
   })();
 
   (function () {
@@ -274,7 +277,7 @@ var Data = (function () {
         }
         fetchingPrices = false;
         pricesAt = Date.now();
-        store('prices', {quote: QUOTE, body: body, at: pricesAt});
+        store('prices', {v: 2, quote: QUOTE, body: body, at: pricesAt});
         changed();
       });
     })(0);
@@ -344,7 +347,7 @@ var Data = (function () {
   }
 
   function sourceStamp() {
-    var s = KEY.length + ':' + KEY.slice(-6) + ':' + REGION + (CONFIG.hideAnimation ? ':no-animation' : '');
+    var s = KEY.length + ':' + KEY.slice(-6) + ':' + REGION + (Prefs.animation() ? '' : ':no-animation');
     for (var i = 0; i < SERVICES.length; i++) s += wantApp(SERVICES[i][1]) ? '1' : '0';
     return s;
   }
@@ -355,7 +358,7 @@ var Data = (function () {
     return (cut > 0 ? t.slice(0, cut) : t).replace(/^\s+|\s+$/g, '');
   }
 
-  /** This hour's 3 picks: movies ("movie"), shows ("tv") or both (null). */
+  /** This hour's picks (up to Prefs.pickCount, 12 by default): movies ("movie"), shows ("tv") or both (null). */
   function now(kind) {
     var list = [];
     if (!KEY) return list;
@@ -365,7 +368,8 @@ var Data = (function () {
     }
     if (!list.length) return list;
     var hour = Math.floor(Date.now() / 3600000), out = [], seen = {};
-    for (var j = 0; j < list.length && out.length < 3; j++) {
+    var limit = Prefs.pickCount();
+    for (var j = 0; j < list.length && out.length < limit; j++) {
       var q = list[(hour * 3 + j) % list.length], f = franchise(q.title);
       if (!seen[f]) { seen[f] = true; out.push(q); }
     }
@@ -462,7 +466,7 @@ var Data = (function () {
 
   function addPick(list, o, kind) {
     if (!o.backdrop_path) return;
-    if (CONFIG.hideAnimation && animated(o)) return;
+    if (!Prefs.animation() && animated(o)) return;
     list.push({id: o.id, kind: kind, title: kind === 'movie' ? o.title : o.name, backdrop: o.backdrop_path, meta: '', app: null, detailed: false});
   }
 
@@ -495,7 +499,7 @@ var Data = (function () {
       if (!ids.length) { done(new Error("none of the TV's streaming apps are on TMDB")); return; }
       var common = '&language=' + lang() + '&watch_region=' + REGION + '&with_watch_monetization_types=flatrate&include_adult=false'
           + '&sort_by=popularity.desc&with_watch_providers=' + encodeURIComponent(ids.join('|'))
-          + (CONFIG.hideAnimation ? '&without_genres=' + ANIMATION : '');
+          + (Prefs.animation() ? '' : '&without_genres=' + ANIMATION);
       var hot = {movie: [], tv: []}, fresh = {movie: [], tv: []};
       each(['movie', 'tv'], function (kind, next) {
         tmdb('/trending/' + kind + '/week?language=' + lang(), function (e, r) {
@@ -513,7 +517,7 @@ var Data = (function () {
             for (var k = 0; !e2 && k < r2.results.length; k++) addPick(fresh.tv, r2.results[k], 'tv');
             var list = [], seen = {};
             alternate(list, seen, hot.movie, hot.tv, 24);
-            alternate(list, seen, fresh.movie, fresh.tv, 24);
+            alternate(list, seen, fresh.movie, fresh.tv, 60);
             if (!list.length) { done(new Error('TMDB returned no recommendations')); return; }
             picks = list;
             done(null);
@@ -577,6 +581,7 @@ var Data = (function () {
 
   return {
     COINS: COINS,
+    FIRST_FUND: FIRST_FUND,
     city: Place.city,
     currency: CURRENCY,
     onChange: function (fn) { listeners.push(fn); },
@@ -591,6 +596,10 @@ var Data = (function () {
       return out;
     },
     setService: function (key, on) { Prefs.setService(key, on); refreshRecs(); changed(); },
+    animation: function () { return Prefs.animation(); },
+    setAnimation: function (on) { Prefs.set('animation', on); refreshRecs(); changed(); },
+    pickCount: function () { return Prefs.pickCount(); },
+    setPickCount: function (n) { Prefs.set('pickCount', n); changed(); },
     refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); },
     settingsChanged: function () { pricesAt = 0; fundsAt = 0; refreshPrices(); changed(); },
     get weather() { return weather; },
@@ -623,7 +632,7 @@ var Data = (function () {
       if (v >= 100) return fmt(v, 0);
       return fmt(v, 2);
     },
-    /** A price with its currency sign; the index funds (index 4 and 5) are always in dollars. */
+    /** A price with its currency sign; the index funds (index 5 and 6) are always in dollars. */
     money: function (v, i) {
       var s = i >= FIRST_FUND ? SYMBOLS.USD : SYMBOLS[CURRENCY] || CURRENCY + ' ';
       if (isNaN(v)) return s + '—';
@@ -679,7 +688,7 @@ var Data = (function () {
     },
     coinName: function (i) {
       if (i >= FIRST_FUND) return FUNDS[i - FIRST_FUND].name;
-      return i === 3 ? tr('Dólar', 'Dollar', 'Dólar') : ['Bitcoin', 'Ethereum', 'Solana'][i];
+      return i === 3 ? tr('Dólar', 'Dollar', 'Dólar') : ['Bitcoin', 'Ethereum', 'Solana', 'XRP · Ripple'][i < 3 ? i : 3];
     }
   };
 })();

@@ -18,7 +18,10 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 OLD = "launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-after-exit-failed'});});"
-NEW = ("launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-after-exit-failed'});else ensureHome(5);});")
+# Wait a moment before returning (RETURN_DELAY ms), so LG's own home has settled, then open FreeTV and keep checking.
+RETURN_DELAY = int(os.environ.get('FREETV_RETURN_DELAY', '1200'))
+NEW = ("setTimeout(function(){if(lastForeground==='com.gathin.tvhome'){launching=false;return;}"
+       "launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-after-exit-failed'});else ensureHome(5);});},%d);" % RETURN_DELAY)
 
 ENSURE = """
 // FreeTV: LG's home can come back a moment after we returned from an app. Look again, and open our home again.
