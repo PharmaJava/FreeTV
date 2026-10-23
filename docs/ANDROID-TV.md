@@ -24,8 +24,8 @@ el modo *Original* lo devuelve todo.
 
 ```bash
 cd android
-./build.sh                       # la primera vez crea config.properties: pon tu ciudad (latitude, longitude, city), tmdb_region...
-./build.sh                       # debe acabar en: Built FreeMyTV.apk
+bash build.sh                       # la primera vez crea config.properties: pon tu ciudad (latitude, longitude, city), tmdb_region...
+bash build.sh                       # debe acabar en: Built FreeMyTV.apk
 adb connect 192.168.1.50:5555    # la IP de tu tele; la tele pregunta «¿Permitir depuración?»: acepta y marca «Siempre»
 adb install -r FreeMyTV.apk
 ```
