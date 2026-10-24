@@ -1533,6 +1533,30 @@
       bridge.onservicecallback = function () { try { bridge.cancel(); } catch (e) {} };
       bridge.call('luna://com.webos.surfacemanager.screenSaver/restartUserActivityTimer', '{}');
     } catch (e) {}
+    playKeepVideo();
+  }
+
+  var keepVideo = null;
+
+  /** A video playing out of sight (a TV does not start its own screensaver while one plays). */
+  function playKeepVideo() {
+    if (typeof NOSLEEP === 'undefined') return;
+    if (!keepVideo) {
+      keepVideo = document.createElement('video');
+      keepVideo.muted = true;
+      keepVideo.loop = true;
+      keepVideo.setAttribute('playsinline', '');
+      keepVideo.style.cssText = 'position:absolute;left:0;top:0;width:4px;height:4px;opacity:0.02;pointer-events:none;z-index:0';
+      // The TV's player plays it from a blob: address (not from a data: one).
+      var raw = atob(NOSLEEP.mp4.split(',')[1]), bytes = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      keepVideo.src = URL.createObjectURL(new Blob([bytes], {type: 'video/mp4'}));
+      document.body.appendChild(keepVideo);
+    }
+    try {
+      var p = keepVideo.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
   }
 
   function showSaver() {
@@ -1625,6 +1649,7 @@
     saverOn = false;
     clearTimeout(saverTimer);
     clearInterval(saverKeep);
+    if (keepVideo) { try { keepVideo.pause(); } catch (e) {} }
     setClass($('saver'), 'on', false);
   }
 
