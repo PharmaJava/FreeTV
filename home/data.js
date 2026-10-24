@@ -53,6 +53,9 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** The Custom tab: the keys of its shortcuts in the order the person chose, and the ones they took away. */
+    chanOrder: function () { var r = pick('chanOrder', []); return r instanceof Array ? r : []; },
+    chanHidden: function () { var r = pick('chanHidden', []); return r instanceof Array ? r : []; },
     /** What was opened from FreeTV lately, newest first: [{id: 'app:<id>' or 'chan:<key>', title, at}] ("Continue watching"). */
     recent: function () { var r = pick('recent', []); return r instanceof Array ? r : []; },
     /** What the screensaver shows: 'places' (photos of Seville, Spain, Lithuania and nature), 'picks' (the suggestions' photos) or 'both'. */

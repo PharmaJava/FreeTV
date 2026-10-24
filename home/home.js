@@ -271,8 +271,18 @@
   }
 
   /** The Custom tab: one cover per YouTube shortcut (kids_channels.py puts the pictures there), then "+". */
+  /** The shortcuts in the person's order, without the ones they took away; new ones from the configuration go at the end. */
+  function channelList() {
+    var all = (window.CONFIG && CONFIG.channels) || [], hidden = Prefs.chanHidden(), order = Prefs.chanOrder(), out = [], i, j;
+    for (i = 0; i < order.length; i++) {
+      for (j = 0; j < all.length; j++) if (all[j].key === order[i] && out.indexOf(all[j]) < 0 && hidden.indexOf(all[j].key) < 0) out.push(all[j]);
+    }
+    for (j = 0; j < all.length; j++) if (out.indexOf(all[j]) < 0 && hidden.indexOf(all[j].key) < 0) out.push(all[j]);
+    return out;
+  }
+
   function channelItems() {
-    var list = (window.CONFIG && CONFIG.channels) || [], out = [];
+    var list = channelList(), out = [];
     for (var i = 0; i < list.length; i++) out.push(channelCard(list[i], ''));
     out.push({local: 'plus', id: 'plus', title: tr('Adicionar canal', 'Add a channel', 'Añadir canal'), meta: ''});
     return out;
@@ -1212,11 +1222,45 @@
       return;
     }
     remember('chan:' + c.key, c.title);
-    // contentTarget is what LG's YouTube takes to open a video or a channel; the app opens even if it does not understand the address.
-    var url = c.kind === 'video' ? 'https://www.youtube.com/watch?v=' + c.id : 'https://www.youtube.com/channel/' + c.id;
-    TV.launch(YOUTUBE, {contentTarget: url}, function (ok) {
+    // contentTarget: YouTube AdFree adds these parameters to its TV screen (youtube.com/tv). A full youtube.com address would open the
+    // desktop website instead. A channel opens its newest video with the channel's uploads as the playlist; with no video known, just the app.
+    var target = c.kind === 'video' ? 'v=' + c.id : c.latest ? 'v=' + c.latest + '&list=UU' + c.id.slice(2) : '';
+    TV.launch(YOUTUBE, target ? {contentTarget: target} : {}, function (ok) {
       if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + c.title);
     });
+  }
+
+  /** Hold OK on a shortcut: move it left or right, or take it away. */
+  function openChannelMenu(c) {
+    var list = channelList(), at = -1, i;
+    for (i = 0; i < list.length; i++) if (list[i].key === c.key) at = i;
+    var buttons = [{label: tr('Abrir', 'Open', 'Abrir'), run: function () { openChannel(c); }}];
+    if (at > 0) buttons.push({label: tr('Mover para a esquerda', 'Move left', 'Mover a la izquierda'), run: function () { moveChannel(c.key, -1); }});
+    if (at >= 0 && at < list.length - 1) buttons.push({label: tr('Mover para a direita', 'Move right', 'Mover a la derecha'), run: function () { moveChannel(c.key, 1); }});
+    buttons.push({label: tr('Tirar daqui', 'Remove', 'Quitar'), run: function () { removeChannel(c); }});
+    buttons.push({label: cancelText()});
+    showDialog(c.title, [], buttons, 0);
+  }
+
+  function moveChannel(key, dx) {
+    var keys = channelList().map(function (c) { return c.key; }), at = keys.indexOf(key), to = at + dx;
+    if (at < 0 || to < 0 || to >= keys.length) return;
+    keys.splice(at, 1);
+    keys.splice(to, 0, key);
+    Prefs.set('chanOrder', keys);
+    st.card = to;
+    renderCards();
+    updateFocus();
+  }
+
+  function removeChannel(c) {
+    var hidden = Prefs.chanHidden().slice();
+    if (hidden.indexOf(c.key) < 0) hidden.push(c.key);
+    Prefs.set('chanHidden', hidden);
+    st.card = Math.max(0, Math.min(st.card, channelList().length));
+    renderCards();
+    updateFocus();
+    toast(c.title + ': ' + tr('removido', 'removed', 'quitado'));
   }
 
   function openAddChannel() {
@@ -1227,8 +1271,14 @@
       {cls: 'code', text: 'kids_channels=Cocomelon|@Cocomelon;Name|@handle'},
       {text: tr('O @nome é o que aparece em youtube.com/@nome. Depois execute: bash install.sh <IP da TV>. A capa é baixada sozinha.',
           'The @name is what shows in youtube.com/@name. Then run: bash install.sh <TV IP>. The cover picture is downloaded for you.',
-          'El @nombre es el que sale en youtube.com/@nombre. Luego ejecuta: bash install.sh <IP de la tele>. La portada se descarga sola.')}
-    ], [{label: 'OK'}], 0);
+          'El @nombre es el que sale en youtube.com/@nombre. Luego ejecuta: bash install.sh <IP de la tele>. La portada se descarga sola.')},
+      {text: tr('Segure OK sobre um atalho para movê-lo ou tirá-lo daqui.', 'Hold OK on a shortcut to move it or take it away.',
+          'Mantén OK sobre un acceso para moverlo o quitarlo.')}
+    ], Prefs.chanHidden().length ? [{label: 'OK'}, {label: tr('Trazer de volta os removidos', 'Bring back the removed ones', 'Recuperar los quitados'), run: function () {
+      Prefs.set('chanHidden', []);
+      renderCards();
+      updateFocus();
+    }}] : [{label: 'OK'}], 0);
   }
 
   // MARK: - All Apps: OK opens a small menu (open, or uninstall with a question first)
@@ -1473,6 +1523,18 @@
 
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 2 * 60000;
 
+  var saverKeep = 0;
+
+  /** Restarts LG's idle timer (webOS only), so that LG's screensaver does not come over ours. */
+  function holdLgSaver() {
+    if (TV.name !== 'webos' || !window.PalmServiceBridge) return;
+    try {
+      var bridge = new window.PalmServiceBridge();
+      bridge.onservicecallback = function () { try { bridge.cancel(); } catch (e) {} };
+      bridge.call('luna://com.webos.surfacemanager.screenSaver/restartUserActivityTimer', '{}');
+    } catch (e) {}
+  }
+
   function showSaver() {
     var mode = Data.saver(), photos = mode === 'places' ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
     if (mode !== 'picks' && typeof LANDSCAPES !== 'undefined') {
@@ -1543,6 +1605,9 @@
       saverTimer = setTimeout(next, 12000);
     }
     setClass(s, 'on', true);
+    holdLgSaver();
+    clearInterval(saverKeep);
+    saverKeep = setInterval(holdLgSaver, 15000);
     next();
   }
 
@@ -1559,6 +1624,7 @@
   function hideSaver() {
     saverOn = false;
     clearTimeout(saverTimer);
+    clearInterval(saverKeep);
     setClass($('saver'), 'on', false);
   }
 
@@ -1569,6 +1635,9 @@
   }
 
   // MARK: - Moving apps on the shelf: hold OK on one, ◀ ▶ moves it, OK drops it
+
+  /** Focus is on a shortcut of the Custom tab (not on the "+"). */
+  function onShortcut() { return st.zone === Z.CARDS && st.tab === 0 && !!cards[st.card] && cards[st.card].local === 'channel'; }
 
   var grabbed = -1, okDown = false, okHeld = false, okTimer = 0, OK_HOLD = 600;
 
@@ -1606,15 +1675,16 @@
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode;
     if (poke()) { e.preventDefault(); return; }   // the first press only wakes the screen
-    if (k === TV.keys.ok && st.zone === Z.SHELF) {
-      // On the shelf OK acts when it is released, so that holding it can pick the app up instead of opening it.
+    if (k === TV.keys.ok && (st.zone === Z.SHELF || onShortcut())) {
+      // On the shelf (and on a Custom shortcut) OK acts when it is released, so that holding it can pick the app up, or open the menu.
       e.preventDefault();
       if (!okDown) {
         okDown = true;
         okHeld = false;
         if (grabbed >= 0) { okHeld = true; drop(); return; }
         clearTimeout(okTimer);
-        okTimer = setTimeout(function () { okHeld = true; grab(st.shelf); }, OK_HOLD);
+        if (st.zone === Z.SHELF) okTimer = setTimeout(function () { okHeld = true; grab(st.shelf); }, OK_HOLD);
+        else okTimer = setTimeout(function () { okHeld = true; if (onShortcut()) openChannelMenu(cards[st.card].chan); }, OK_HOLD);
       }
       return;
     }
@@ -1633,7 +1703,7 @@
     var pressed = okDown, held = okHeld;
     okDown = false;
     okHeld = false;
-    if (pressed && !held && st.zone === Z.SHELF && grabbed < 0) activate();
+    if (pressed && !held && (st.zone === Z.SHELF || onShortcut()) && grabbed < 0) activate();
   });
   // Chrome sends a mousemove again, at the same place, whenever the page under a parked pointer changes (every refresh of the cards):
   // that is not a person, and it kept the screensaver from ever starting. Only a pointer that moved wakes the screen.

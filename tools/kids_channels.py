@@ -92,6 +92,8 @@ def for_build(extra_value):
             if not s.get('ok'):
                 continue
             item['id'] = s.get('id') or item['id']
+            if VIDEO_ID.match(s.get('latest') or ''):
+                item['latest'] = s['latest']
             if s.get('thumb') and os.path.exists(os.path.join(WORK, s['thumb'])):
                 item['thumb'] = 'channels/' + s['thumb']
         elif e['kind'] == 'video' or not item['id']:
@@ -121,6 +123,16 @@ def page_channel_id(html):
     return m.group(1) if m else ''
 
 
+def latest_video(channel_id):
+    """The channel's newest video id (its public RSS feed), or '' when it cannot be read."""
+    try:
+        feed = get('%s/feeds/videos.xml?channel_id=%s' % (BASE, channel_id))
+    except Exception:
+        return ''
+    m = re.search(r'<yt:videoId>([A-Za-z0-9_-]{11})</yt:videoId>', feed)
+    return m.group(1) if m else ''
+
+
 def check(entry):
     """Looks the shortcut up on YouTube; returns the status that is saved ({'ok': bool, ...})."""
     if entry['kind'] == 'video':
@@ -138,6 +150,7 @@ def check(entry):
         status['id'] = owner or entry.get('id', '')
         if not CHANNEL_ID.match(status['id']):
             return {'ok': False, 'why': 'could not read the channel id'}
+        status['latest'] = latest_video(status['id'])
     elif entry.get('owner') and owner != entry['owner']:
         return {'ok': False, 'why': 'the video is not on the expected channel (%s, expected %s)' % (owner or 'unknown', entry['owner'])}
     image = meta(html, 'og:image')
