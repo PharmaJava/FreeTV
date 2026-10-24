@@ -11,6 +11,13 @@ var I18N = (function () {
     "All Apps": "Alle Apps",
     "Settings": "Einstellungen",
     "Screensaver": "Bildschirmschoner",
+    "Custom": "Eigene",
+    "Continue watching": "Weiterschauen",
+    "Add a channel": "Kanal hinzufügen",
+    "Open": "Öffnen",
+    "Uninstall": "Deinstallieren",
+    "Cancel": "Abbrechen",
+    "Nothing yet: what you open from here shows up here.": "Noch nichts: was du hier öffnest, erscheint hier.",
     "Places and picks": "Orte und Tipps",
     "Places": "Orte",
     "Picks": "Tipps",
@@ -63,8 +70,8 @@ var I18N = (function () {
   /** German by the English; text built at runtime by its English pattern. */
   function germanText(en) {
     if (Object.prototype.hasOwnProperty.call(german, en)) return german[en];
-    var m = /^(\d+) (min|h) ago$/.exec(en);
-    if (m) return 'vor ' + m[1] + (m[2] === 'min' ? ' Min.' : ' Std.');
+    var m = /^(\d+) (min|h|d) ago$/.exec(en);
+    if (m) return 'vor ' + m[1] + (m[2] === 'min' ? ' Min.' : m[2] === 'h' ? ' Std.' : ' T.');
     m = /^(\d+) seasons?$/.exec(en);
     if (m) return m[1] + (m[1] === '1' ? ' Staffel' : ' Staffeln');
     m = /^H:(\S+)(\s+)L:(\S+)$/.exec(en);
@@ -79,6 +86,13 @@ var I18N = (function () {
     "All Apps": "Приложения",
     "Settings": "Настройки",
     "Screensaver": "Заставка",
+    "Custom": "Моё",
+    "Continue watching": "Продолжить просмотр",
+    "Add a channel": "Добавить канал",
+    "Open": "Открыть",
+    "Uninstall": "Удалить",
+    "Cancel": "Отмена",
+    "Nothing yet: what you open from here shows up here.": "Пока пусто: то, что вы откроете отсюда, появится здесь.",
     "Places and picks": "Места и подборки",
     "Places": "Места",
     "Picks": "Подборки",
@@ -139,8 +153,8 @@ var I18N = (function () {
 
   function russianText(en) {
     if (Object.prototype.hasOwnProperty.call(russian, en)) return russian[en];
-    var m = /^(\d+) (min|h) ago$/.exec(en);
-    if (m) return m[1] + (m[2] === 'min' ? ' мин назад' : ' ч назад');
+    var m = /^(\d+) (min|h|d) ago$/.exec(en);
+    if (m) return m[1] + (m[2] === 'min' ? ' мин назад' : m[2] === 'h' ? ' ч назад' : ' дн. назад');
     m = /^The shelf holds up to (\d+) apps\.$/.exec(en);
     if (m) return 'В избранное можно добавить не более ' + m[1] + ' приложений.';
     return en;

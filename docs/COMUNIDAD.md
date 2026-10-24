@@ -134,7 +134,7 @@ Playbook, LG Gaming Portal, LG Radio+, LG Movies & TV, RT News…) y las que no 
 ## Salvapantallas bonitos, sin root
 
 Los salvapantallas «de verdad» del catálogo (Aerial, el personalizable…) **necesitan root**, así que no se instalan. Pero FreeTV trae
-el suyo: tras cinco minutos sin tocar el mando en el inicio, enseña fotos a pantalla completa con el reloj. En *Ajustes de inicio →
+el suyo: tras dos minutos sin tocar el mando en el inicio, enseña fotos a pantalla completa con el reloj. En *Ajustes de inicio →
 Salvapantallas* eliges **Paisajes y sugerencias** (por defecto), **Paisajes** (solo lugares) o **Sugerencias** (solo las fotos de las
 recomendaciones). Los paisajes son unas 120 fotos de **Sevilla, Andalucía, España y Lituania** (naturaleza y monumentos) que
 Wikimedia Commons marca como destacadas o de calidad, **solo con licencia libre** (dominio público, CC0, CC BY o CC BY-SA). Cada foto
