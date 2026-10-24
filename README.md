@@ -20,7 +20,8 @@ de LG, y **todo se puede deshacer**.
     Ms Rachel, siempre en inglés), que se abren en **YouTube AdFree** (se instala desde la Tienda) **en su pantalla de TV**, no en la
     web. Un canal abre su vídeo más reciente que ya se puede ver (se salta los directos y los estrenos que aún no han empezado).
     **Añadir un canal desde la tele, sin ordenador:** pulsa el **+**, escribe el nombre (o el @nombre) con el teclado de la tele y
-    pulsa Intro; la tele lo busca en YouTube y eliges el canal con el mando. **Mantén OK** sobre un canal para *Abrir*, *Mover a la
+    pulsa Intro; la tele lo busca en YouTube y eliges el canal con el mando. **Mantén OK** (o la ruedecita del Magic Remote, con el
+    puntero en pantalla) sobre un canal para *Abrir*, *Mover a la
     izquierda/derecha* o *Quitar* (un OK corto lo abre). También se pueden añadir desde el ordenador: en `config.properties`,
     `kids_channels=Cocomelon|@Cocomelon`, y `bash install.sh <IP>`.
   - **Continuar viendo:** lo último que abriste desde FreeTV (apps y canales), con la hora. **Mantén OK** para *Quitar* uno de la

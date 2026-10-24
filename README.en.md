@@ -20,7 +20,8 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
     always in English), opened in **YouTube AdFree** (install it from the Store) **in its TV screen**, not the website. A channel opens
     its newest video that can be watched now (live streams and premieres that have not started are skipped).
     **Add a channel from the TV, no computer:** press **+**, type the name (or @name) with the TV's keyboard and press Enter; the TV
-    looks it up on YouTube and you pick the channel with the remote. **Hold OK** on a channel to *Open*, *Move left/right* or *Remove*
+    looks it up on YouTube and you pick the channel with the remote. **Hold OK** (or the Magic Remote's wheel, with the pointer on
+    screen) on a channel to *Open*, *Move left/right* or *Remove*
     it (a short OK opens it). They can also be added from the computer: in `config.properties`, `kids_channels=Cocomelon|@Cocomelon`,
     then `bash install.sh <IP>`.
   - **Continue watching:** what you opened last from FreeTV (apps and channels), with the time. **Hold OK** to *Remove* one. The TV
