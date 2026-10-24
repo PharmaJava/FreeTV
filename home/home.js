@@ -1574,6 +1574,8 @@
   }
 
   /** The pointer focuses what it's over (the Magic Remote, or a mouse when previewing). */
+  var pressTimer = 0, pressHeld = false;
+
   function hover(node, zone, index) {
     node.onmouseover = function () {
       if (st.zone === Z.DLG) return;
@@ -1593,7 +1595,26 @@
       else if (zone === Z.COMM) st.comm = index;
       updateFocus();
     };
-    node.onclick = function () { if (st.zone === Z.DLG) return; node.onmouseover(); activate(); };
+    // The Magic Remote's wheel, with the pointer on screen, clicks instead of sending OK: holding it on the shelf picks the app up,
+    // and on a channel, in Continue watching or in All Apps it opens the menu, like holding OK.
+    node.onmousedown = function () {
+      if (st.zone === Z.DLG) return;
+      node.onmouseover();
+      pressHeld = false;
+      clearTimeout(pressTimer);
+      if (st.zone === Z.SHELF || holdMenu()) pressTimer = setTimeout(function () {
+        pressHeld = true;
+        if (st.zone === Z.SHELF) grab(st.shelf);
+        else { var open = holdMenu(); if (open) open(); }
+      }, OK_HOLD);
+    };
+    node.onmouseup = node.onmouseleave = function () { clearTimeout(pressTimer); };
+    node.onclick = function () {
+      if (st.zone === Z.DLG) return;
+      if (pressHeld) { pressHeld = false; return; }   // the hold already did its part
+      node.onmouseover();
+      activate();
+    };
   }
 
   // MARK: - Toast
