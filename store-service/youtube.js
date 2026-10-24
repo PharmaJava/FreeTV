@@ -13,7 +13,9 @@ var HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) FreeTV', 'Accept-L
 var LIVE = '🔴';   // the red circle YouTube channels put in the title of a live stream
 
 function get(url, done, hops) {
-  var req = https.get(url, {headers: HEADERS}, function (res) {
+  var options = require('url').parse(url);   // Node 8 (the TV's) has no https.get(url, options, callback)
+  options.headers = HEADERS;
+  var req = https.get(options, function (res) {
     if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && (hops || 0) < 4) {
       res.resume();
       get(require('url').resolve(url, res.headers.location), done, (hops || 0) + 1);
