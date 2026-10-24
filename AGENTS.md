@@ -38,6 +38,7 @@ Read [`docs/GUIA-IA.md`](docs/GUIA-IA.md) first: it is written for exactly this.
 | `home/` | The app the TV runs: `index.html`, `home.js` (UI, keys), `data.js` (weather, quotes, picks), `tv.js` (TV services), `renewal.js`, `extras.js`, `helper-control.js`, `native-bootstrap.js` |
 | `assets/`, `third_party/ws/` | Icons, font, and ws 7.5.10 |
 | `tools/make_landscapes.py` | Rebuilds `home/landscapes.js`, the screensaver's photos (Wikimedia Commons, free licences only, author and licence kept and shown). Slow on purpose |
+| `tools/kids_channels.py` | The Custom tab's YouTube shortcuts (defaults + `kids_channels=` in config): looks each one up, saves its cover picture to `work/channels/` and refuses a video that is not on the channel it should be (children's content). Pictures are other people's logos: never commit them |
 | `tools/build_home.py` | Builds `out/home` from `home/` and `config.properties` |
 | `tools/patch_helper.py` | The two helper fixes |
 | `install.sh` | The whole install (LG) |

@@ -47,6 +47,15 @@ service.register('apps', function (message) {
   }, function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
 });
 
+/** Uninstalls an app (Developer Mode can only remove what it installed: for the others the answer says so, code 'not-removable'). */
+service.register('remove', function (message) {
+  var s = current(), p = message.payload || {};
+  if (!s) { message.respond({returnValue: false, code: 'no-key', error: 'FreeTV todavía no tiene permiso para borrar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
+  s.remove(String(p.id || '')).then(function (r) {
+    message.respond(r.ok ? {returnValue: true} : {returnValue: false, code: r.code || 'failed', error: r.error});
+  });
+});
+
 service.register('job', function (message) {
   var s = current();
   message.respond({returnValue: true, job: s ? s.job : null});

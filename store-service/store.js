@@ -206,6 +206,51 @@ Store.prototype.run = async function (appId, flag) {
   }
 };
 
+var PROTECTED = /^(com\.gathin\.|com\.local\.nativehome$|freetv\.store$)/;   // FreeTV's own pieces are never removed from here
+
+/**
+ * Uninstalls an app, as `ares-install -r` does (/dev/remove). The TV only lets Developer Mode remove what was installed through
+ * Developer Mode: for an LG or store app it answers FAILED_REMOVE, and that is reported as code 'not-removable', not hidden.
+ * Resolves to {ok:true} or {ok:false, error, code}.
+ */
+Store.prototype.remove = async function (appId) {
+  var conn = null;
+  if (!ID_RE.test(appId || '')) return {ok: false, error: 'Identificador no válido.'};
+  if (PROTECTED.test(appId)) return {ok: false, error: 'FreeTV no se borra a sí misma desde aquí.', code: 'protected'};
+  if (this.busy) return {ok: false, error: 'Hay una instalación en marcha: espera a que acabe.'};
+  this.busy = true;
+  try {
+    conn = await this.connect();
+    var payload = JSON.stringify({id: appId, subscribe: true}), state = '', bad = '', lines = '';
+    await this.exec(conn, 'timeout -t 120 luna-send-pub -i luna://com.webos.appInstallService/dev/remove ' + q(payload), function (text) {
+      lines += text;
+      var parts = lines.split('\n');
+      lines = parts.pop();
+      for (var k = 0; k < parts.length; k++) {
+        var obj = null;
+        try { obj = JSON.parse(parts[k]); } catch (e) { continue; }
+        var s = obj && obj.details && obj.details.state ? String(obj.details.state) : '';
+        if (/FAILED/i.test(s)) { bad = (obj.details && obj.details.reason) || s; return true; }
+        if (/removed|^SUCCESS/i.test(s)) { state = s; return true; }
+        if (obj && obj.returnValue === false) { bad = obj.errorText || 'la tele rechazó el borrado'; return true; }
+      }
+      return false;
+    });
+    if (!state) {
+      this.log('remove ' + appId + ' failed: ' + (bad || 'no answer'));
+      return {ok: false, code: /FAILED_REMOVE|not.*(found|installed)|denied/i.test(bad) ? 'not-removable' : 'failed', error: bad || 'sin respuesta'};
+    }
+    var ids = await this.installedIds(conn);
+    if (ids && ids.indexOf(appId) >= 0) return {ok: false, code: 'failed', error: 'La tele dijo que la había borrado, pero sigue instalada.'};
+    return {ok: true};
+  } catch (e) {
+    return {ok: false, code: 'failed', error: String(e && e.message || e)};
+  } finally {
+    if (conn) { try { conn.end(); } catch (e) {} }
+    this.busy = false;
+  }
+};
+
 /** Starts an install; returns {ok:true} or {ok:false, error}. */
 Store.prototype.start = function (appId, flag) {
   if (!ID_RE.test(appId || '')) return {ok: false, error: 'Identificador no válido.'};
@@ -230,4 +275,4 @@ Store.prototype.check = async function () {
   }
 };
 
-module.exports = {Store: Store, CAUTION: CAUTION};
+module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED};

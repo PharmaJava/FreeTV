@@ -29,6 +29,8 @@ done
 python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' || { echo 'Python 3.9 or newer is needed.' >&2; exit 1; }
 
 echo '== 1/4 Building the home screen'
+# The Custom tab's YouTube shortcuts and their cover pictures (needs the internet; without it the shortcuts have no picture).
+python3 tools/kids_channels.py || echo '(Could not check the Custom tab channels: they are built without pictures.)'
 python3 tools/build_home.py
 [[ -d out/home ]] || exit 1
 

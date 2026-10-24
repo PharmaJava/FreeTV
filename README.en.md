@@ -15,6 +15,12 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
 
 ## What it does
 
+- **Home tabs:** **Custom** (the first), **Continue watching**, Explore, Movies and Shows.
+  - **Custom:** shortcuts with a cover picture to children's YouTube channels (Bluey, Sofia the First, Minnie's Bow-Toons and Ms Rachel,
+    always in English), opened in **YouTube AdFree** (install it from the Store). The **+** explains how to add another: in
+    `config.properties`, `kids_channels=Cocomelon|@Cocomelon`, then `bash install.sh <IP>` (it downloads the cover itself).
+  - **Continue watching:** what you opened last from FreeTV (apps and channels), with the time. The TV does not tell an app what another
+    app played, so it cannot show the exact point of a series.
 - **Real app icons.** The icons your TV provides, square and edge to edge, no frames. **Live TV** is one more icon on the
   shelf (by default where Apple TV would be).
 - **Arrange your apps.** On the shelf, hold **OK** on an icon: it lifts; move it with ◀ ▶ and drop it with **OK**. The
@@ -101,6 +107,8 @@ default is **no**, and the store still works through the computer. You can take 
 | You want to… | Do this |
 |---|---|
 | Go to FreeTV | **Home** button (or turn the TV on) |
+| Open a channel for the children | **Custom** tab (the first) → **OK** on its cover |
+| Uninstall an app | *All Apps* → **OK** on it → *Uninstall* → confirm. Only apps installed through Developer Mode (the Store's); LG's own must be deleted on LG's home |
 | Move an icon on the shelf | Hold **OK** on it, ◀ ▶ to move, **OK** to drop |
 | Choose the shelf apps | *Home Settings → Shelf* |
 | Choose which services to suggest from, animation, how many | *Home Settings → Suggestions* |

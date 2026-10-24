@@ -15,6 +15,12 @@ de LG, y **todo se puede deshacer**.
 
 ## Qué hace
 
+- **Pestañas del inicio:** **Personalizado** (la primera), **Continuar viendo**, Explorar, Películas y Series.
+  - **Personalizado:** accesos directos con portada a canales de YouTube para los niños (Bluey, Sofia the First, Minnie's Bow-Toons y
+    Ms Rachel, siempre en inglés), que se abren en **YouTube AdFree** (se instala desde la Tienda). El **+** explica cómo añadir
+    otro: en `config.properties`, `kids_channels=Cocomelon|@Cocomelon`, y `bash install.sh <IP>` (descarga la portada sola).
+  - **Continuar viendo:** lo último que abriste desde FreeTV (apps y canales), con la hora. La tele no deja saber qué reprodujo
+    otra app, así que no muestra el punto exacto de una serie.
 - **Iconos de app de verdad.** Los iconos que da la tele, cuadrados y a todo el cuadro, sin marcos. En el estante, **TV en
   directo** es un icono más (por defecto va donde iría Apple TV).
 - **Mueve tus apps a tu gusto.** En el estante, mantén **OK** sobre un icono: se levanta; muévelo con ◀ ▶ y suéltalo con
@@ -128,7 +134,9 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 | Mover un icono del estante | Mantén **OK** sobre él, ◀ ▶ para moverlo, **OK** para soltar |
 | Elegir qué apps van en el estante | *Ajustes de inicio → Estante* |
 | Ver más sugerencias | En el explorador, ▶ (se desliza); cada una dice su plataforma |
-| Ver todas las apps | Baja con ▼ y abre *Todas las apps* |
+| Ver todas las apps | Baja con ▼ y abre *Todas las apps* (salen todas, también las del estante) |
+| Desinstalar una app | *Todas las apps* → **OK** sobre ella → *Desinstalar* → confirma. Solo las instaladas por el Modo Desarrollador (las de la Tienda); las de LG hay que borrarlas en el inicio de LG |
+| Abrir un canal para los niños | Pestaña **Personalizado** (la primera) → **OK** sobre su portada |
 | Instalar una app de la comunidad | Icono **Tienda** del estante → elige la app → **OK** → *Instalar en esta tele* → confirma |
 | Cambiar el salvapantallas | *Ajustes de inicio → Salvapantallas* (paisajes, sugerencias o ambos) |
 | Elegir de qué servicios sugerir, animación y cuántas | *Ajustes de inicio → Sugerencias* |

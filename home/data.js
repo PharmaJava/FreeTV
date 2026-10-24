@@ -53,6 +53,8 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** What was opened from FreeTV lately, newest first: [{id: 'app:<id>' or 'chan:<key>', title, at}] ("Continue watching"). */
+    recent: function () { var r = pick('recent', []); return r instanceof Array ? r : []; },
     /** What the screensaver shows: 'places' (photos of Seville, Spain, Lithuania and nature), 'picks' (the suggestions' photos) or 'both'. */
     saver: function () { return pick('saver', 'both'); },
     /** The Store icon is added to a saved shelf once; after that it is the person's to keep or take away. */

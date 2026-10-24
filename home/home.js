@@ -138,16 +138,16 @@
       if (!out.length) out = apps.slice(0, MAX_SHELF);
     }
     shelf = out;
-    others = apps.filter(function (x) { return shelf.indexOf(x) < 0; });
+    others = apps.slice();   // All Apps lists every app, the ones on the shelf too
   }
 
   // MARK: - Focus
 
-  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community'};
+  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community', DLG: 'dialog'};
   var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0};
   var cards = [];
 
-  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM; }
+  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM || st.zone === Z.DLG; }
 
   function updateFocus() {
     var i, list;
@@ -157,15 +157,15 @@
       setClass(list[i], 'focus', st.zone === Z.TOP && st.top === i);
     }
     list = $('buttons').children;
-    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TOP && st.top === 3 + i);
-    setClass($('quotes'), 'hide', st.zone === Z.TOP && st.top >= 3);
+    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TOP && st.top === TABS + i);
+    setClass($('quotes'), 'hide', st.zone === Z.TOP && st.top >= TABS);
     list = $('cards').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.CARDS && st.card === i);
     if (st.zone === Z.CARDS) {
       // keep the focused card inside the screen, and let the blurred background follow it
-      cardShift = st.card > 0 ? Math.max(0, cardLeft(st.card) + SMALL_W - 1840) : 0;
+      cardShift = st.card > 0 ? Math.max(0, cardLeft(st.card) + cardW(st.card) - 1840) : 0;
       $('cards').style.webkitTransform = $('cards').style.transform = cardShift ? 'translateX(' + (-cardShift) + 'px)' : '';
-      if (cards[st.card] && cards[st.card] !== bgShown) { bgShown = cards[st.card]; backdrop(Data.image(bgShown.backdrop, 'w300')); }
+      if (cards[st.card] && cards[st.card] !== bgShown) { bgShown = cards[st.card]; backdrop(cardBackdrop(bgShown)); }
     }
     list = $('tiles').children;
     for (i = 0; i < list.length; i++) {
@@ -182,6 +182,7 @@
     focusRows($('shelfedit'), st.edit, st.zone === Z.EDIT);
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
     focusRows($('community'), commOpen < 0 ? st.comm : commAct, st.zone === Z.COMM);
+    focusRows($('dialog'), dlg.index, st.zone === Z.DLG);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
   }
 
@@ -211,14 +212,17 @@
 
   // MARK: - Top: title, tabs, buttons, quotes
 
-  var TAB_KIND = [null, 'movie', 'tv'];
+  // Five tabs: Custom (YouTube shortcuts for the children), Continue watching (what was opened from here), then the TMDB picks.
+  var TABS = 5, TAB_KIND = [null, null, null, 'movie', 'tv'];
+  function localTab() { return st.tab < 2; }
 
   function renderTop() {
     $('title').textContent = tr('Para você', 'For You', 'Para ti');
     var tabs = $('tabs');
     tabs.innerHTML = '';
-    var names = [tr('Explorar', 'Explore', 'Explorar'), tr('Filmes', 'Movies', 'Películas'), tr('Séries', 'Shows', 'Series')];
-    for (var i = 0; i < 3; i++) {
+    var names = [tr('Personalizado', 'Custom', 'Personalizado'), tr('Continuar assistindo', 'Continue watching', 'Continuar viendo'),
+      tr('Explorar', 'Explore', 'Explorar'), tr('Filmes', 'Movies', 'Películas'), tr('Séries', 'Shows', 'Series')];
+    for (var i = 0; i < TABS; i++) {
       var t = el('button', 'tab', tabs, names[i]);
       hover(t, Z.TOP, i);
     }
@@ -231,7 +235,7 @@
       r.style.left = (1596 + 88 * b) + 'px';
       sym(defs[b][0], r);
       el('div', 'tip', r, defs[b][1]);
-      hover(r, Z.TOP, 3 + b);
+      hover(r, Z.TOP, TABS + b);
     }
   }
 
@@ -252,15 +256,86 @@
   // MARK: - Picks and background
 
   // One wide card, then as many tall ones as there are picks; the row slides sideways to keep the focused one in view.
-  var HERO_W = 1040, SMALL_W = 320, CARD_GAP = 40, cardShift = 0, bgShown = null;
-  function cardLeft(c) { return c === 0 ? 80 : 80 + HERO_W + CARD_GAP + (c - 1) * (SMALL_W + CARD_GAP); }
+  var HERO_W = 1040, SMALL_W = 320, LOCAL_W = 340, CARD_GAP = 40, cardShift = 0, bgShown = null;
+  function cardW(c) { return localTab() ? LOCAL_W : (c === 0 ? HERO_W : SMALL_W); }
+  function cardLeft(c) {
+    if (localTab()) return 80 + c * (LOCAL_W + CARD_GAP);   // all the same size
+    return c === 0 ? 80 : 80 + HERO_W + CARD_GAP + (c - 1) * (SMALL_W + CARD_GAP);
+  }
+
+  var YOUTUBE = 'youtube.leanback.v4';   // YouTube AdFree (the same id as LG's own YouTube, which it replaces)
+
+  function findApp(id) {
+    for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return apps[i];
+    return null;
+  }
+
+  /** The Custom tab: one cover per YouTube shortcut (kids_channels.py puts the pictures there), then "+". */
+  function channelItems() {
+    var list = (window.CONFIG && CONFIG.channels) || [], out = [];
+    for (var i = 0; i < list.length; i++) out.push(channelCard(list[i], ''));
+    out.push({local: 'plus', id: 'plus', title: tr('Adicionar canal', 'Add a channel', 'Añadir canal'), meta: ''});
+    return out;
+  }
+
+  function channelCard(c, meta) {
+    return {local: 'channel', id: 'chan:' + c.key, title: c.title, thumb: c.thumb || '', meta: meta || 'YouTube', chan: c};
+  }
+
+  function agoText(at) {
+    var m = Math.max(1, Math.round((Date.now() - at) / 60000));
+    if (m < 60) return tr('há ' + m + ' min', m + ' min ago', 'hace ' + m + ' min');
+    var h = Math.round(m / 60);
+    if (h < 48) return tr('há ' + h + ' h', h + ' h ago', 'hace ' + h + ' h');
+    var d = Math.round(h / 24);
+    return tr('há ' + d + ' d', d + ' d ago', 'hace ' + d + ' d');
+  }
+
+  /** "Continue watching": what was opened from FreeTV, newest first. (The TV does not tell an app what other apps played.) */
+  function recentItems() {
+    var list = Prefs.recent(), out = [];
+    for (var i = 0; i < list.length && out.length < 12; i++) {
+      var r = list[i], meta = agoText(r.at || 0), j;
+      if (r.id.indexOf('chan:') === 0) {
+        var chans = (window.CONFIG && CONFIG.channels) || [];
+        for (j = 0; j < chans.length; j++) if ('chan:' + chans[j].key === r.id) out.push(channelCard(chans[j], 'YouTube · ' + meta));
+      } else {
+        var app = findApp(r.id.slice(4));
+        if (app) out.push({local: 'app', id: r.id, title: app.title, thumb: app.icon || '', color: app.color || '', meta: meta, app: app});
+      }
+    }
+    if (!out.length) out.push({local: 'hint', id: 'hint', title: tr('Ainda nada', 'Nothing yet', 'Todavía nada'),
+      meta: tr('O que você abrir daqui aparece aqui.', 'What you open from here shows up here.', 'Lo que abras desde aquí aparece aquí.')});
+    return out;
+  }
+
+  /** Remembers what was opened (an app or a shortcut), for the Continue watching tab. */
+  function remember(id, title) {
+    var list = Prefs.recent().filter(function (x) { return x.id !== id; });
+    list.unshift({id: id, title: title, at: Date.now()});
+    Prefs.set('recent', list.slice(0, 12));
+    if (st.tab === 1) renderCards();
+  }
+
+  function tabItems() {
+    if (st.tab === 0) return channelItems();
+    if (st.tab === 1) return recentItems();
+    return Data.picks(TAB_KIND[st.tab]);
+  }
+
+  function cardSig(p) { return [p.local || '', p.id, p.title, p.thumb || '', p.backdrop || '', p.meta || '', p.service || ''].join('|'); }
+
+  function cardBackdrop(p) {
+    if (p.local) return p.thumb || '';
+    return Data.image(p.backdrop, 'w300');
+  }
 
   function renderCards() {
-    var list = Data.picks(TAB_KIND[st.tab]);
+    var list = tabItems();
     var holder = $('cards');
     setClass(body, 'no-picks', !list.length);
     var same = list.length === cards.length;
-    for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta && list[i].service === cards[i].service;
+    for (var i = 0; same && i < list.length; i++) same = cardSig(list[i]) === cardSig(cards[i]);
     if (same && holder.children.length === list.length) return;
     cards = list;
     holder.innerHTML = '';
@@ -269,8 +344,21 @@
     for (var c = 0; c < list.length; c++) {
       var p = list[c], card = el('div', 'card', holder);
       card.style.left = cardLeft(c) + 'px';
-      card.style.width = (c === 0 ? HERO_W : SMALL_W) + 'px';
+      card.style.width = cardW(c) + 'px';
       var img = el('div', 'img', card);
+      if (p.local) {
+        setClass(card, 'sq', true);
+        if (p.thumb) img.style.backgroundImage = 'url(' + p.thumb + ')';
+        else {
+          if (p.local === 'plus') setClass(img, 'plus', true);
+          else img.style.backgroundColor = p.color || '#5B5F6B';
+          el('div', 'word', img, p.local === 'plus' ? '+' : p.title);
+        }
+        el('div', 'name', card, p.title);
+        if (p.meta) el('div', 'meta', card, p.meta);
+        hover(card, Z.CARDS, c);
+        continue;
+      }
       img.style.backgroundImage = 'url(' + Data.image(p.backdrop, c === 0 ? 'w1280' : 'w780') + ')';
       el('div', 'name', card, p.title);
       // The wide card says everything; the others say what it is and where to watch it.
@@ -281,7 +369,7 @@
     st.card = Math.min(st.card, Math.max(0, list.length - 1));
     if (!list.length && st.zone === Z.CARDS) st.zone = Z.SHELF;
     bgShown = list.length ? list[0] : null;
-    backdrop(list.length ? Data.image(list[0].backdrop, 'w300') : '');
+    backdrop(list.length ? cardBackdrop(list[0]) : '');
     updateFocus();
   }
 
@@ -503,6 +591,7 @@
     setClass($('shelfedit'), 'open', false);
     setClass($('suggest'), 'open', false);
     setClass($('community'), 'open', false);
+    setClass($('dialog'), 'open', false);
     st.zone = Z.SHELF;
     updateFocus();
   }
@@ -659,7 +748,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' ? 70000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -1063,10 +1152,129 @@
   function launcher(id, name) {
     return function () {
       if (id === 'freetv.store') { openCommunity(true); return; }
+      if (id.indexOf('com.gathin.') !== 0 && id !== 'com.local.nativehome') remember('app:' + id, name || id);
       TV.launch(id, null, function (ok) {
         if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + (name || id));
       });
     };
+  }
+
+  // MARK: - Dialog: a small box with some text and buttons (OK chooses, Back closes)
+
+  var dlg = {acts: [], index: 0, from: Z.APPS, token: 0};
+
+  /** lines: [{text, cls}], buttons: [{label, run}]. A button closes the box and then runs (it may open another one). */
+  function showDialog(title, lines, buttons, index) {
+    if (st.zone !== Z.DLG) dlg.from = st.zone;
+    var box = $('dialog').firstChild;
+    box.innerHTML = '';
+    var head = el('div', 'title', box);
+    sym('apps', head);
+    head.appendChild(document.createTextNode(title));
+    for (var i = 0; i < lines.length; i++) line(box, lines[i].cls || '', lines[i].text);
+    dlg.acts = [];
+    dlg.token++;
+    for (var b = 0; b < buttons.length; b++) {
+      (function (n, button) {
+        var row = el('div', 'row', box, button.label);
+        dlg.acts.push(button.run || function () {});
+        row.onmouseover = function () { if (st.zone === Z.DLG && dlg.index !== n) { dlg.index = n; updateFocus(); } };
+        row.onclick = function () { dlg.index = n; updateFocus(); activate(); };
+      })(b, buttons[b]);
+    }
+    dlg.index = index || 0;
+    st.zone = Z.DLG;
+    setClass($('dialog'), 'open', true);
+    updateFocus();
+    return dlg.token;
+  }
+
+  function closeDialog() {
+    dlg.token++;
+    setClass($('dialog'), 'open', false);
+    st.zone = dlg.from;
+    updateFocus();
+  }
+
+  function cancelText() { return tr('Cancelar', 'Cancel', 'Cancelar'); }
+
+  // MARK: - Custom tab: shortcuts to YouTube channels, opened in YouTube AdFree
+
+  function openLocal(p) {
+    if (p.local === 'channel') openChannel(p.chan);
+    else if (p.local === 'app') launcher(p.app.id, p.title)();
+    else if (p.local === 'plus') openAddChannel();
+  }
+
+  function openChannel(c) {
+    if (!findApp(YOUTUBE)) {
+      toast(tr('Instale o YouTube AdFree pela Loja antes', 'Install YouTube AdFree from the Store first', 'Instala YouTube AdFree desde la Tienda primero'));
+      return;
+    }
+    remember('chan:' + c.key, c.title);
+    // contentTarget is what LG's YouTube takes to open a video or a channel; the app opens even if it does not understand the address.
+    var url = c.kind === 'video' ? 'https://www.youtube.com/watch?v=' + c.id : 'https://www.youtube.com/channel/' + c.id;
+    TV.launch(YOUTUBE, {contentTarget: url}, function (ok) {
+      if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + c.title);
+    });
+  }
+
+  function openAddChannel() {
+    showDialog(tr('Adicionar um canal', 'Add a channel', 'Añadir un canal'), [
+      {text: tr('A TV não tem teclado: adicione no computador. Em config.properties, escreva (nomes em inglês):',
+          'The TV has no keyboard: add it on the computer. In config.properties, write (names in English):',
+          'La tele no tiene teclado: se añade desde el ordenador. En config.properties escribe (nombres en inglés):')},
+      {cls: 'code', text: 'kids_channels=Cocomelon|@Cocomelon;Name|@handle'},
+      {text: tr('O @nome é o que aparece em youtube.com/@nome. Depois execute: bash install.sh <IP da TV>. A capa é baixada sozinha.',
+          'The @name is what shows in youtube.com/@name. Then run: bash install.sh <TV IP>. The cover picture is downloaded for you.',
+          'El @nombre es el que sale en youtube.com/@nombre. Luego ejecuta: bash install.sh <IP de la tele>. La portada se descarga sola.')}
+    ], [{label: 'OK'}], 0);
+  }
+
+  // MARK: - All Apps: OK opens a small menu (open, or uninstall with a question first)
+
+  var PROTECTED = /^(com\.gathin\.|com\.local\.nativehome$|freetv\.store$)/;
+
+  function openAppMenu(app) {
+    var buttons = [{label: tr('Abrir', 'Open', 'Abrir'), run: launcher(app.id, app.title)}];
+    if (!PROTECTED.test(app.id)) buttons.push({label: tr('Desinstalar', 'Uninstall', 'Desinstalar'), run: function () { confirmRemove(app); }});
+    buttons.push({label: cancelText()});
+    showDialog(app.title, [], buttons, 0);
+  }
+
+  function confirmRemove(app) {
+    showDialog(tr('Desinstalar?', 'Uninstall?', '¿Desinstalar?'), [
+      {text: tr('Tem certeza de que quer apagar «' + app.title + '»?', 'Are you sure you want to delete «' + app.title + '»?', '¿Seguro que quieres borrar «' + app.title + '»?')}
+    ], [{label: cancelText()}, {label: tr('Sim, apagar', 'Yes, delete', 'Sí, borrar'), run: function () { removeApp(app); }}], 0);
+  }
+
+  function removeApp(app) {
+    var token = showDialog(app.title, [{text: tr('Apagando…', 'Deleting…', 'Borrando…')}], [], 0);
+    function result(title, text) {
+      if (dlg.token === token && st.zone === Z.DLG) showDialog(title, [{text: text, cls: 'warn'}], [{label: 'OK'}], 0);
+      else toast(text);
+    }
+    svcCall('remove', {id: app.id}, function (r) {
+      if (r && r.returnValue) {
+        toast(app.title + ': ' + tr('apagada', 'deleted', 'borrada'));
+        svcApps(function () {
+          loadApps(function () {
+            renderShelf(); renderDrawer();
+            if (st.zone === Z.APPS || (st.zone === Z.DLG && dlg.from === Z.APPS)) { renderApps(); st.grid = Math.max(0, Math.min(st.grid, others.length - 1)); }
+            if (dlg.token === token && st.zone === Z.DLG) closeDialog(); else updateFocus();
+          });
+        });
+        return;
+      }
+      var why = r && r.error ? r.error : '';
+      var text = !r ? tr('FreeTV precisa do acesso da Loja para apagar apps (o install.sh pergunta por ele).',
+              'FreeTV needs the Store permission to delete apps (install.sh asks about it).', 'FreeTV necesita el permiso de la Tienda para borrar apps (install.sh lo pregunta).')
+          : r.code === 'not-removable' ? tr('A LG não deixa apagar esta app por aqui (só as instaladas pelo Modo Desenvolvedor, como as da Loja). Na tela inicial da LG, segure OK sobre ela e escolha Remover.',
+              'LG does not let this app be deleted from here (only those installed through Developer Mode, like the Store ones). On LG\'s home, hold OK on it and choose Delete.',
+              'LG no deja borrar esta app desde aquí (solo las instaladas con el Modo Desarrollador, como las de la Tienda). En el inicio de LG, mantén OK sobre ella y elige Eliminar.')
+          : tr('Não foi possível apagar: ', 'Could not delete: ', 'No se pudo borrar: ') + why;
+      result(app.title, text);
+    });
   }
 
   function tvSettings() {
@@ -1083,13 +1291,15 @@
   function activate() {
     switch (st.zone) {
       case Z.TOP:
-        if (st.top < 3) return;
-        if (st.top === 3) { var live = liveTV(); if (live) launcher(live.id, tr('TV aberta', 'Live TV', 'TV en vivo'))(); }
-        else if (st.top === 4) { st.zone = Z.SHELF; openDrawer(); st.drawer = 1 < drawerInputs ? 1 : 0; updateFocus(); }
+        if (st.top < TABS) return;
+        if (st.top === TABS) { var live = liveTV(); if (live) launcher(live.id, tr('TV aberta', 'Live TV', 'TV en vivo'))(); }
+        else if (st.top === TABS + 1) { st.zone = Z.SHELF; openDrawer(); st.drawer = 1 < drawerInputs ? 1 : 0; updateFocus(); }
         else openSettings();
         return;
       case Z.CARDS:
-        var p = cards[st.card], app = p && Data.appFor(p.app);
+        var p = cards[st.card];
+        if (p && p.local) { openLocal(p); return; }
+        var app = p && Data.appFor(p.app);
         if (app) launcher(app.id, app.title)();
         return;
       case Z.SHELF:
@@ -1100,7 +1310,13 @@
         if (drawerItems[st.drawer]) drawerItems[st.drawer].run();
         return;
       case Z.APPS:
-        if (others[st.grid]) launcher(others[st.grid].id, others[st.grid].title)();
+        if (others[st.grid]) {
+          if (TV.name === 'webos') openAppMenu(others[st.grid]);   // OK: open it, or uninstall it
+          else launcher(others[st.grid].id, others[st.grid].title)();
+        }
+        return;
+      case Z.DLG:
+        if (dlg.acts[dlg.index]) { var run = dlg.acts[dlg.index]; closeDialog(); run(); }
         return;
       case Z.SETTINGS:
         if (rowsNow[st.row]) { rowsNow[st.row].step(1); if (st.zone === Z.SETTINGS) renderSettings(); }
@@ -1143,10 +1359,10 @@
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(0, Math.min(5, st.top + dx));
-          if (st.top < 3) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
+          st.top = Math.max(0, Math.min(TABS + 2, st.top + dx));
+          if (st.top < TABS) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
-          if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < 3 ? 0 : cards.length - 1); }
+          if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < TABS ? 0 : cards.length - 1); }
           else st.zone = Z.SHELF;
         }
         break;
@@ -1173,6 +1389,9 @@
         if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
         else if (commOpen >= 0 && dy) commAct = Math.max(0, Math.min(commActs.length - 1, commAct + dy));
         break;
+      case Z.DLG:
+        if (dy) dlg.index = Math.max(0, Math.min(dlg.acts.length - 1, dlg.index + dy));
+        break;
       case Z.SUGG:
         if (dy) st.sug = Math.max(0, Math.min(suggestNow.length - 1, st.sug + dy));
         else if (dx && suggestNow[st.sug] && suggestNow[st.sug].toggle === undefined) { suggestNow[st.sug].step(dx); renderSuggest(); }
@@ -1183,6 +1402,7 @@
 
   function back() {
     if (grabbed >= 0) { drop(); return; }
+    if (st.zone === Z.DLG) { closeDialog(); return; }
     if (st.zone === Z.EDIT) { setClass($('shelfedit'), 'open', false); openSettings(); st.row = rowsNow.length - 2; updateFocus(); return; }
     if (st.zone === Z.COMM) {
       if (commOpen >= 0) {
@@ -1214,12 +1434,13 @@
   /** The pointer focuses what it's over (the Magic Remote, or a mouse when previewing). */
   function hover(node, zone, index) {
     node.onmouseover = function () {
+      if (st.zone === Z.DLG) return;
       if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
       if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
       if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
       st.zone = zone;
-      if (zone === Z.TOP) { st.top = index; if (index < 3) selectTab(index); }
+      if (zone === Z.TOP) { st.top = index; if (index < TABS) selectTab(index); }
       else if (zone === Z.CARDS) st.card = index;
       else if (zone === Z.SHELF) st.shelf = index;
       else if (zone === Z.DRAWER) st.drawer = index;
@@ -1230,7 +1451,7 @@
       else if (zone === Z.COMM) st.comm = index;
       updateFocus();
     };
-    node.onclick = function () { node.onmouseover(); activate(); };
+    node.onclick = function () { if (st.zone === Z.DLG) return; node.onmouseover(); activate(); };
   }
 
   // MARK: - Toast
@@ -1274,6 +1495,7 @@
     el('div', 'date', clock);
     el('div', 'title', clock);
     var credit = el('div', 'credit', s);
+    tickSaverClock(clock);   // the clock is there at once, even while the first photo is still coming
     var front = a;
     function next() {
       if (!saverOn) return;
@@ -1413,7 +1635,15 @@
     okHeld = false;
     if (pressed && !held && st.zone === Z.SHELF && grabbed < 0) activate();
   });
-  document.addEventListener('mousemove', function () { poke(); });
+  // Chrome sends a mousemove again, at the same place, whenever the page under a parked pointer changes (every refresh of the cards):
+  // that is not a person, and it kept the screensaver from ever starting. Only a pointer that moved wakes the screen.
+  var lastMouse = '';
+  document.addEventListener('mousemove', function (e) {
+    var at = e.screenX + ',' + e.screenY + ',' + e.clientX + ',' + e.clientY;
+    if (at === lastMouse) return;
+    lastMouse = at;
+    poke();
+  });
 
   // MARK: - Start
 
@@ -1498,5 +1728,5 @@
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
-    grab: grab, drop: drop, shelf: function () { return shelf; }};
+    grab: grab, drop: drop, shelf: function () { return shelf; }, openApps: openApps, apps: function () { return others; }};
 })();
