@@ -1660,6 +1660,8 @@
 
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode;
+    // 1537: what the TV sends when its screen comes back from LG's screensaver (and FreeTV sends that one away): not a person.
+    if (k === 1537) return;
     if (poke()) { e.preventDefault(); return; }   // the first press only wakes the screen
     if (k === TV.keys.ok && (st.zone === Z.SHELF || onShortcut())) {
       // On the shelf (and on a Custom shortcut) OK acts when it is released, so that holding it can pick the app up, or open the menu.
