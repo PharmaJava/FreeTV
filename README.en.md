@@ -17,10 +17,14 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
 
 - **Home tabs:** **Custom** (the first), **Continue watching**, Explore, Movies and Shows.
   - **Custom:** shortcuts with a cover picture to children's YouTube channels (Bluey, Sofia the First, Minnie's Bow-Toons and Ms Rachel,
-    always in English), opened in **YouTube AdFree** (install it from the Store). The **+** explains how to add another: in
-    `config.properties`, `kids_channels=Cocomelon|@Cocomelon`, then `bash install.sh <IP>` (it downloads the cover itself).
-  - **Continue watching:** what you opened last from FreeTV (apps and channels), with the time. The TV does not tell an app what another
-    app played, so it cannot show the exact point of a series.
+    always in English), opened in **YouTube AdFree** (install it from the Store) **in its TV screen**, not the website. A channel opens
+    its newest video that can be watched now (live streams and premieres that have not started are skipped).
+    **Add a channel from the TV, no computer:** press **+**, type the name (or @name) with the TV's keyboard and press Enter; the TV
+    looks it up on YouTube and you pick the channel with the remote. **Hold OK** on a channel to *Open*, *Move left/right* or *Remove*
+    it (a short OK opens it). They can also be added from the computer: in `config.properties`, `kids_channels=Cocomelon|@Cocomelon`,
+    then `bash install.sh <IP>`.
+  - **Continue watching:** what you opened last from FreeTV (apps and channels), with the time. **Hold OK** to *Remove* one. The TV
+    does not tell an app what another app played, so it cannot show the exact point of a series.
 - **Real app icons.** The icons your TV provides, square and edge to edge, no frames. **Live TV** is one more icon on the
   shelf (by default where Apple TV would be).
 - **Arrange your apps.** On the shelf, hold **OK** on an icon: it lifts; move it with ◀ ▶ and drop it with **OK**. The
@@ -40,7 +44,9 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   is **not installed**. See [Community apps](#community-apps-ad-free-youtube-kodi-jellyfin).
 - **Its own screensaver.** After two idle minutes, full-screen photos with the clock: landscapes of Seville, Andalusia, Spain
   and Lithuania (Wikimedia Commons, free licences only, author and licence on screen), the picks' photos, or both. Chosen in
-  *Home Settings → Screensaver*. No root needed.
+  *Home Settings → Screensaver*. No root needed. **It stays above LG's own screensaver** (the clock one): while FreeTV's is on, if
+  the TV switches to its screensaver, FreeTV sends it away within a second or two. For that the TV asks **once** for permission
+  (power state and screen): accept it.
 - **A real Home button.** Press **Home** in any app and you come back to FreeTV, not LG's home. Leaving an app with
   **Back** brings you here too: the helper waits a bit over a second for LG to settle, then opens FreeTV once, with no
   back and forth. When the TV turns on, the helper opens FreeTV (on some TVs LG's home shows for a couple of
@@ -108,7 +114,10 @@ default is **no**, and the store still works through the computer. You can take 
 |---|---|
 | Go to FreeTV | **Home** button (or turn the TV on) |
 | Open a channel for the children | **Custom** tab (the first) → **OK** on its cover |
-| Uninstall an app | *All Apps* → **OK** on it → *Uninstall* → confirm. Only apps installed through Developer Mode (the Store's); LG's own must be deleted on LG's home |
+| Add a YouTube channel | **Custom** → **+** → type the name with the TV keyboard → Enter → pick the channel |
+| Move or remove a channel | **Custom** → **hold OK** on it |
+| Remove something from Continue watching | **Continue watching** → **hold OK** on it → *Remove* |
+| Uninstall an app | *All Apps* → **hold OK** on it → *Uninstall* → confirm (a short OK opens it). Only apps installed through Developer Mode (the Store's); LG's own must be deleted on LG's home |
 | Move an icon on the shelf | Hold **OK** on it, ◀ ▶ to move, **OK** to drop |
 | Choose the shelf apps | *Home Settings → Shelf* |
 | Choose which services to suggest from, animation, how many | *Home Settings → Suggestions* |

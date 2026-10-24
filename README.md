@@ -17,10 +17,14 @@ de LG, y **todo se puede deshacer**.
 
 - **Pestañas del inicio:** **Personalizado** (la primera), **Continuar viendo**, Explorar, Películas y Series.
   - **Personalizado:** accesos directos con portada a canales de YouTube para los niños (Bluey, Sofia the First, Minnie's Bow-Toons y
-    Ms Rachel, siempre en inglés), que se abren en **YouTube AdFree** (se instala desde la Tienda). El **+** explica cómo añadir
-    otro: en `config.properties`, `kids_channels=Cocomelon|@Cocomelon`, y `bash install.sh <IP>` (descarga la portada sola).
-  - **Continuar viendo:** lo último que abriste desde FreeTV (apps y canales), con la hora. La tele no deja saber qué reprodujo
-    otra app, así que no muestra el punto exacto de una serie.
+    Ms Rachel, siempre en inglés), que se abren en **YouTube AdFree** (se instala desde la Tienda) **en su pantalla de TV**, no en la
+    web. Un canal abre su vídeo más reciente que ya se puede ver (se salta los directos y los estrenos que aún no han empezado).
+    **Añadir un canal desde la tele, sin ordenador:** pulsa el **+**, escribe el nombre (o el @nombre) con el teclado de la tele y
+    pulsa Intro; la tele lo busca en YouTube y eliges el canal con el mando. **Mantén OK** sobre un canal para *Abrir*, *Mover a la
+    izquierda/derecha* o *Quitar* (un OK corto lo abre). También se pueden añadir desde el ordenador: en `config.properties`,
+    `kids_channels=Cocomelon|@Cocomelon`, y `bash install.sh <IP>`.
+  - **Continuar viendo:** lo último que abriste desde FreeTV (apps y canales), con la hora. **Mantén OK** para *Quitar* uno de la
+    lista. La tele no deja saber qué reprodujo otra app, así que no muestra el punto exacto de una serie.
 - **Iconos de app de verdad.** Los iconos que da la tele, cuadrados y a todo el cuadro, sin marcos. En el estante, **TV en
   directo** es un icono más (por defecto va donde iría Apple TV).
 - **Mueve tus apps a tu gusto.** En el estante, mantén **OK** sobre un icono: se levanta; muévelo con ◀ ▶ y suéltalo con
@@ -40,7 +44,9 @@ de LG, y **todo se puede deshacer**.
   [Apps de la comunidad](#apps-de-la-comunidad-youtube-sin-anuncios-kodi-jellyfin).
 - **Salvapantallas propio.** Tras dos minutos sin tocar el mando, fotos a pantalla completa con el reloj: paisajes de Sevilla,
   Andalucía, España y Lituania (Wikimedia Commons, solo licencias libres, con autor y licencia en pantalla), las fotos de las
-  sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root.
+  sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root. **Va por encima del salvapantallas de
+  LG** (el del reloj): mientras está el de FreeTV, si la tele pasa a su salvapantallas, FreeTV lo aparta en uno o dos segundos. Para
+  eso la tele pide permiso **una vez** (estado de energía y pantalla): acéptalo.
 - **El botón Home de verdad.** Pulsas **Home** en cualquier app y vuelves a FreeTV, no al inicio de LG. Al salir de una
   app con **Atrás** también vuelves aquí: el ayudante espera algo más de un segundo a que LG se asiente y entonces abre
   FreeTV, una sola vez, sin ir y venir. Al encender la tele, el ayudante abre FreeTV (en algunas teles se ve el inicio de LG un par de segundos antes).
@@ -135,8 +141,11 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 | Elegir qué apps van en el estante | *Ajustes de inicio → Estante* |
 | Ver más sugerencias | En el explorador, ▶ (se desliza); cada una dice su plataforma |
 | Ver todas las apps | Baja con ▼ y abre *Todas las apps* (salen todas, también las del estante) |
-| Desinstalar una app | *Todas las apps* → **OK** sobre ella → *Desinstalar* → confirma. Solo las instaladas por el Modo Desarrollador (las de la Tienda); las de LG hay que borrarlas en el inicio de LG |
+| Desinstalar una app | *Todas las apps* → **mantén OK** sobre ella → *Desinstalar* → confirma (un OK corto la abre). Solo las instaladas por el Modo Desarrollador (las de la Tienda); las de LG hay que borrarlas en el inicio de LG |
 | Abrir un canal para los niños | Pestaña **Personalizado** (la primera) → **OK** sobre su portada |
+| Añadir un canal de YouTube | **Personalizado** → **+** → escribe el nombre con el teclado de la tele → Intro → elige el canal |
+| Mover o quitar un canal | **Personalizado** → **mantén OK** sobre él |
+| Quitar algo de Continuar viendo | **Continuar viendo** → **mantén OK** sobre ello → *Quitar* |
 | Instalar una app de la comunidad | Icono **Tienda** del estante → elige la app → **OK** → *Instalar en esta tele* → confirma |
 | Cambiar el salvapantallas | *Ajustes de inicio → Salvapantallas* (paisajes, sugerencias o ambos) |
 | Elegir de qué servicios sugerir, animación y cuántas | *Ajustes de inicio → Sugerencias* |
