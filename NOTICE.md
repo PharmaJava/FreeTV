@@ -22,9 +22,6 @@ The screensaver's landscape photos (`home/landscapes.js`) are not copied into th
 Commons, and each one is shown with its author and licence (public domain, CC0, CC BY or CC BY-SA). RezkaTV, offered in the store
 as an unofficial extra, is a third-party app (MIT) that this project does not make or endorse.
 
-The screensaver plays a tiny silent video out of sight (), so that LG's own screensaver does not start: it is the video of
-NoSleep.js (MIT, Rich Tibbett, https://github.com/richtr/NoSleep.js).
-
 FreeTV is not affiliated with, endorsed by or sponsored by LG Electronics. "LG" and "webOS" belong to their owners.
 Netflix, YouTube, Prime Video, Disney+ and the other app icons shown on the home screen are the icons your own TV gives
 to apps already installed on it.

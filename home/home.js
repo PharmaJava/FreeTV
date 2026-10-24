@@ -1523,42 +1523,6 @@
 
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 2 * 60000;
 
-  var saverKeep = 0;
-
-  /** Restarts LG's idle timer (webOS only), so that LG's screensaver does not come over ours. */
-  function holdLgSaver() {
-    if (TV.name !== 'webos' || !window.PalmServiceBridge) return;
-    try {
-      var bridge = new window.PalmServiceBridge();
-      bridge.onservicecallback = function () { try { bridge.cancel(); } catch (e) {} };
-      bridge.call('luna://com.webos.surfacemanager.screenSaver/restartUserActivityTimer', '{}');
-    } catch (e) {}
-    playKeepVideo();
-  }
-
-  var keepVideo = null;
-
-  /** A video playing out of sight (a TV does not start its own screensaver while one plays). */
-  function playKeepVideo() {
-    if (typeof NOSLEEP === 'undefined') return;
-    if (!keepVideo) {
-      keepVideo = document.createElement('video');
-      keepVideo.muted = true;
-      keepVideo.loop = true;
-      keepVideo.setAttribute('playsinline', '');
-      keepVideo.style.cssText = 'position:absolute;left:0;top:0;width:4px;height:4px;opacity:0.02;pointer-events:none;z-index:0';
-      // The TV's player plays it from a blob: address (not from a data: one).
-      var raw = atob(NOSLEEP.mp4.split(',')[1]), bytes = new Uint8Array(raw.length);
-      for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-      keepVideo.src = URL.createObjectURL(new Blob([bytes], {type: 'video/mp4'}));
-      document.body.appendChild(keepVideo);
-    }
-    try {
-      var p = keepVideo.play();
-      if (p && p.catch) p.catch(function () {});
-    } catch (e) {}
-  }
-
   function showSaver() {
     var mode = Data.saver(), photos = mode === 'places' ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
     if (mode !== 'picks' && typeof LANDSCAPES !== 'undefined') {
@@ -1629,9 +1593,7 @@
       saverTimer = setTimeout(next, 12000);
     }
     setClass(s, 'on', true);
-    holdLgSaver();
-    clearInterval(saverKeep);
-    saverKeep = setInterval(holdLgSaver, 15000);
+    TV.holdScreen(true);   // LG's own screensaver would go over ours
     next();
   }
 
@@ -1648,8 +1610,7 @@
   function hideSaver() {
     saverOn = false;
     clearTimeout(saverTimer);
-    clearInterval(saverKeep);
-    if (keepVideo) { try { keepVideo.pause(); } catch (e) {} }
+    TV.holdScreen(false);
     setClass($('saver'), 'on', false);
   }
 

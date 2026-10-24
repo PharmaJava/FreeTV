@@ -74,6 +74,64 @@ var TV = (function () {
     ws.onerror = ws.onclose = function () { finish(null); };
   }
 
+  // LG's own screensaver (the clock) starts after its idle time and goes over FreeTV's, whatever FreeTV does: the TV's power state turns to
+  // "Screen Saver". The remote control API can read that state and turn the screen on again, which sends LG's screensaver away. It asks
+  // the TV once to allow it (power state and screen: turnOnScreen needs more than CONTROL_POWER); the key it gives back is kept.
+  var POWER_KEY = 'fmtv.ssapPowerKey2', POWER_REFUSED = 'fmtv.ssapPowerRefused';
+  var power = {on: false, ws: null, timer: 0, retry: 0};
+
+  function powerStop() {
+    power.on = false;
+    clearTimeout(power.timer);
+    clearTimeout(power.retry);
+    try { if (power.ws) power.ws.close(); } catch (e) {}
+    power.ws = null;
+  }
+
+  function powerStart() {
+    if (!webos || power.on) return;
+    var refused = false, key = null;
+    try { refused = !!localStorage.getItem(POWER_REFUSED); key = localStorage.getItem(POWER_KEY); } catch (e) {}
+    if (refused) return;   // the person said no on the TV
+    power.on = true;
+    var ws = null;
+    function send(id, uri) { try { ws.send(JSON.stringify({type: 'request', id: id, uri: 'ssap://' + uri})); } catch (e) {} }
+    function ask() {
+      if (!power.on || power.ws !== ws) return;
+      send('state', 'com.webos.service.tvpower/power/getPowerState');
+      power.timer = setTimeout(ask, 1500);
+    }
+    function again() {
+      if (!power.on || power.ws !== ws) return;
+      clearTimeout(power.timer);
+      power.ws = null;
+      power.retry = setTimeout(function () { if (power.on) { power.on = false; powerStart(); } }, 20000);
+    }
+    try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { power.on = false; return; }
+    power.ws = ws;
+    ws.onopen = function () {
+      var payload = {forcePairing: false, pairingType: 'PROMPT',
+        manifest: {manifestVersion: 1, appVersion: '1.0', permissions: ['READ_POWER_STATE', 'CONTROL_POWER', 'CONTROL_TV_SCREEN', 'CONTROL_DISPLAY']}};
+      if (key) payload['client-key'] = key;
+      ws.send(JSON.stringify({type: 'register', id: 'register', payload: payload}));
+    };
+    ws.onmessage = function (event) {
+      var m = null;
+      try { m = JSON.parse(event.data); } catch (e) {}
+      if (!m) return;
+      if (m.type === 'registered') {
+        try { localStorage.setItem(POWER_KEY, m.payload['client-key']); } catch (e) {}
+        ask();
+      } else if (m.id === 'register' && m.type === 'error') {
+        try { localStorage.setItem(POWER_REFUSED, '1'); } catch (e) {}
+        powerStop();
+      } else if (m.id === 'state' && m.payload && m.payload.state && m.payload.state !== 'Active') {
+        send('wake', 'com.webos.service.tvpower/power/turnOnScreen');   // LG's screensaver took over: send it away
+      }
+    };
+    ws.onerror = ws.onclose = again;
+  }
+
   // LG inputs: the antenna and the four HDMI ports, with the apps LG opens for them.
   var INPUTS = [
     {id: 'com.webos.app.livetv', key: 'live', label: null, symbol: 'live_tv'},
@@ -295,6 +353,9 @@ var TV = (function () {
 
   return {
     name: webos ? 'webos' : samsung ? 'tizen' : 'browser',
+
+    /** While FreeTV's screensaver is on (true), LG's own is kept away; false when it ends. */
+    holdScreen: function (on) { if (on) powerStart(); else powerStop(); },
 
     /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]; on LG, Live TV is one more. */
     apps: function (done) {
