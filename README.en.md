@@ -38,7 +38,7 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   Press OK on an app for its page and, if it **needs no root**, an **Install on this TV** button: the TV downloads the package,
   checks its SHA-256 hash and installs it, no computer (if you turn that on while installing FreeTV). Anything that needs root
   is **not installed**. See [Community apps](#community-apps-ad-free-youtube-kodi-jellyfin).
-- **Its own screensaver.** After five idle minutes, full-screen photos with the clock: landscapes of Seville, Andalusia, Spain
+- **Its own screensaver.** After two idle minutes, full-screen photos with the clock: landscapes of Seville, Andalusia, Spain
   and Lithuania (Wikimedia Commons, free licences only, author and licence on screen), the picks' photos, or both. Chosen in
   *Home Settings → Screensaver*. No root needed.
 - **A real Home button.** Press **Home** in any app and you come back to FreeTV, not LG's home. Leaving an app with

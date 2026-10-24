@@ -38,7 +38,7 @@ de LG, y **todo se puede deshacer**.
   OK en una app ves su ficha y, si **no pide root**, el botón **Instalar en esta tele**: la tele descarga el paquete, comprueba su
   hash SHA-256 y lo instala, sin ordenador (si lo activas al instalar FreeTV). Lo que pide root **no se instala**. Ver
   [Apps de la comunidad](#apps-de-la-comunidad-youtube-sin-anuncios-kodi-jellyfin).
-- **Salvapantallas propio.** Tras cinco minutos sin tocar el mando, fotos a pantalla completa con el reloj: paisajes de Sevilla,
+- **Salvapantallas propio.** Tras dos minutos sin tocar el mando, fotos a pantalla completa con el reloj: paisajes de Sevilla,
   Andalucía, España y Lituania (Wikimedia Commons, solo licencias libres, con autor y licencia en pantalla), las fotos de las
   sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root.
 - **El botón Home de verdad.** Pulsas **Home** en cualquier app y vuelves a FreeTV, no al inicio de LG. Al salir de una

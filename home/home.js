@@ -1471,7 +1471,7 @@
     setClass(body, 'night', Data.isNight(Date.now()));
   }
 
-  var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 5 * 60000;
+  var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 2 * 60000;
 
   function showSaver() {
     var mode = Data.saver(), photos = mode === 'places' ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
@@ -1722,9 +1722,11 @@
     renderClock();
     checkNight();
     Data.refresh();
-    if (!saverOn && !sheetOpen() && Date.now() - idleAt > SAVER_AFTER) showSaver();
     if (saverOn) tickSaverClock($('saver').querySelector('.clock'));
   }, 30000);
+  setInterval(function () {   // looked at often, so it starts at 2 minutes and not up to 30 seconds late
+    if (!saverOn && !sheetOpen() && Date.now() - idleAt > SAVER_AFTER) showSaver();
+  }, 5000);
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
