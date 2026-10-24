@@ -55,6 +55,8 @@ var Prefs = (function () {
     pickCount: function () { return pick('pickCount', 12); },
     /** The Custom tab: the keys of its shortcuts in the order the person chose, and the ones they took away. */
     chanOrder: function () { var r = pick('chanOrder', []); return r instanceof Array ? r : []; },
+    /** Channels added from the TV itself (searched on YouTube by the store service): [{key, title, kind, id, thumb, latest, added}]. */
+    chanExtra: function () { var r = pick('chanExtra', []); return r instanceof Array ? r : []; },
     chanHidden: function () { var r = pick('chanHidden', []); return r instanceof Array ? r : []; },
     /** What was opened from FreeTV lately, newest first: [{id: 'app:<id>' or 'chan:<key>', title, at}] ("Continue watching"). */
     recent: function () { var r = pick('recent', []); return r instanceof Array ? r : []; },

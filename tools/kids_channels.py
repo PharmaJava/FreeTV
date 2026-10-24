@@ -124,13 +124,19 @@ def page_channel_id(html):
 
 
 def latest_video(channel_id):
-    """The channel's newest video id (its public RSS feed), or '' when it cannot be read."""
+    """The channel's newest video that plays now (its public RSS feed), or ''. A live stream (marked 🔴) or a premiere that has not
+    started (0 views) does not open in YouTube's TV screen, so those are skipped."""
     try:
         feed = get('%s/feeds/videos.xml?channel_id=%s' % (BASE, channel_id))
     except Exception:
         return ''
-    m = re.search(r'<yt:videoId>([A-Za-z0-9_-]{11})</yt:videoId>', feed)
-    return m.group(1) if m else ''
+    for entry in re.findall(r'<entry>(.*?)</entry>', feed, re.S):
+        vid = re.search(r'<yt:videoId>([A-Za-z0-9_-]{11})</yt:videoId>', entry)
+        views = re.search(r'<media:statistics views="(\d+)"', entry)
+        title = re.search(r'<title>(.*?)</title>', entry, re.S)
+        if vid and views and int(views.group(1)) > 0 and '🔴' not in (title.group(1) if title else ''):
+            return vid.group(1)
+    return ''
 
 
 def check(entry):

@@ -326,6 +326,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #community .dtext, #dialog .dtext { margin: 0 0 12px; font-size: 25px; line-height: 34px; color: rgba(245, 245, 247, 0.82); white-space: normal; word-wrap: break-word; }
 #community .dtext b, #dialog .dtext b { color: #FFF; font-weight: 600; }
 #community .dtext.warn, #dialog .dtext.warn { color: #FFD9A0; }
+#dialog .chaninput { display: block; width: 100%; box-sizing: border-box; margin: 6px 0 20px; padding: 14px 20px; font-size: 30px; font-family: inherit;
+  color: #FFF; background: rgba(255, 255, 255, 0.10); border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 16px; outline: none; }
+#dialog .chaninput:focus { border-color: #FFF; background: rgba(255, 255, 255, 0.16); }
 #community .dtext.code, #dialog .dtext.code { font-family: monospace; font-size: 21px; line-height: 30px; color: #BFD8FF; }
 #community .tag { color: rgba(245, 245, 247, 0.6); }
 #community .tag.root { color: #FFB4A8; }

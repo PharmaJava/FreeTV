@@ -272,8 +272,11 @@
 
   /** The Custom tab: one cover per YouTube shortcut (kids_channels.py puts the pictures there), then "+". */
   /** The shortcuts in the person's order, without the ones they took away; new ones from the configuration go at the end. */
+  /** The shortcuts from the configuration (kids_channels.py) and the ones added on the TV. */
+  function allChannels() { return ((window.CONFIG && CONFIG.channels) || []).concat(Prefs.chanExtra()); }
+
   function channelList() {
-    var all = (window.CONFIG && CONFIG.channels) || [], hidden = Prefs.chanHidden(), order = Prefs.chanOrder(), out = [], i, j;
+    var all = allChannels(), hidden = Prefs.chanHidden(), order = Prefs.chanOrder(), out = [], i, j;
     for (i = 0; i < order.length; i++) {
       for (j = 0; j < all.length; j++) if (all[j].key === order[i] && out.indexOf(all[j]) < 0 && hidden.indexOf(all[j].key) < 0) out.push(all[j]);
     }
@@ -307,7 +310,7 @@
     for (var i = 0; i < list.length && out.length < 12; i++) {
       var r = list[i], meta = agoText(r.at || 0), j;
       if (r.id.indexOf('chan:') === 0) {
-        var chans = (window.CONFIG && CONFIG.channels) || [];
+        var chans = allChannels();
         for (j = 0; j < chans.length; j++) if ('chan:' + chans[j].key === r.id) out.push(channelCard(chans[j], 'YouTube · ' + meta));
       } else {
         var app = findApp(r.id.slice(4));
@@ -758,7 +761,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' ? 70000 : method === 'remove' ? 130000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -1222,9 +1225,11 @@
       return;
     }
     remember('chan:' + c.key, c.title);
+    refreshLatest(c);
     // contentTarget: YouTube AdFree adds these parameters to its TV screen (youtube.com/tv). A full youtube.com address would open the
-    // desktop website instead. A channel opens its newest video with the channel's uploads as the playlist; with no video known, just the app.
-    var target = c.kind === 'video' ? 'v=' + c.id : c.latest ? 'v=' + c.latest + '&list=UU' + c.id.slice(2) : '';
+    // desktop website instead. A channel opens its newest video that plays now (with the uploads playlist after it, it did not load); with no
+    // video known, just the app.
+    var target = c.kind === 'video' ? 'v=' + c.id : c.latest ? 'v=' + c.latest : '';
     TV.launch(YOUTUBE, target ? {contentTarget: target} : {}, function (ok) {
       if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + c.title);
     });
@@ -1254,34 +1259,122 @@
   }
 
   function removeChannel(c) {
-    var hidden = Prefs.chanHidden().slice();
-    if (hidden.indexOf(c.key) < 0) hidden.push(c.key);
-    Prefs.set('chanHidden', hidden);
+    if (c.added) Prefs.set('chanExtra', Prefs.chanExtra().filter(function (x) { return x.key !== c.key; }));   // added on the TV: gone
+    else {
+      var hidden = Prefs.chanHidden().slice();   // from the configuration: hidden, and "+" can bring it back
+      if (hidden.indexOf(c.key) < 0) hidden.push(c.key);
+      Prefs.set('chanHidden', hidden);
+    }
     st.card = Math.max(0, Math.min(st.card, channelList().length));
     renderCards();
     updateFocus();
     toast(c.title + ': ' + tr('removido', 'removed', 'quitado'));
   }
 
+  var chanQuery = '';
+
+  /** "+": the name (or @name) typed with the TV's own keyboard, looked up on YouTube by the store service, and one result picked. */
   function openAddChannel() {
-    showDialog(tr('Adicionar um canal', 'Add a channel', 'Añadir un canal'), [
-      {text: tr('A TV não tem teclado: adicione no computador. Em config.properties, escreva (nomes em inglês):',
-          'The TV has no keyboard: add it on the computer. In config.properties, write (names in English):',
-          'La tele no tiene teclado: se añade desde el ordenador. En config.properties escribe (nombres en inglés):')},
-      {cls: 'code', text: 'kids_channels=Cocomelon|@Cocomelon;Name|@handle'},
-      {text: tr('O @nome é o que aparece em youtube.com/@nome. Depois execute: bash install.sh <IP da TV>. A capa é baixada sozinha.',
-          'The @name is what shows in youtube.com/@name. Then run: bash install.sh <TV IP>. The cover picture is downloaded for you.',
-          'El @nombre es el que sale en youtube.com/@nombre. Luego ejecuta: bash install.sh <IP de la tele>. La portada se descarga sola.')},
-      {text: tr('Segure OK sobre um atalho para movê-lo ou tirá-lo daqui.', 'Hold OK on a shortcut to move it or take it away.',
-          'Mantén OK sobre un acceso para moverlo o quitarlo.')}
-    ], Prefs.chanHidden().length ? [{label: 'OK'}, {label: tr('Trazer de volta os removidos', 'Bring back the removed ones', 'Recuperar los quitados'), run: function () {
+    var buttons = [{label: tr('Procurar', 'Search', 'Buscar'), run: function () { searchChannels(chanQuery); }}];
+    if (Prefs.chanHidden().length) buttons.push({label: tr('Trazer de volta os removidos', 'Bring back the removed ones', 'Recuperar los quitados'), run: function () {
       Prefs.set('chanHidden', []);
       renderCards();
       updateFocus();
-    }}] : [{label: 'OK'}], 0);
+    }});
+    buttons.push({label: cancelText()});
+    showDialog(tr('Adicionar um canal', 'Add a channel', 'Añadir un canal'), [
+      {text: tr('Escreva o nome do canal (ou o seu @nome) com o teclado da TV e aperte Enter.',
+          'Type the channel name (or its @name) with the TV keyboard and press Enter.',
+          'Escribe el nombre del canal (o su @nombre) con el teclado de la tele y pulsa Intro.')},
+      {text: tr('Segure OK sobre um atalho para movê-lo ou tirá-lo daqui.', 'Hold OK on a shortcut to move it or take it away.',
+          'Mantén OK sobre un acceso para moverlo o quitarlo.')}
+    ], buttons, 0);
+    var box = $('dialog').firstChild, input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'chaninput';
+    input.value = chanQuery;
+    input.setAttribute('placeholder', tr('Ex.: Bluey', 'E.g. Bluey', 'Ej.: Bluey'));
+    input.oninput = function () { chanQuery = input.value; };
+    box.insertBefore(input, box.querySelector('.row'));
+    setTimeout(function () { try { input.focus(); } catch (e) {} }, 250);   // the TV opens its keyboard
   }
 
-  // MARK: - All Apps: OK opens a small menu (open, or uninstall with a question first)
+  function searchChannels(q) {
+    q = String(q || '').replace(/^\s+|\s+$/g, '');
+    if (!q) { openAddChannel(); return; }
+    if (TV.name !== 'webos') { toast(tr('Só na TV LG', 'Only on the LG TV', 'Solo en la tele LG')); return; }
+    var title = tr('Adicionar um canal', 'Add a channel', 'Añadir un canal');
+    var token = showDialog(title, [{text: tr('Procurando «' + q + '» no YouTube…', 'Looking for «' + q + '» on YouTube…', 'Buscando «' + q + '» en YouTube…')}], [], 0);
+    svcCall('channels', {query: q}, function (r) {
+      if (dlg.token !== token || st.zone !== Z.DLG) return;   // closed meanwhile
+      if (!r || !r.returnValue || !r.channels || !r.channels.length) {
+        showDialog(title, [{cls: 'warn', text: (r && r.error) || tr('A TV não respondeu.', 'The TV did not answer.', 'La tele no respondió.')}],
+          [{label: tr('Procurar outro', 'Search again', 'Buscar otro'), run: openAddChannel}, {label: cancelText()}], 0);
+        return;
+      }
+      var buttons = r.channels.map(function (c) {
+        return {label: c.title + (c.subs ? '  ·  ' + c.subs : ''), run: function () { addChannel(c); }};
+      });
+      buttons.push({label: tr('Procurar outro', 'Search again', 'Buscar otro'), run: openAddChannel});
+      buttons.push({label: cancelText()});
+      showDialog(tr('Escolha o canal', 'Pick the channel', 'Elige el canal'), [], buttons, 0);
+    });
+  }
+
+  function addChannel(c) {
+    var all = allChannels(), i;
+    for (i = 0; i < all.length; i++) {
+      if (all[i].id === c.id) {   // already there (maybe taken away): show it again
+        Prefs.set('chanHidden', Prefs.chanHidden().filter(function (k) { return k !== all[i].key; }));
+        renderCards();
+        updateFocus();
+        toast(all[i].title + ': ' + tr('já está', 'already there', 'ya está'));
+        return;
+      }
+    }
+    var extra = Prefs.chanExtra().slice();
+    extra.push({key: 'yt-' + c.id.slice(2).toLowerCase(), title: String(c.title || '').slice(0, 40), kind: 'channel', id: c.id,
+                thumb: /^https:\/\//.test(c.thumb || '') ? c.thumb : '', latest: c.latest || '', added: true});
+    Prefs.set('chanExtra', extra);
+    renderCards();
+    updateFocus();
+    toast(c.title + ': ' + tr('adicionado', 'added', 'añadido'));
+  }
+
+  /** A channel added on the TV keeps its newest video up to date for the next time it is opened. */
+  function refreshLatest(c) {
+    if (!c.added) return;
+    svcCall('channels', {query: c.id}, function (r) {
+      var v = r && r.returnValue && r.channels && r.channels[0] && r.channels[0].latest;
+      if (!v || v === c.latest) return;
+      Prefs.set('chanExtra', Prefs.chanExtra().map(function (x) { if (x.key === c.key) x.latest = v; return x; }));
+    });
+  }
+
+  /** Hold OK on something in Continue watching: open it, or take it off the list. */
+  function openRecentMenu(p) {
+    showDialog(p.title, [], [
+      {label: tr('Abrir', 'Open', 'Abrir'), run: function () { openLocal(p); }},
+      {label: tr('Tirar de Continuar assistindo', 'Remove from Continue watching', 'Quitar de Continuar viendo'), run: function () {
+        Prefs.set('recent', Prefs.recent().filter(function (x) { return x.id !== p.id; }));
+        st.card = Math.max(0, st.card - 1);
+        renderCards();
+        updateFocus();
+      }},
+      {label: cancelText()}
+    ], 0);
+  }
+
+  /** What holding OK opens where the focus is (null: OK only acts when it is pressed). */
+  function holdMenu() {
+    var p = st.zone === Z.CARDS ? cards[st.card] : null;
+    if (p && st.tab === 0 && p.local === 'channel') return function () { openChannelMenu(p.chan); };
+    if (p && st.tab === 1 && (p.local === 'channel' || p.local === 'app')) return function () { openRecentMenu(p); };
+    if (st.zone === Z.APPS && others[st.grid] && TV.name === 'webos') { var app = others[st.grid]; return function () { openAppMenu(app); }; }
+    return null;
+  }
+
+  // MARK: - All Apps: holding OK opens a small menu (open, or uninstall with a question first)
 
   var PROTECTED = /^(com\.gathin\.|com\.local\.nativehome$|freetv\.store$)/;
 
@@ -1361,8 +1454,7 @@
         return;
       case Z.APPS:
         if (others[st.grid]) {
-          if (TV.name === 'webos') openAppMenu(others[st.grid]);   // OK: open it, or uninstall it
-          else launcher(others[st.grid].id, others[st.grid].title)();
+          launcher(others[st.grid].id, others[st.grid].title)();   // holding OK opens the menu (open, uninstall)
         }
         return;
       case Z.DLG:
@@ -1622,9 +1714,6 @@
 
   // MARK: - Moving apps on the shelf: hold OK on one, ◀ ▶ moves it, OK drops it
 
-  /** Focus is on a shortcut of the Custom tab (not on the "+"). */
-  function onShortcut() { return st.zone === Z.CARDS && st.tab === 0 && !!cards[st.card] && cards[st.card].local === 'channel'; }
-
   var grabbed = -1, okDown = false, okHeld = false, okTimer = 0, OK_HOLD = 600;
 
   function grab(i) {
@@ -1663,8 +1752,15 @@
     // 1537: what the TV sends when its screen comes back from LG's screensaver (and FreeTV sends that one away): not a person.
     if (k === 1537) return;
     if (poke()) { e.preventDefault(); return; }   // the first press only wakes the screen
-    if (k === TV.keys.ok && (st.zone === Z.SHELF || onShortcut())) {
-      // On the shelf (and on a Custom shortcut) OK acts when it is released, so that holding it can pick the app up, or open the menu.
+    var field = document.activeElement && document.activeElement.tagName === 'INPUT' ? document.activeElement : null;
+    if (field) {
+      // Typing with the TV's keyboard: the letters go to the field; Enter searches; Back or the arrows leave the field.
+      if (k === 13) { e.preventDefault(); chanQuery = field.value; field.blur(); searchChannels(chanQuery); }
+      else if (k === TV.keys.back || k === 27 || k === TV.keys.up || k === TV.keys.down) { e.preventDefault(); field.blur(); }
+      return;
+    }
+    if (k === TV.keys.ok && (st.zone === Z.SHELF || holdMenu())) {
+      // Here OK acts when it is released, so that holding it can pick the app up (shelf) or open the menu (Custom, Continue watching, All Apps).
       e.preventDefault();
       if (!okDown) {
         okDown = true;
@@ -1672,7 +1768,7 @@
         if (grabbed >= 0) { okHeld = true; drop(); return; }
         clearTimeout(okTimer);
         if (st.zone === Z.SHELF) okTimer = setTimeout(function () { okHeld = true; grab(st.shelf); }, OK_HOLD);
-        else okTimer = setTimeout(function () { okHeld = true; if (onShortcut()) openChannelMenu(cards[st.card].chan); }, OK_HOLD);
+        else okTimer = setTimeout(function () { var open = holdMenu(); okHeld = true; if (open) open(); }, OK_HOLD);
       }
       return;
     }
@@ -1691,7 +1787,7 @@
     var pressed = okDown, held = okHeld;
     okDown = false;
     okHeld = false;
-    if (pressed && !held && (st.zone === Z.SHELF || onShortcut()) && grabbed < 0) activate();
+    if (pressed && !held && (st.zone === Z.SHELF || holdMenu()) && grabbed < 0) activate();
   });
   // Chrome sends a mousemove again, at the same place, whenever the page under a parked pointer changes (every refresh of the cards):
   // that is not a person, and it kept the screensaver from ever starting. Only a pointer that moved wakes the screen.

@@ -6,6 +6,7 @@
  */
 var fs = require('fs'), path = require('path'), Service = require('webos-service');
 var Store = require('./store').Store;
+var youtube = require('./youtube');
 
 var service = new Service('com.gathin.tvhome.store');
 var dir = path.join(__dirname, 'state'), keyFile = path.join(dir, 'key.pem');
@@ -53,6 +54,13 @@ service.register('remove', function (message) {
   if (!s) { message.respond({returnValue: false, code: 'no-key', error: 'FreeTV todavía no tiene permiso para borrar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
   s.remove(String(p.id || '')).then(function (r) {
     message.respond(r.ok ? {returnValue: true} : {returnValue: false, code: r.code || 'failed', error: r.error});
+  });
+});
+
+/** YouTube channels for FreeTV's Custom tab: a name, an @name or a youtube.com address (the screen cannot read YouTube itself). */
+service.register('channels', function (message) {
+  youtube.search((message.payload || {}).query, function (err, list) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, channels: list});
   });
 });
 
