@@ -34,7 +34,25 @@ service.register('status', function (message) {
 service.register('install', function (message) {
   var s = current(), p = message.payload || {};
   if (!s) { message.respond({returnValue: false, error: 'FreeTV todavía no tiene permiso para instalar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
-  var r = s.start(String(p.id || ''), String(p.flag || ''));
+  var r = s.start(String(p.id || ''), String(p.flag || ''), p.update === true);
+  message.respond(r.ok ? {returnValue: true} : {returnValue: false, error: r.error});
+});
+
+/** Which installed apps have a newer version in the catalogue: {updates: [{id, title, from, to, flag}], installed: {id: version}}. */
+service.register('updates', function (message) {
+  var s = current();
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  s.connect().then(function (conn) {
+    return s.updates(conn).then(function (r) { try { conn.end(); } catch (e) {} message.respond({returnValue: true, updates: r.list, installed: r.installed}); },
+      function (e) { try { conn.end(); } catch (x) {} message.respond({returnValue: false, error: String(e && e.message || e)}); });
+  }, function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+});
+
+/** Updates every installed app that has a newer version (not the ones that need a confirmation). Progress: `job`, field batch. */
+service.register('updateAll', function (message) {
+  var s = current();
+  if (!s) { message.respond({returnValue: false, error: 'FreeTV todavía no tiene permiso para instalar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
+  var r = s.startUpdateAll();
   message.respond(r.ok ? {returnValue: true} : {returnValue: false, error: r.error});
 });
 

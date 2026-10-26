@@ -666,6 +666,18 @@
     rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
       step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
     rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});   // Samsung: TizenBrew's modules
+    if (TV.name === 'webos') rows.push({label: tr('Atualizar apps sozinha', 'Update apps by itself', 'Actualizar apps solas'), toggle: Prefs.autoUpdate(), step: function () {
+      var on = !Prefs.autoUpdate();
+      Prefs.set('autoUpdate', on);
+      if (on) {
+        Prefs.set('updCheckedAt', 0);
+        svcCheck();
+        setTimeout(function () {
+          if (store.svc === 'ok') { toast(tr('Uma vez por dia, a TV atualiza as apps que você já instalou.', 'Once a day the TV updates the apps you already installed.', 'Una vez al día la tele actualiza las apps que ya instalaste.')); autoUpdate(); }
+          else toast(tr('Precisa da permissão da loja: bash install.sh no computador.', 'It needs the store permission: bash install.sh on the computer.', 'Necesita el permiso de la tienda: bash install.sh en el ordenador.'));
+        }, 4000);
+      }
+    }});
     if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
     rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -717,7 +729,8 @@
   var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']}];
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
-  var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0}, storeTimer = 0;
+  var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0,
+    updList: [], updates: {}, installed: {}, flowAll: 'idle', batch: null, cur: ''}, storeTimer = 0;
 
   function commTitle() { return tr('Apps da comunidade', 'Community apps', 'Apps de la comunidad'); }
 
@@ -802,7 +815,7 @@
     store.svc = 'checking';
     svcCall('status', {}, function (r) {
       store.svc = r && r.returnValue && r.provisioned ? (r.ready ? 'ok' : 'off') : 'none';
-      if (store.svc === 'ok') svcApps();
+      if (store.svc === 'ok') { svcApps(); svcUpdates(); }
       if (communityShown()) renderCommunity();
     });
   }
@@ -817,6 +830,30 @@
     });
   }
 
+  /** Which installed apps have a newer version in the catalogue (asked of the store service); the Store marks them. */
+  function svcUpdates(done) {
+    svcCall('updates', {}, function (r) {
+      if (r && r.returnValue && r.updates) {
+        store.updList = r.updates;
+        store.installed = r.installed || {};
+        store.updates = {};
+        r.updates.forEach(function (u) { store.updates[u.id] = u; });
+        applyUpdateRow();
+        if (communityShown()) renderCommunity();
+      }
+      if (done) done(!!(r && r.returnValue));
+    });
+  }
+
+  /** "Update all (N)" is the first row of the Store's list while there is something to update (the ones that need a confirmation, one by one). */
+  function applyUpdateRow() {
+    var n = store.updList.filter(function (u) { return !u.flag; }).length, had = commList.length && commList[0].special;
+    if (had) commList.shift();
+    if (n > 0) commList.unshift({id: '*updates', special: true, manifest: {},
+      title: tr('Atualizar tudo (' + n + ')', 'Update all (' + n + ')', 'Actualizar todo (' + n + ')')});
+    if ((had ? 1 : 0) !== (n > 0 ? 1 : 0)) st.comm = 0;
+  }
+
   /** Is the computer there? (Its answer redraws the screen.) */
   function storeCheck() {
     if (!storeBase()) { store.conn = 'none'; return; }
@@ -828,7 +865,8 @@
   }
 
   function storeInstall(app) {
-    var flag = COMM_FLAG[app.id] || '';
+    var upd = store.svc === 'ok' && !!store.updates[app.id], flag = COMM_FLAG[app.id] || '';
+    if (upd && flag === 'official-removed') flag = '';
     store.id = app.id;
     store.flow = 'working';
     store.phase = 'starting';
@@ -837,7 +875,7 @@
     store.via = store.svc === 'ok' ? 'tv' : 'pc';
     renderCommunity();
     if (store.via === 'tv') {
-      svcCall('install', {id: app.id, flag: flag}, function (r) {
+      svcCall('install', {id: app.id, flag: flag, update: upd}, function (r) {
         if (!r || !r.returnValue) {
           store.flow = 'failed';
           store.message = r && r.error ? r.error : tr('A TV não respondeu.', 'The TV did not answer.', 'La tele no respondió.');
@@ -869,7 +907,8 @@
       store.note = r.note || '';
       if (r.phase === 'done') {
         store.flow = 'done';
-        toast(app.title + ': ' + tr('instalada', 'installed', 'instalada'));
+        toast(app.title + ': ' + tr(store.updates[app.id] ? 'atualizada' : 'instalada', store.updates[app.id] ? 'updated' : 'installed', store.updates[app.id] ? 'actualizada' : 'instalada'));
+        svcUpdates();
         loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); });
       } else if (r.phase === 'failed') {
         store.flow = 'failed';
@@ -944,6 +983,7 @@
   }
 
   function commOrder(a, b) {
+    if (a.special || b.special) return a.special ? -1 : 1;
     var ra = a.manifest.rootRequired ? 1 : 0, rb = b.manifest.rootRequired ? 1 : 0;
     if (ra !== rb) return ra - rb;
     return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
@@ -968,10 +1008,104 @@
         : tr('Preparando…', 'Getting ready…', 'Preparando…');
   }
 
+  /** "Update all": what would be updated, the button, then the progress (one app after the other, in the store service). */
+  function renderUpdateAll(box) {
+    var list = store.updList;
+    line(box, '', '').appendChild(el('b', '', null, tr('Atualizar tudo', 'Update all', 'Actualizar todo')));
+    if (store.flowAll === 'working') {
+      var b = store.batch || {};
+      line(box, '', (store.cur ? store.cur + '  ' : '') + (b.total ? '(' + (b.n || 0) + '/' + b.total + ')' : '') + '  ' + phaseText(store.phase));
+      line(box, '', tr('Não desligue a TV. Voltar deixa a atualização continuar.', 'Do not turn the TV off. Back lets the update carry on.', 'No apagues la tele. Atrás deja que siga actualizando.'));
+    } else if (store.flowAll === 'done' || store.flowAll === 'failed') {
+      var d = store.batch || {};
+      if (store.flowAll === 'failed') line(box, 'warn', tr('Não foi possível atualizar: ', 'Could not update: ', 'No se pudo actualizar: ') + store.message);
+      else line(box, '', tr('Pronto: ' + (d.done || 0) + ' atualizadas', 'Done: ' + (d.done || 0) + ' updated', 'Listo: ' + (d.done || 0) + ' actualizadas') +
+          (d.failed ? tr(' · ' + d.failed + ' com erro', ' · ' + d.failed + ' failed', ' · ' + d.failed + ' con error') : ''));
+      action(box, tr('Ver mais apps', 'Browse more apps', 'Ver más apps'), function () { store.flowAll = 'idle'; commOpen = -1; commAct = 0; renderCommunity(); });
+    } else {
+      line(box, '', tr('Cada uma é baixada na TV, o hash SHA-256 é conferido e instalada por cima: as apps e seus ajustes são mantidos.',
+          'Each one is downloaded on the TV, its SHA-256 hash checked, and installed over the old one: the apps and their settings are kept.',
+          'Cada una se descarga en la tele, se comprueba su hash SHA-256 y se instala encima: las apps y sus ajustes se conservan.'));
+      list.forEach(function (u) {
+        line(box, u.flag ? 'warn' : '', u.title + '  v' + u.from + ' → v' + u.to + (u.flag ? tr('  (uma a uma, pede confirmação)', '  (one by one, it asks first)', '  (una a una, pide confirmación)') : ''));
+      });
+      if (store.flow === 'working') line(box, '', tr('Há outra instalação em andamento.', 'Another install is in progress.', 'Hay otra instalación en marcha.'));
+      else action(box, tr('Atualizar tudo', 'Update all', 'Actualizar todo'), storeUpdateAll);
+    }
+    if (commAct >= commActs.length) commAct = 0;
+    el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));
+    updateFocus();
+  }
+
+  function storeUpdateAll() {
+    store.flowAll = 'working';
+    store.batch = null;
+    store.cur = '';
+    store.phase = 'starting';
+    store.misses = 0;
+    store.via = 'tv';
+    renderCommunity();
+    svcCall('updateAll', {}, function (r) {
+      if (!r || !r.returnValue) {
+        store.flowAll = 'failed';
+        store.message = r && r.error ? r.error : tr('A TV não respondeu.', 'The TV did not answer.', 'La tele no respondió.');
+        if (communityShown()) renderCommunity();
+        return;
+      }
+      svcPollAll(function (batch) {
+        store.flowAll = batch ? 'done' : 'failed';
+        if (!batch) store.message = tr('A TV parou de responder.', 'The TV stopped answering.', 'La tele dejó de responder.');
+        toast(tr('Atualizadas: ', 'Updated: ', 'Actualizadas: ') + (batch ? batch.done : 0));
+        svcApps(function () { loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); }); });
+        svcUpdates();
+        if (communityShown()) renderCommunity();
+      });
+    });
+  }
+
+  /** Follows the store service's batch until it ends: done(batch), or done(null) when the TV stops answering. */
+  function svcPollAll(done) {
+    clearTimeout(storeTimer);
+    svcCall('job', {}, function (r) {
+      var j = r && r.job, b = j && j.batch;
+      if (!b) {
+        if (++store.misses > 10) { done(null); return; }
+        storeTimer = setTimeout(function () { svcPollAll(done); }, 2000);
+        return;
+      }
+      store.misses = 0;
+      store.batch = b;
+      store.cur = j.title || '';
+      store.phase = j.phase;
+      if (communityShown() && store.flowAll === 'working') renderCommunity();
+      if (b.finished) { done(b); return; }
+      storeTimer = setTimeout(function () { svcPollAll(done); }, 1500);
+    });
+  }
+
+  /** The automatic update (Home Settings, off until the person turns it on): once a day, in the background, only what is installed. */
+  function autoUpdate() {
+    if (TV.name !== 'webos' || !Prefs.autoUpdate() || Date.now() - Prefs.updCheckedAt() < 24 * 3600 * 1000) return;
+    Prefs.set('updCheckedAt', Date.now());
+    svcCall('updateAll', {}, function (r) {
+      if (!r || !r.returnValue) return;
+      svcPollAll(function (batch) {
+        if (!batch) return;
+        if (batch.done) {
+          toast(tr('Apps atualizadas: ', 'Apps updated: ', 'Apps actualizadas: ') + batch.done);
+          svcApps(function () { loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); }); });
+        }
+        svcUpdates();
+      });
+    });
+  }
+
   function renderDetail(box) {
     var a = commList[commOpen], m = a.manifest, req = a.requirements || {}, mine = store.id === a.id ? store.flow : 'idle';
-    var warn = COMM_CAUTION[a.id], cmd = 'python3 tools/community.py serve <IP>';
     commActs = [];
+    if (a.special) { renderUpdateAll(box); return; }
+    var upd = store.svc === 'ok' ? store.updates[a.id] : null;
+    var warn = upd && COMM_FLAG[a.id] === 'official-removed' ? null : COMM_CAUTION[a.id], cmd = 'python3 tools/community.py serve <IP>';
     line(box, '', '').appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
     if (mine === 'asking') {
       if (store.svc === 'ok') line(box, '', tr('A própria TV baixa o pacote, confere o hash SHA-256 e instala. Não precisa do computador. Leva alguns minutos.',
@@ -981,7 +1115,7 @@
           'Your computer downloads the package, checks its SHA-256 hash and installs it on the TV. It takes a few minutes.',
           'Tu ordenador descarga el paquete, comprueba su hash SHA-256 y lo instala en la tele. Tarda unos minutos.'));
       if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
-      var go = warn ? (COMM_FLAG[a.id] === 'official-removed' ? tr('Já apaguei o oficial: instalar', 'I deleted the official: install', 'Ya borré el oficial: instalar')
+      var go = upd ? tr('Atualizar', 'Update', 'Actualizar') : warn ? (COMM_FLAG[a.id] === 'official-removed' ? tr('Já apaguei o oficial: instalar', 'I deleted the official: install', 'Ya borré el oficial: instalar')
           : tr('Entendi o aviso: instalar', 'I understand: install', 'Entendido: instalar')) : tr('Instalar', 'Install', 'Instalar');
       var stop = tr('Cancelar', 'Cancel', 'Cancelar');
       // With a warning, OK lands on Cancel first.
@@ -1004,6 +1138,10 @@
       });
     } else {
       line(box, '', a.shortDescription || m.appDescription || '');
+      if (upd) line(box, 'good', tr('Atualização disponível (v' + upd.from + ' → v' + upd.to + '). As apps e seus ajustes são mantidos.',
+          'Update available (v' + upd.from + ' → v' + upd.to + '). The app and its settings are kept.',
+          'Actualización disponible (v' + upd.from + ' → v' + upd.to + '). La app y sus ajustes se conservan.'));
+      else if (store.svc === 'ok' && store.installed[a.id]) line(box, 'good', tr('Instalada: v' + store.installed[a.id] + ' · em dia.', 'Installed: v' + store.installed[a.id] + ' · up to date.', 'Instalada: v' + store.installed[a.id] + ' · al día.'));
       line(box, '', tr('Precisa de: ', 'Needs: ', 'Necesita: ') + (req.webosRelease ? 'webOS ' + req.webosRelease : tr('nada especial', 'nothing special', 'nada especial')) +
           (req.deviceSoC ? ' · chip ' + req.deviceSoC.join(', ') : ''));
       if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
@@ -1011,7 +1149,7 @@
       if (m.rootRequired) line(box, 'warn', tr('Precisa de root: o FreeTV não instala isto.', 'Needs root: FreeTV does not install this.', 'Necesita root: FreeTV no la instala.'));
       else if ((store.svc === 'ok' || store.conn === 'ok') && store.flow === 'working') line(box, '', tr('Há outra instalação em andamento.', 'Another install is in progress.', 'Hay otra instalación en marcha.'));
       else if (store.svc === 'ok' || store.conn === 'ok') {
-        action(box, tr('Instalar nesta TV', 'Install on this TV', 'Instalar en esta tele'), function () {
+        action(box, upd ? tr('Atualizar nesta TV', 'Update on this TV', 'Actualizar en esta tele') : tr('Instalar nesta TV', 'Install on this TV', 'Instalar en esta tele'), function () {
           store.flow = 'asking'; store.id = a.id; commAct = 0; renderCommunity();
         });
       } else if (store.svc === 'checking' || store.conn === 'checking') line(box, '', tr('Preparando a instalação…', 'Getting the install ready…', 'Preparando la instalación…'));
@@ -1054,7 +1192,11 @@
     for (var i = 0; i < commList.length; i++) {
       var p = commList[i], row = el('div', 'row', holder, p.title), v = el('span', 'value', row);
       var root = !!p.manifest.rootRequired;
-      el('span', 'tag' + (root ? ' root' : ''), v, root ? 'root' : tr('sem root', 'no root', 'sin root'));
+      if (p.special) el('span', 'tag upd', v, tr('novas versões', 'new versions', 'nuevas versiones'));
+      else {
+        if (store.updates[p.id]) el('span', 'tag upd', v, tr('atualização ', 'update ', 'actualización ') + store.updates[p.id].to + '  ');
+        el('span', 'tag' + (root ? ' root' : ''), v, root ? 'root' : tr('sem root', 'no root', 'sin root'));
+      }
       hover(row, Z.COMM, i);
     }
     el('div', 'hint', box, tr('OK mostra os detalhes', 'OK shows the details', 'OK muestra los detalles'));
@@ -1720,6 +1862,7 @@
     if (st.zone === Z.COMM) {
       if (commOpen >= 0) {
         if (store.flow !== 'working') store.flow = 'idle';   // a running install carries on in the background
+        if (store.flowAll !== 'working') store.flowAll = 'idle';
         commOpen = -1;
         renderCommunity();
         return;
@@ -2062,7 +2205,11 @@
     if (openedForStore) openCommunity();
   });
   // Wake the store service now, so the first visit to the Store does not wait for its cold start (about 30 s on the TV).
-  if (TV.name === 'webos') setTimeout(function () { svcCall('status', {}, function () {}); }, 20000);
+  if (TV.name === 'webos') {
+    setTimeout(function () { svcCall('status', {}, function () {}); }, 20000);
+    setTimeout(autoUpdate, 90000);
+    setInterval(autoUpdate, 3600 * 1000);   // it only acts when a day has passed since the last time
+  }
 
   setInterval(function () {
     renderClock();

@@ -53,6 +53,9 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** Update the installed community apps by itself, once a day (off until the person turns it on: that is their permission). */
+    autoUpdate: function () { return pick('autoUpdate', false) === true; },
+    updCheckedAt: function () { return pick('updCheckedAt', 0) || 0; },
     /** The Custom tab: the keys of its shortcuts in the order the person chose, and the ones they took away. */
     chanOrder: function () { var r = pick('chanOrder', []); return r instanceof Array ? r : []; },
     /** Channels added from the TV itself (searched on YouTube by the store service): [{key, title, kind, id, thumb, latest, added}]. */

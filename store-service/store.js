@@ -37,6 +37,24 @@ var CAUTION = {
   'com.rezkatv.app.legacy': 'unofficial'
 };
 
+/** 1.2.10 -> {n: [1, 2, 10], pre: false}; 2.0.6-beta -> {n: [2, 0, 6], pre: true}. null when it is not a version. */
+function parseVersion(v) {
+  var m = /^v?(\d+(?:\.\d+)*)(.*)$/i.exec(String(v || '').trim());
+  if (!m) return null;
+  return {n: m[1].split('.').map(Number), pre: /[A-Za-z]/.test(m[2])};
+}
+
+/** Is `catalogue` a newer version than `installed`? (anything that is not a version is never newer) */
+function isNewer(catalogue, installed) {
+  var a = parseVersion(catalogue), b = parseVersion(installed), i;
+  if (!a || !b) return false;
+  for (i = 0; i < Math.max(a.n.length, b.n.length); i++) {
+    var x = a.n[i] || 0, y = b.n[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return b.pre && !a.pre;   // 1.2.0 is newer than 1.2.0-beta
+}
+
 function Store(options) {
   this.host = options.host || '127.0.0.1';
   this.port = options.port || 9922;
@@ -110,6 +128,29 @@ Store.prototype.catalogue = async function (conn) {
   return apps;
 };
 
+/**
+ * The apps installed through Developer Mode that have a newer version in the catalogue (the same one the Store installs from, so the
+ * same rules apply: no root, https, SHA-256 published). [{id, title, from, to, flag}]: `flag` is the confirmation the app needs
+ * (CAUTION) when it is not the "official removed" one, which an installed app has already met; those are never updated in bulk.
+ * Also resolves `installed`: {id: version} for every Developer Mode app, for the Store's pages.
+ */
+Store.prototype.updates = async function (conn) {
+  var apps = await this.catalogue(conn), dev = await this.devApps(conn) || [], list = [], installed = {}, i, j;
+  for (i = 0; i < dev.length; i++) {
+    installed[dev[i].id] = dev[i].version;
+    for (j = 0; j < apps.length; j++) {
+      if (apps[j].id !== dev[i].id) continue;
+      var m = apps[j].manifest || {}, hash = ((m.ipkHash || {}).sha256 || '').toLowerCase();
+      if (m.rootRequired || !SHA_RE.test(hash) || typeof m.ipkUrl !== 'string' || !URL_RE.test(m.ipkUrl)) break;
+      if (!isNewer(m.version, dev[i].version)) break;
+      list.push({id: dev[i].id, title: apps[j].title || dev[i].title, from: dev[i].version, to: String(m.version),
+                 flag: CAUTION[dev[i].id] && CAUTION[dev[i].id] !== 'official-removed' ? CAUTION[dev[i].id] : ''});
+      break;
+    }
+  }
+  return {list: list, installed: installed};
+};
+
 Store.prototype.freeMb = async function (conn) {
   var r = await this.exec(conn, 'df -m /media/developer | tail -1');
   var f = r.out.trim().split(/\s+/);
@@ -122,19 +163,20 @@ Store.prototype.installedIds = async function (conn) {
   try { return JSON.parse(r.out.trim().split('\n')[0]).apps.map(function (a) { return a.id; }); } catch (e) { return null; }
 };
 
-/** The apps installed through Developer Mode: [{id, title, icon (a file:// address), color}], without FreeTV's own pieces. */
+/** The apps installed through Developer Mode: [{id, title, version, icon (a file:// address), color}], without FreeTV's own pieces. */
 Store.prototype.devApps = async function (conn) {
   var r = await this.exec(conn, "timeout -t 20 luna-send-pub -n 1 luna://com.webos.applicationManager/dev/listApps '{}'");
   var apps;
   try { apps = JSON.parse(r.out.trim().split('\n')[0]).apps; } catch (e) { return null; }
   return apps.filter(function (a) { return a.id && !/^com\.gathin\.tvhome/.test(a.id) && a.id !== 'com.local.nativehome'; }).map(function (a) {
     var icon = a.largeIcon || a.icon || '';
-    return {id: a.id, title: a.title || a.id, icon: icon && a.folderPath && !/\.\./.test(icon) ? 'file://' + a.folderPath + '/' + icon : '', color: a.iconColor || a.bgColor || ''};
+    return {id: a.id, title: a.title || a.id, version: String(a.version || ''), icon: icon && a.folderPath && !/\.\./.test(icon) ? 'file://' + a.folderPath + '/' + icon : '', color: a.iconColor || a.bgColor || ''};
   });
 };
 
 /** The whole install. Resolves when done or failed (the outcome is in this.job). */
-Store.prototype.run = async function (appId, flag) {
+Store.prototype.run = async function (appId, flag, opts) {
+  opts = opts || {};
   var self = this, conn = null, file = '';
   try {
     if (!ID_RE.test(appId)) throw fail('Identificador no válido.');
@@ -146,7 +188,15 @@ Store.prototype.run = async function (appId, flag) {
     var m = app.manifest || {}, hash = ((m.ipkHash || {}).sha256 || '').toLowerCase();
     this.set({title: app.title || appId});
     if (m.rootRequired) throw fail('Esta app necesita una tele con root: FreeTV no la instala.');
-    if (CAUTION[appId] && CAUTION[appId] !== flag) throw fail('Esta app necesita que confirmes su aviso en la tele.');
+    var need = CAUTION[appId];
+    if (opts.update) {
+      // An update goes over an app that Developer Mode installed: that is all it can be. (YouTube AdFree's "delete the official first"
+      // warning is about the first install; an installed one has already met it.)
+      var dev = await this.devApps(conn);
+      if (!dev || !dev.some(function (d) { return d.id === appId; })) throw fail('Esta app no está instalada desde el Modo Desarrollador: no hay nada que actualizar.');
+      if (need === 'official-removed') need = '';
+    }
+    if (need && need !== flag) throw fail('Esta app necesita que confirmes su aviso en la tele.');
     if (!SHA_RE.test(hash)) throw fail('El catálogo no publica el hash SHA-256 de este paquete: no lo instalo sin poder comprobarlo.');
     if (typeof m.ipkUrl !== 'string' || !URL_RE.test(m.ipkUrl)) throw fail('La dirección del paquete no es una dirección https válida.');
     var sizeMb = (m.ipkSize || 0) / 1048576, free = await this.freeMb(conn);
@@ -202,7 +252,7 @@ Store.prototype.run = async function (appId, flag) {
       try { if (file) await this.exec(conn, '/bin/rm -f ' + q(file)); } catch (e) {}
       try { conn.end(); } catch (e) {}
     }
-    this.busy = false;
+    if (!opts.inBatch) this.busy = false;
   }
 };
 
@@ -252,13 +302,52 @@ Store.prototype.remove = async function (appId) {
 };
 
 /** Starts an install; returns {ok:true} or {ok:false, error}. */
-Store.prototype.start = function (appId, flag) {
+Store.prototype.start = function (appId, flag, update) {
   if (!ID_RE.test(appId || '')) return {ok: false, error: 'Identificador no válido.'};
   if (this.busy) return {ok: false, error: 'Ya hay una instalación en marcha.'};
   this.busy = true;
-  this.set({phase: 'starting', id: appId, title: '', message: '', note: ''});
-  this.run(appId, flag || '');
+  this.set({phase: 'starting', id: appId, title: '', message: '', note: '', batch: null});
+  this.run(appId, flag || '', {update: !!update});
   return {ok: true};
+};
+
+/**
+ * Updates every app that has a newer version, one after the other, with the same checks as an install. The ones that need a
+ * confirmation (CAUTION other than the "official removed" one) are left for the person to update one by one. The progress is in
+ * job.batch: {total, n, done, failed, finished}.
+ */
+Store.prototype.startUpdateAll = function () {
+  if (this.busy) return {ok: false, error: 'Ya hay una instalación en marcha.'};
+  this.busy = true;
+  this.set({phase: 'starting', id: '*updates', title: '', message: '', note: '', batch: {total: 0, n: 0, done: 0, failed: 0, finished: false}});
+  this.runUpdateAll();
+  return {ok: true};
+};
+
+Store.prototype.runUpdateAll = async function () {
+  var batch = this.job.batch, list = [], conn = null, i;
+  try {
+    conn = await this.connect();
+    list = (await this.updates(conn)).list.filter(function (u) { return !u.flag; });
+  } catch (e) {
+    this.set({phase: 'failed', id: '*updates', message: 'No se pudo mirar las actualizaciones: ' + (e && e.message ? e.message : e)});
+    batch.finished = true;
+    this.busy = false;
+    return;
+  } finally {
+    if (conn) { try { conn.end(); } catch (e) {} }
+  }
+  batch.total = list.length;
+  for (i = 0; i < list.length; i++) {
+    batch.n = i + 1;
+    this.set({batch: batch});
+    await this.run(list[i].id, '', {update: true, inBatch: true});
+    if (this.job.phase === 'done') batch.done++; else batch.failed++;
+    this.set({batch: batch});
+  }
+  batch.finished = true;
+  this.set({phase: 'done', id: '*updates', title: '', message: '', batch: batch});
+  this.busy = false;
 };
 
 /** Can the SSH session be opened? (what the screen asks before it offers the Install button) */
@@ -275,4 +364,4 @@ Store.prototype.check = async function () {
   }
 };
 
-module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED};
+module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED, isNewer: isNewer};
