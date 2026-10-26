@@ -279,12 +279,30 @@ var TV = (function () {
     }
   }
 
-  function samsungLaunch(id, done) {
-    try {
-      window.tizen.application.launch(id, function () { if (done) done(true); }, function () { if (done) done(false); });
-    } catch (e) {
-      if (done) done(false);
+  // Samsung's YouTube: the Tizen app, and the id older TVs give it.
+  var SAMSUNG_YOUTUBE = /(\.TizenYouTube|^111299001912)$/;
+
+  function samsungLaunch(id, params, done) {
+    function plain() {
+      try {
+        window.tizen.application.launch(id, function () { if (done) done(true); }, function () { if (done) done(false); });
+      } catch (e) {
+        if (done) done(false);
+      }
     }
+    // A video in Samsung's YouTube ("v=VIDEOID", what the Custom tab passes as contentTarget): the "view" request with the
+    // video in its PAYLOAD, the way Samsung's YouTube takes a video from outside. If this TV doesn't take it, YouTube just opens.
+    // Not tried on a Samsung by us.
+    var target = params && params.contentTarget;
+    if (target && SAMSUNG_YOUTUBE.test(id)) {
+      try {
+        var data = new window.tizen.ApplicationControlData('PAYLOAD', [JSON.stringify({values: target})]);
+        var control = new window.tizen.ApplicationControl('http://tizen.org/appcontrol/operation/view', null, null, null, [data]);
+        window.tizen.application.launchAppControl(control, id, function () { if (done) done(true); }, plain);
+        return;
+      } catch (e) { /* this Tizen has no such request: plain launch */ }
+    }
+    plain();
   }
 
   /** The video sources the TV reports ([{type: 'TV' | 'HDMI' | ..., number}]), or null when it doesn't tell. */
@@ -354,6 +372,9 @@ var TV = (function () {
   return {
     name: webos ? 'webos' : samsung ? 'tizen' : 'browser',
 
+    /** The YouTube app the Custom tab opens its channels in: YouTube AdFree on LG (it takes LG's YouTube id), Samsung's own YouTube. */
+    youtube: samsung ? ['9Ur5IzDKqV.TizenYouTube', '111299001912'] : ['youtube.leanback.v4'],
+
     /** While FreeTV's screensaver is on (true), LG's own is kept away; false when it ends. */
     holdScreen: function (on) { if (on) powerStart(); else powerStop(); },
 
@@ -408,7 +429,7 @@ var TV = (function () {
     launch: function (id, params, done) {
       if (samsung) {
         if (id.indexOf('source:') === 0) samsungSource(id, done);
-        else samsungLaunch(id, done);
+        else samsungLaunch(id, params, done);
         return;
       }
       if (!webos) {

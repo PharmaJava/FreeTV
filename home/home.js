@@ -263,14 +263,18 @@
     return c === 0 ? 80 : 80 + HERO_W + CARD_GAP + (c - 1) * (SMALL_W + CARD_GAP);
   }
 
-  var YOUTUBE = 'youtube.leanback.v4';   // YouTube AdFree (the same id as LG's own YouTube, which it replaces)
+  /** The installed YouTube the channels open in (TV.youtube: YouTube AdFree on LG, Samsung's YouTube), or null. */
+  function youtubeApp() {
+    for (var i = 0; i < TV.youtube.length; i++) if (findApp(TV.youtube[i])) return TV.youtube[i];
+    return null;
+  }
 
   function findApp(id) {
     for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return apps[i];
     return null;
   }
 
-  /** The Custom tab: one cover per YouTube shortcut (kids_channels.py puts the pictures there), then "+". */
+  /** The Custom tab: one cover per YouTube shortcut (kids_channels.py puts the pictures there), then "+" (LG). */
   /** The shortcuts in the person's order, without the ones they took away; new ones from the configuration go at the end. */
   /** The shortcuts from the configuration (kids_channels.py) and the ones added on the TV. */
   function allChannels() { return ((window.CONFIG && CONFIG.channels) || []).concat(Prefs.chanExtra()); }
@@ -287,7 +291,8 @@
   function channelItems() {
     var list = channelList(), out = [];
     for (var i = 0; i < list.length; i++) out.push(channelCard(list[i], ''));
-    out.push({local: 'plus', id: 'plus', title: tr('Adicionar canal', 'Add a channel', 'Añadir canal'), meta: ''});
+    // "+" searches YouTube from the TV through FreeTV's service, which only LG has.
+    if (TV.name === 'webos') out.push({local: 'plus', id: 'plus', title: tr('Adicionar canal', 'Add a channel', 'Añadir canal'), meta: ''});
     return out;
   }
 
@@ -1220,8 +1225,10 @@
   }
 
   function openChannel(c) {
-    if (!findApp(YOUTUBE)) {
-      toast(tr('Instale o YouTube AdFree pela Loja antes', 'Install YouTube AdFree from the Store first', 'Instala YouTube AdFree desde la Tienda primero'));
+    var youtube = youtubeApp();
+    if (!youtube) {
+      toast(TV.name === 'tizen' ? tr('Instale o YouTube pela loja da Samsung antes', 'Install YouTube from the Samsung store first', 'Instala YouTube desde la tienda de Samsung primero')
+        : tr('Instale o YouTube AdFree pela Loja antes', 'Install YouTube AdFree from the Store first', 'Instala YouTube AdFree desde la Tienda primero'));
       return;
     }
     remember('chan:' + c.key, c.title);
@@ -1230,7 +1237,7 @@
     // desktop website instead. A channel opens its newest video that plays now (with the uploads playlist after it, it did not load); with no
     // video known, just the app.
     var target = c.kind === 'video' ? 'v=' + c.id : c.latest ? 'v=' + c.latest : '';
-    TV.launch(YOUTUBE, target ? {contentTarget: target} : {}, function (ok) {
+    TV.launch(youtube, target ? {contentTarget: target} : {}, function (ok) {
       if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + c.title);
     });
   }

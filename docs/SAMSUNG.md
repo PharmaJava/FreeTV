@@ -45,6 +45,13 @@ Para actualizar, vuelve a construir y a instalar **con el mismo certificado**: l
 - Los iconos de apps de Samsung son logos (no cuadrados con fondo): se ven dentro del cuadro, sobre el color de cada marca.
 - Sin **TV en directo** en el estante ni botón Home propio; sí tienes el cajón con las entradas HDMI y la TV.
 - Las cotizaciones del S&P 500 y el NASDAQ 100 pueden no cargarse si la tele bloquea esas direcciones; Bitcoin y compañía sí.
+- **Pestaña Personalizado:** los canales de YouTube se abren en el **YouTube de Samsung** (instálalo desde la tienda de Samsung si no
+  lo tienes), con el vídeo más reciente del canal. `tizen/build.py` consulta los canales antes de empaquetar, como `install.sh` en LG
+  (necesita internet; sin él, el canal abre YouTube sin ir al vídeo). Abrir el vídeo usa la petición «view» de Tizen con el vídeo en
+  `PAYLOAD`: **no lo hemos probado en una Samsung**; si tu tele no la acepta, se abre YouTube a secas.
+- Sin el **+** para añadir canales desde la tele (busca en YouTube con un servicio que solo existe en LG): añádelos en
+  `config.properties` (`kids_channels=`) y vuelve a construir.
+- Sin **Tienda de apps de la comunidad** (es un catálogo para LG) ni **Desinstalar** desde *Todas las apps*.
 
 ## Créditos
 

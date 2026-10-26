@@ -5,6 +5,7 @@
     python3 tizen/build.py --sign PROFILE  # signed with a certificate profile of Samsung's Tizen tools
     python3 tizen/build.py --preview       # also leaves the files in out/tizen/ to open index.html in a browser
     python3 tizen/build.py --config other.properties
+    python3 tizen/build.py --no-channels   # without checking the Custom tab's YouTube channels first (no internet)
 
 The same home screen as on LG (home/), without the LG-only pieces (Home button helper, Developer Mode renewal), with
 tizen/config.xml and tizen/icon.png and the logos Samsung's apps need, in a zip as Tizen Studio makes it.
@@ -22,6 +23,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import build_home  # noqa: E402
+import kids_channels  # noqa: E402
 
 OUT = os.path.join(ROOT, 'out', 'tizen')
 WGT = os.path.join(ROOT, 'FreeTV-tizen.wgt')
@@ -88,4 +90,11 @@ def build(preview, config, profile):
 if __name__ == '__main__':
     args = sys.argv[1:]
     profile = args[args.index('--sign') + 1] if '--sign' in args else None
+    if '--no-channels' not in args:
+        # As install.sh does on LG: each Custom tab channel's newest video and cover picture, so a channel opens its video in
+        # Samsung's YouTube (without it, YouTube opens on its own home). Needs the internet; without it the build goes on.
+        try:
+            kids_channels.main(['--config', build_home.config_path(args)])
+        except Exception as e:
+            print('(Could not check the Custom tab channels: %s. They are built without pictures.)' % e)
     build('--preview' in args, build_home.read_config(build_home.config_path(args)), profile)
