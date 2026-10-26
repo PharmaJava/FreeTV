@@ -64,10 +64,12 @@
   /** Shelf apps in this order when installed, like the Android app: key, LG app id, name on the TV, brand gradient. */
   var SHELF = [
     ['netflix', /^netflix$/, /netflix/i, ['#0A0A0A', '#000000']],
+    ['ytadfree', /^tizenbrew:npm\/@foxreis\/tizentube$/, /^youtube adfree$/i, ['#1C1C1E', '#09090A']],   // Samsung, through TizenBrew
     ['youtube', /youtube/, /^youtube$/i, ['#1C1C1E', '#09090A']],
     ['prime', /^amazon$/, /prime video|amazon/i, ['#2AA8FF', '#0A68D4']],
     ['disney', /disney/, /disney/i, ['#173584', '#08143F']],
     ['max', /hbo|wbd/, /^(hbo )?max$|hbo max/i, ['#5C30E8', '#221684']],
+    ['twitch', /^tizenbrew:npm\/@jjg0\/twizen$/, /^twitch adfree$/i, ['#9146FF', '#4B1FA8']],   // Samsung, through TizenBrew
     ['live', /^com\.webos\.app\.livetv$/, /tv em direto|live tv|tv en directo/i, ['#2A8CFF', '#0A3FA8']],
     ['store', /^freetv\.store$/, /^(loja|store|tienda)$/i, ['#FF6B8A', '#E0245E']],
     ['hulu', /^hulu/, /hulu/i, ['#1CE783', '#0B8F4E']],
@@ -125,12 +127,25 @@
       Prefs.set('shelf', chosen);
     }
     if (hasStore && !Prefs.storeOffered()) Prefs.set('storeOffered', true);
+    // Samsung with TizenBrew: YouTube AdFree and Twitch AdFree come onto a saved shelf once (then they are the person's). YouTube AdFree
+    // takes the official YouTube's place (same icon: both would look alike); the official one stays in All Apps.
+    var brew = apps.filter(function (x) { return x.id.indexOf('tizenbrew:') === 0; }).map(function (x) { return x.id; });
+    var adfree = brew.filter(function (id) { return /tizentube$/.test(id); })[0];
+    if (chosen && brew.length && !Prefs.brewOffered()) {
+      var official = chosen.filter(function (id) { return TV.youtube.indexOf(id) >= 0; })[0];
+      if (official && adfree) chosen = chosen.map(function (id) { return id === official ? adfree : id; });
+      chosen = chosen.concat(brew.filter(function (id) { return chosen.indexOf(id) < 0; }));
+      if (chosen.length > MAX_SHELF) chosen = chosen.slice(chosen.length - MAX_SHELF);   // the new ones stay
+      Prefs.set('shelf', chosen);
+    }
+    if (brew.length && !Prefs.brewOffered()) Prefs.set('brewOffered', true);
     if (chosen) {
       for (var i = 0; i < chosen.length && out.length < MAX_SHELF; i++) {
         for (var j = 0; j < apps.length; j++) if (apps[j].id === chosen[i]) out.push(apps[j]);
       }
     } else {
       for (var s = 0; s < SHELF.length && out.length < MAX_SHELF; s++) {
+        if (SHELF[s][0] === 'youtube' && adfree) continue;   // YouTube AdFree is there instead (Samsung with TizenBrew)
         for (var a = 0; a < apps.length; a++) {
           if ((SHELF[s][1].test(apps[a].id) || SHELF[s][2].test(apps[a].title)) && out.indexOf(apps[a]) < 0) { out.push(apps[a]); break; }
         }
@@ -650,7 +665,7 @@
       picks: tr('Sugestões', 'Picks', 'Sugerencias')};
     rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
       step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
-    if (TV.name !== 'tizen') rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});
+    rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});   // Samsung: TizenBrew's modules
     if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
     rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -894,6 +909,7 @@
   var commFromShelf = false;
 
   function openCommunity(fromShelf) {
+    if (TV.name === 'tizen') { setClass($('settings'), 'open', false); openModules(); return; }
     commFromShelf = fromShelf === true;
     setClass($('settings'), 'open', false);
     st.zone = Z.COMM;
@@ -1170,6 +1186,7 @@
   function launcher(id, name) {
     return function () {
       if (id === 'freetv.store') { openCommunity(true); return; }
+      if (id.indexOf('tizenbrew:') === 0) { remember('app:' + id, name || id); openBrewApp(id.slice(10), name || id); return; }
       if (id.indexOf('com.gathin.') !== 0 && id !== 'com.local.nativehome') remember('app:' + id, name || id);
       TV.launch(id, null, function (ok) {
         if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + (name || id));
@@ -1215,6 +1232,153 @@
   }
 
   function cancelText() { return tr('Cancelar', 'Cancel', 'Cancelar'); }
+
+  // MARK: - Samsung: community apps are TizenBrew's modules (tizenbrew.js). FreeTV lists them, adds or removes them in TizenBrew
+  // (with a question first: they are other people's code) and opens them in TizenBrew.
+
+  var brewQuery = '';
+
+  function brewText(m) { return m.about instanceof Array ? tr(m.about[0], m.about[1], m.about[2]) : (m.about || ''); }
+
+  function brewClosedText() {
+    return tr('O TizenBrew precisa estar aberto para ver ou adicionar módulos: abra-o uma vez (botão abaixo), volte ao FreeTV com Home e entre aqui de novo. Ele fica aberto até desligar a TV.',
+      'TizenBrew has to be open to see or add modules: open it once (button below), come back to FreeTV with Home and come in here again. It stays open until the TV is turned off.',
+      'TizenBrew tiene que estar abierto para ver o añadir módulos: ábrelo una vez (botón de abajo), vuelve a FreeTV con Home y entra aquí otra vez. Se queda abierto hasta que apagues la tele.');
+  }
+
+  function openBrew() {
+    TizenBrew.launch(null, function (ok) { if (!ok) toast(tr('Não deu para abrir o TizenBrew', "Couldn't open TizenBrew", 'No se pudo abrir TizenBrew')); });
+  }
+
+  /** The Store on Samsung: TizenBrew's modules (the recommended ones, a search on npm, or any name). */
+  function openModules() {
+    var title = commTitle();
+    if (!TizenBrew.installed(apps)) {
+      showDialog(title, [
+        {text: tr('Na Samsung, as apps da comunidade (YouTube e Twitch sem anúncios e muitas mais) funcionam dentro do TizenBrew, um app gratuito da comunidade.',
+          'On Samsung, community apps (YouTube and Twitch without ads, and many more) run inside TizenBrew, a free community app.',
+          'En Samsung, las apps de la comunidad (YouTube y Twitch sin anuncios, y muchas más) funcionan dentro de TizenBrew, una app gratuita de la comunidad.')},
+        {text: tr('Instale-o uma vez com o TizenBrew Installer, no computador ou num celular Android: github.com/reisxd/TizenBrewInstaller. Depois, YouTube AdFree e Twitch AdFree aparecem aqui sozinhos.',
+          'Install it once with TizenBrew Installer, on a computer or an Android phone: github.com/reisxd/TizenBrewInstaller. Then YouTube AdFree and Twitch AdFree show up here by themselves.',
+          'Instálalo una vez con TizenBrew Installer, desde un ordenador o un móvil Android: github.com/reisxd/TizenBrewInstaller. Después, YouTube AdFree y Twitch AdFree aparecen aquí solos.')}
+      ], [{label: 'OK'}], 0);
+      return;
+    }
+    var token = showDialog(title, [{text: tr('Perguntando ao TizenBrew…', 'Asking TizenBrew…', 'Preguntando a TizenBrew…')}], [], 0);
+    TizenBrew.modules(function (err, have) {
+      if (dlg.token !== token || st.zone !== Z.DLG) return;   // closed meanwhile
+      var lines = [{text: tr('Módulos do TizenBrew: são de outras pessoas, o FreeTV pergunta antes de adicionar um.',
+        "TizenBrew's modules: they are other people's, FreeTV asks before adding one.", 'Módulos de TizenBrew: son de otras personas, FreeTV pregunta antes de añadir uno.')}];
+      if (err) lines.push({cls: 'warn', text: brewClosedText()});
+      var buttons = TizenBrew.RECOMMENDED.map(function (m) {
+        var on = have && have.indexOf(m.full) >= 0;
+        return {label: (on ? '✓ ' : '') + m.title, run: function () { openModule(m, have); }};
+      });
+      buttons.push({label: tr('Procurar mais…', 'Search for more…', 'Buscar más…'), run: function () { askModuleText('search', have); }});
+      buttons.push({label: tr('Adicionar pelo nome…', 'Add by name…', 'Añadir por nombre…'), run: function () { askModuleText('name', have); }});
+      buttons.push({label: tr('Abrir o TizenBrew', 'Open TizenBrew', 'Abrir TizenBrew'), run: openBrew});
+      buttons.push({label: cancelText()});
+      showDialog(title, lines, buttons, 0);
+    });
+  }
+
+  /** A text box (the TV's keyboard): a search on npm, or a module's name as TizenBrew takes it (npm/<package>, gh/<user>/<repo>). */
+  function askModuleText(kind, have) {
+    var search = kind === 'search';
+    showDialog(search ? tr('Procurar módulos', 'Search modules', 'Buscar módulos') : tr('Adicionar pelo nome', 'Add by name', 'Añadir por nombre'), [
+      {text: search ? tr('Escreva o que procura (ex.: iptv, twitch) e aperte Enter.', 'Type what you are looking for (e.g. iptv, twitch) and press Enter.',
+          'Escribe lo que buscas (ej.: iptv, twitch) y pulsa Intro.')
+        : tr('Como o TizenBrew o pede: npm/<pacote> ou gh/<usuário>/<repositório> (do GitHub).', 'As TizenBrew wants it: npm/<package> or gh/<user>/<repository> (from GitHub).',
+          'Como lo pide TizenBrew: npm/<paquete> o gh/<usuario>/<repositorio> (de GitHub).')}
+    ], [{label: search ? tr('Procurar', 'Search', 'Buscar') : tr('Continuar', 'Continue', 'Seguir'), run: function () {
+      var q = brewQuery.replace(/^\s+|\s+$/g, '');
+      if (!q) { openModules(); return; }
+      if (search) { searchModules(q, have); return; }
+      if (!TizenBrew.parse(q)) { toast(tr('Nome não válido', 'Not a valid name', 'Nombre no válido')); askModuleText('name', have); return; }
+      openModule({full: q, title: q.replace(/^(npm|gh)\//, ''), about: ''}, have);
+    }}, {label: cancelText()}], 0);
+    var box = $('dialog').firstChild, input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'chaninput';
+    input.value = brewQuery;
+    input.setAttribute('placeholder', search ? 'iptv' : 'npm/@jjg0/twizen');
+    input.oninput = function () { brewQuery = input.value; };
+    box.insertBefore(input, box.querySelector('.row'));
+    setTimeout(function () { try { input.focus(); } catch (e) {} }, 250);   // the TV opens its keyboard
+  }
+
+  function searchModules(q, have) {
+    var title = tr('Procurar módulos', 'Search modules', 'Buscar módulos');
+    var token = showDialog(title, [{text: tr('Procurando «' + q + '»…', 'Looking for «' + q + '»…', 'Buscando «' + q + '»…')}], [], 0);
+    TizenBrew.search(q, function (err, found) {
+      if (dlg.token !== token || st.zone !== Z.DLG) return;
+      if (err || !found.length) {
+        showDialog(title, [{cls: 'warn', text: err ? tr('Sem conexão com a busca.', 'The search did not answer.', 'La búsqueda no respondió.')
+          : tr('Nada encontrado.', 'Nothing found.', 'No he encontrado nada.')}],
+          [{label: tr('Procurar outro', 'Search again', 'Buscar otro'), run: function () { askModuleText('search', have); }}, {label: cancelText()}], 0);
+        return;
+      }
+      var buttons = found.slice(0, 7).map(function (m) {
+        return {label: (have && have.indexOf(m.full) >= 0 ? '✓ ' : '') + m.title, run: function () { openModule(m, have); }};
+      });
+      buttons.push({label: tr('Procurar outro', 'Search again', 'Buscar otro'), run: function () { askModuleText('search', have); }});
+      buttons.push({label: cancelText()});
+      showDialog(tr('Escolha o módulo', 'Pick the module', 'Elige el módulo'), [], buttons, 0);
+    });
+  }
+
+  /** One module: open it, or add it (a question first) / take it out of TizenBrew. */
+  function openModule(m, have) {
+    var on = have && have.indexOf(m.full) >= 0, lines = [];
+    if (brewText(m)) lines.push({text: brewText(m)});
+    lines.push({cls: 'code', text: m.full});
+    var buttons = [];
+    if (on || m.full === 'npm/@foxreis/tizentube') buttons.push({label: tr('Abrir', 'Open', 'Abrir'), run: function () { openBrewApp(m.full, m.title); }});
+    if (on) buttons.push({label: tr('Tirar do TizenBrew', 'Remove from TizenBrew', 'Quitar de TizenBrew'), run: function () { brewChange('remove', m); }});
+    else buttons.push({label: tr('Adicionar ao TizenBrew', 'Add to TizenBrew', 'Añadir a TizenBrew'), run: function () { confirmBrewAdd(m, false); }});
+    buttons.push({label: cancelText()});
+    showDialog(m.title, lines, buttons, 0);
+  }
+
+  function confirmBrewAdd(m, thenOpen) {
+    showDialog(m.title, [{cls: 'warn', text: tr('É código de outra pessoa, que o TizenBrew vai baixar e rodar na sua TV. O FreeTV não o revisa. Adicionar?',
+      "It is someone else's code, which TizenBrew will download and run on your TV. FreeTV does not review it. Add it?",
+      'Es código de otra persona, que TizenBrew descargará y ejecutará en tu tele. FreeTV no lo revisa. ¿Añadirlo?')}],
+      [{label: cancelText()}, {label: tr('Sim, adicionar', 'Yes, add it', 'Sí, añadirlo'), run: function () { brewChange('add', m, thenOpen); }}], 0);
+  }
+
+  function brewChange(action, m, thenOpen) {
+    var token = showDialog(m.title, [{text: tr('Falando com o TizenBrew…', 'Talking to TizenBrew…', 'Hablando con TizenBrew…')}], [], 0);
+    TizenBrew[action](m.full, function (err) {
+      if (err) {
+        if (dlg.token === token && st.zone === Z.DLG) {
+          showDialog(m.title, [{cls: 'warn', text: brewClosedText()}], [{label: tr('Abrir o TizenBrew', 'Open TizenBrew', 'Abrir TizenBrew'), run: openBrew}, {label: cancelText()}], 0);
+        }
+        return;
+      }
+      if (dlg.token === token && st.zone === Z.DLG) closeDialog();
+      toast(m.title + ': ' + (action === 'add' ? tr('adicionado ao TizenBrew', 'added to TizenBrew', 'añadido a TizenBrew') : tr('tirado do TizenBrew', 'removed from TizenBrew', 'quitado de TizenBrew')));
+      if (action === 'add' && thenOpen) TizenBrew.launch(m.full, function () {});
+    });
+  }
+
+  /** YouTube AdFree, Twitch AdFree or another module: open it in TizenBrew. One that is not there yet is added first (with a question);
+      TizenTube comes with TizenBrew, so it just opens. When TizenBrew's service is not running yet, the module opens all the same
+      (if TizenBrew does not have it, it says so) unless FreeTV knows it never added it. */
+  function openBrewApp(full, title) {
+    function go() { TizenBrew.launch(full, function (ok) { if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + title); }); }
+    if (full === 'npm/@foxreis/tizentube') { go(); return; }
+    TizenBrew.modules(function (err, have) {
+      if (!err && have.indexOf(full) >= 0) { go(); return; }
+      var m = null;
+      TizenBrew.RECOMMENDED.forEach(function (r) { if (r.full === full) m = r; });
+      m = m || {full: full, title: title, about: ''};
+      if (!err) { confirmBrewAdd(m, true); return; }
+      showDialog(title, [{text: tr(title + ' funciona dentro do TizenBrew e ainda precisa ser adicionado a ele.', title + ' runs inside TizenBrew and still has to be added to it.',
+        title + ' funciona dentro de TizenBrew y todavía hay que añadirlo.')}, {cls: 'warn', text: brewClosedText()}],
+        [{label: tr('Abrir o TizenBrew', 'Open TizenBrew', 'Abrir TizenBrew'), run: openBrew}, {label: cancelText()}], 0);
+    });
+  }
 
   // MARK: - Custom tab: shortcuts to YouTube channels, opened in YouTube AdFree
 

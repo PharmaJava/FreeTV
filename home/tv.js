@@ -378,12 +378,23 @@ var TV = (function () {
     /** While FreeTV's screensaver is on (true), LG's own is kept away; false when it ends. */
     holdScreen: function (on) { if (on) powerStart(); else powerStop(); },
 
-    /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]; on LG, Live TV is one more. */
+    /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]; on LG, Live TV is one more; on Samsung with
+        TizenBrew, its YouTube AdFree and Twitch AdFree modules ("tizenbrew:npm/<package>"). Both get FreeTV's Store icon. */
     apps: function (done) {
       this.appsOnly(function (list) {
         if (webos) {
           list.push({id: 'com.webos.app.livetv', title: tr('TV em direto', 'Live TV', 'TV en directo'), icon: '', color: '#1C7BFF', symbol: 'live_tv'});
           // FreeTV's own store (Community apps): an icon like any other, which opens that screen instead of an app.
+          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps'});
+        }
+        if (samsung && window.TizenBrew) {
+          // With TizenBrew on the TV: YouTube AdFree and Twitch AdFree (its modules) are apps like any other, and FreeTV's Store
+          // icon opens the community modules (tizenbrew.js). Without it, the Store icon explains how to get TizenBrew.
+          if (window.TizenBrew.installed(list)) {
+            window.TizenBrew.RECOMMENDED.forEach(function (m) {
+              if (m.shelf) list.push({id: 'tizenbrew:' + m.full, title: m.title, icon: m.icon, color: ''});
+            });
+          }
           list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps'});
         }
         done(list);
@@ -428,7 +439,8 @@ var TV = (function () {
     /** Opens an app (or an input); done(ok). */
     launch: function (id, params, done) {
       if (samsung) {
-        if (id.indexOf('source:') === 0) samsungSource(id, done);
+        if (id.indexOf('tizenbrew:') === 0) window.TizenBrew.launch(id.slice(10), done);
+        else if (id.indexOf('source:') === 0) samsungSource(id, done);
         else samsungLaunch(id, params, done);
         return;
       }

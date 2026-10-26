@@ -51,7 +51,32 @@ Para actualizar, vuelve a construir y a instalar **con el mismo certificado**: l
   `PAYLOAD`: **no lo hemos probado en una Samsung**; si tu tele no la acepta, se abre YouTube a secas.
 - Sin el **+** para añadir canales desde la tele (busca en YouTube con un servicio que solo existe en LG): añádelos en
   `config.properties` (`kids_channels=`) y vuelve a construir.
-- Sin **Tienda de apps de la comunidad** (es un catálogo para LG) ni **Desinstalar** desde *Todas las apps*.
+- Sin **Desinstalar** desde *Todas las apps*.
+
+## Apps de la comunidad: TizenBrew (YouTube AdFree, Twitch AdFree y más)
+
+En Samsung, las apps de la comunidad funcionan dentro de [TizenBrew](https://github.com/reisxd/TizenBrew), una app gratuita de la
+comunidad que carga *módulos* publicados en npm o en GitHub. Se instala **una vez** con
+[TizenBrew Installer](https://github.com/reisxd/TizenBrewInstaller) (en el ordenador o en un móvil Android; en las teles de 2023 o más
+te pide entrar con tu cuenta de Samsung para crear el certificado, él solo).
+
+Con TizenBrew en la tele, FreeTV:
+
+- **Pone en el estante YouTube AdFree** ([TizenTube](https://github.com/reisxd/TizenTube): YouTube sin anuncios ni patrocinios, que
+  TizenBrew ya trae) en el sitio del YouTube oficial (que sigue en *Todas las apps*), y **Twitch AdFree**
+  ([Twizen](https://www.npmjs.com/package/@jjg0/twizen): Twitch sin anuncios). Si ya tenías el estante a tu gusto, se añaden una vez.
+- La primera vez que abres **Twitch AdFree**, FreeTV pregunta y lo añade a TizenBrew (es código de otra persona), y lo abre.
+- El icono **Tienda** (y *Ajustes de inicio → Apps de la comunidad*) muestra los módulos: los recomendados, **Buscar más…** (en npm, los
+  publicados para TizenBrew) y **Añadir por nombre…** (`npm/<paquete>` o `gh/<usuario>/<repositorio>`, de GitHub). Desde ahí se abren,
+  se añaden o se quitan. Siempre pregunta antes de añadir.
+
+Cómo lo hace (`home/tizenbrew.js`): abre un módulo pidiéndoselo a TizenBrew (`launchAppControl` con `{moduleName, moduleType}`, lo que
+TizenBrew lee al arrancar), y para ver, añadir o quitar módulos habla con el servicio de TizenBrew (`ws://127.0.0.1:8081`). Ese servicio
+solo está en marcha si TizenBrew se ha abierto desde que se encendió la tele: si no, FreeTV lo dice y ofrece abrirlo. Si TizenBrew ya
+está abierto en segundo plano, puede que al pedirle un módulo solo se ponga delante en vez de abrirlo. **Probado en un navegador con una
+Samsung y un TizenBrew simulados, no en una Samsung.**
+
+Sin TizenBrew, la Tienda explica cómo instalarlo y el estante es el de siempre.
 
 ## Créditos
 

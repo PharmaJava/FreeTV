@@ -180,7 +180,7 @@ installing. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
 | TV | What there is | Status |
 |---|---|---|
 | **LG (webOS)** | Full FreeTV (this guide) | **Tested** on an LG OLED |
-| **Samsung (2017+)** | The same screen, packaged in `tizen/`: [guide](docs/SAMSUNG.md) | **Experimental**: not tested by us on a Samsung |
+| **Samsung (2017+)** | The same screen, packaged in `tizen/`, with YouTube AdFree, Twitch AdFree and community apps through TizenBrew: [guide](docs/SAMSUNG.md) (in Spanish) | **Experimental**: not tested by us on a Samsung |
 | **Android TV / Google TV** | Free My TV's Android app in `android/`: [guide](docs/ANDROID-TV.md) | Included unchanged; not built or tested here; no FreeTV extras |
 | Samsung up to 2016, Fire TV, Roku… | Nothing | [Alternative: a Google TV streamer on HDMI](docs/OTRAS-TELES.md) |
 

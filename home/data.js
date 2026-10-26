@@ -64,6 +64,8 @@ var Prefs = (function () {
     saver: function () { return pick('saver', 'both'); },
     /** The Store icon is added to a saved shelf once; after that it is the person's to keep or take away. */
     storeOffered: function () { return pick('storeOffered', false); },
+    /** Samsung: YouTube AdFree and Twitch AdFree (TizenBrew) are added to a saved shelf once, like the Store icon. */
+    brewOffered: function () { return pick('brewOffered', false); },
     /** Where the computer that installs community apps is ("192.168.1.20:8777"): told by `community.py serve`, or community_host. */
     storeHost: function () { return pick('storeHost', CONFIG.communityHost || ''); },
     storeNonce: function () { return pick('storeNonce', ''); },

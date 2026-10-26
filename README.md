@@ -227,7 +227,7 @@ de un tercero) detrás de una confirmación aparte. El catálogo y las apps las 
 | Tele | Qué hay | Estado |
 |---|---|---|
 | **LG (webOS)** | FreeTV completo (esta guía) | **Probado** en una LG OLED |
-| **Samsung (2017 o más)** | La misma pantalla, empaquetada en `tizen/`: [guía](docs/SAMSUNG.md) | **Experimental**: no probado por nosotros en Samsung |
+| **Samsung (2017 o más)** | La misma pantalla, empaquetada en `tizen/`, con YouTube AdFree, Twitch AdFree y las apps de la comunidad a través de TizenBrew: [guía](docs/SAMSUNG.md) | **Experimental**: no probado por nosotros en Samsung |
 | **Android TV / Google TV** | La app de Free My TV en `android/`: [guía](docs/ANDROID-TV.md) | Incluida sin cambios; no compilada ni probada aquí; sin las novedades de FreeTV |
 | Samsung hasta 2016, Fire TV, Roku… | Nada | [Alternativa: un reproductor Google TV por HDMI](docs/OTRAS-TELES.md) |
 
