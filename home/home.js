@@ -913,6 +913,7 @@
         store.flow = 'done';
         toast(app.title + ': ' + tr(store.updates[app.id] ? 'atualizada' : 'instalada', store.updates[app.id] ? 'updated' : 'installed', store.updates[app.id] ? 'actualizada' : 'instalada'));
         svcUpdates();
+        setTimeout(svcUpdates, 8000);
         loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); });
       } else if (r.phase === 'failed') {
         store.flow = 'failed';
@@ -1062,6 +1063,7 @@
         toast(tr('Atualizadas: ', 'Updated: ', 'Actualizadas: ') + (batch ? batch.done : 0));
         svcApps(function () { loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); }); });
         svcUpdates();
+        setTimeout(svcUpdates, 8000);   // the TV's app list takes a few seconds to show the new versions
         if (communityShown()) renderCommunity();
       });
     });

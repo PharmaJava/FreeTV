@@ -43,6 +43,14 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   Press OK on an app for its page and, if it **needs no root**, an **Install on this TV** button: the TV downloads the package,
   checks its SHA-256 hash and installs it, no computer (if you turn that on while installing FreeTV). Anything that needs root
   is **not installed**. See [Community apps](#community-apps-ad-free-youtube-kodi-jellyfin).
+- **App updates.** The TV knows which version of each installed app you have, and the catalogue says the latest. In the Store an app
+  with a newer version is marked ("update 1.2.3"), its page says *Update available (v1.2 → v1.3)* and an **Update** button installs it
+  over the old one with the same checks (no root, https, SHA-256 hash); the app and its settings are kept. **Update all (N)** at the
+  top of the list brings them all up to date, one after the other. Apps that ask for a confirmation because of their warning (Open
+  Service Menu, Auto Dev Token Refresh, Homebrew Channel) are left out of "Update all": update them one by one, confirming.
+  **Automatic (optional):** *Home Settings → Update apps by itself*, **off by default**. If you turn it on (that is your permission),
+  once a day the TV looks and updates the apps you already installed. It only works if you said yes to "install apps from the TV
+  itself" when installing FreeTV.
 - **Its own screensaver.** After two idle minutes, full-screen photos with the clock: landscapes of Seville, Andalusia, Spain
   and Lithuania (Wikimedia Commons, free licences only, author and licence on screen), the picks' photos, or both. Chosen in
   *Home Settings → Screensaver*. No root needed. **It stays above LG's own screensaver** (the clock one): while FreeTV's is on, if
@@ -123,6 +131,8 @@ default is **no**, and the store still works through the computer. You can take 
 | Choose the shelf apps | *Home Settings → Shelf* |
 | Choose which services to suggest from, animation, how many | *Home Settings → Suggestions* |
 | Install a community app | **Store** icon on the shelf → pick the app → **OK** → *Install on this TV* → confirm |
+| Update apps | **Store** → **Update all (N)** (at the top), or an app marked "update" → *Update on this TV* |
+| Update apps by themselves | *Home Settings → Update apps by itself* (off by default) |
 | Change the screensaver | *Home Settings → Screensaver* (landscapes, picks or both) |
 | Go back to LG's home | Hold **Home** for 2 seconds |
 | Turn the Home button back on | *Home Settings → Turn the Home button back on* |

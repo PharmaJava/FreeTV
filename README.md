@@ -43,6 +43,14 @@ de LG, y **todo se puede deshacer**.
   OK en una app ves su ficha y, si **no pide root**, el botón **Instalar en esta tele**: la tele descarga el paquete, comprueba su
   hash SHA-256 y lo instala, sin ordenador (si lo activas al instalar FreeTV). Lo que pide root **no se instala**. Ver
   [Apps de la comunidad](#apps-de-la-comunidad-youtube-sin-anuncios-kodi-jellyfin).
+- **Actualizaciones de las apps.** La tele sabe qué versión tienes de cada app instalada y el catálogo dice cuál es la última. En la
+  Tienda, la app con versión nueva sale marcada («actualización 1.2.3»), su ficha dice *Actualización disponible (v1.2 → v1.3)* y un
+  botón **Actualizar** la instala encima con la misma comprobación (sin root, https, hash SHA-256); las apps y sus ajustes se conservan.
+  Arriba de la lista aparece **Actualizar todo (N)**, que las pone al día una tras otra. Las que piden confirmación por su aviso (Open
+  Service Menu, Auto Dev Token Refresh, Homebrew Channel) no entran en «Actualizar todo»: se actualizan una a una, confirmando.
+  **Automático (opcional):** *Ajustes de inicio → Actualizar apps solas*, **apagado por defecto**. Si lo enciendes (ese es tu
+  permiso), la tele mira una vez al día y actualiza sola las apps que ya instalaste. Solo funciona si al instalar FreeTV dijiste que
+  sí a «instalar apps desde la propia tele».
 - **Salvapantallas propio.** Tras dos minutos sin tocar el mando, fotos a pantalla completa con el reloj: paisajes de Sevilla,
   Andalucía, España y Lituania (Wikimedia Commons, solo licencias libres, con autor y licencia en pantalla), las fotos de las
   sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root. **Va por encima del salvapantallas de
@@ -148,6 +156,8 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 | Mover o quitar un canal | **Personalizado** → **mantén OK** sobre él |
 | Quitar algo de Continuar viendo | **Continuar viendo** → **mantén OK** sobre ello → *Quitar* |
 | Instalar una app de la comunidad | Icono **Tienda** del estante → elige la app → **OK** → *Instalar en esta tele* → confirma |
+| Actualizar apps | **Tienda** → **Actualizar todo (N)** (arriba), o una app marcada «actualización» → *Actualizar en esta tele* |
+| Que se actualicen solas | *Ajustes de inicio → Actualizar apps solas* (apagado por defecto) |
 | Cambiar el salvapantallas | *Ajustes de inicio → Salvapantallas* (paisajes, sugerencias o ambos) |
 | Elegir de qué servicios sugerir, animación y cuántas | *Ajustes de inicio → Sugerencias* |
 | Quitar o poner las cotizaciones | *Ajustes de inicio* (Bitcoin, Ethereum, Solana, XRP, S&P 500, NASDAQ 100) |

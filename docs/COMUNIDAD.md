@@ -70,6 +70,23 @@ python3 tools/community.py serve   192.168.1.140        # instalar desde la pant
 
 Hace falta haber instalado FreeTV antes (`bash install.sh <IP>`): deja las herramientas de LG y el perfil de tu tele.
 
+## Actualizar las apps
+
+La tele pregunta a Developer Mode qué versión tienes de cada app que instalaste y la compara con la del catálogo. Una app solo se ofrece
+si el catálogo tiene una versión **mayor**, no pide root, su descarga es https y publica el hash SHA-256 (las mismas reglas que al instalar).
+
+- **Una app:** en la Tienda sale marcada «actualización X» y su ficha dice *Actualización disponible (vA → vB)*; el botón **Actualizar**
+  descarga, comprueba el hash y la instala **encima**: la app y sus ajustes se conservan. La de YouTube sin anuncios no vuelve a pedir
+  que borres la oficial (ya la borraste al instalarla).
+- **Todas:** **Actualizar todo (N)**, primera fila de la lista. Va una tras otra y enseña cuál lleva y cuántas son. Las apps con aviso
+  que hay que confirmar (`--sensitive`) **no entran**: se actualizan una a una, confirmando su aviso.
+- **Automático, opcional:** *Ajustes de inicio → Actualizar apps solas*, **apagado por defecto** (FreeTV no instala nada sin tu permiso:
+  encenderlo es ese permiso). Una vez al día, la primera vez que FreeTV lleva abierta 90 segundos, y solo apps que ya instalaste. Necesita
+  la clave de la tienda (la pregunta del final de `install.sh`). Para apagarlo, el mismo interruptor.
+
+Una app que no está en el catálogo (instalada por otro lado) nunca se toca. Si algo falla en una actualización, esa app queda como
+estaba y las demás siguen.
+
 ## Qué hace para ser seguro
 
 1. **Solo sin root.** Si el catálogo dice que una app necesita root, `install` se niega. FreeTV no hace root a ninguna tele.
