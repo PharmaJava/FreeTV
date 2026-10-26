@@ -848,10 +848,14 @@
   /** "Update all (N)" is the first row of the Store's list while there is something to update (the ones that need a confirmation, one by one). */
   function applyUpdateRow() {
     var n = store.updList.filter(function (u) { return !u.flag; }).length, had = commList.length && commList[0].special;
+    var open = commOpen >= 0 ? commList[commOpen] : null, row = commList[st.comm];
+    if (open && open.special && store.flowAll !== 'idle') return;   // its own page is on screen (progress, result): the row goes when it is closed
     if (had) commList.shift();
     if (n > 0) commList.unshift({id: '*updates', special: true, manifest: {},
       title: tr('Atualizar tudo (' + n + ')', 'Update all (' + n + ')', 'Actualizar todo (' + n + ')')});
-    if ((had ? 1 : 0) !== (n > 0 ? 1 : 0)) st.comm = 0;
+    // the same app stays selected / open when a row comes or goes above it
+    if (row) st.comm = Math.max(0, commList.indexOf(row));
+    if (open) commOpen = commList.indexOf(open);
   }
 
   /** Is the computer there? (Its answer redraws the screen.) */
@@ -1021,7 +1025,7 @@
       if (store.flowAll === 'failed') line(box, 'warn', tr('Não foi possível atualizar: ', 'Could not update: ', 'No se pudo actualizar: ') + store.message);
       else line(box, '', tr('Pronto: ' + (d.done || 0) + ' atualizadas', 'Done: ' + (d.done || 0) + ' updated', 'Listo: ' + (d.done || 0) + ' actualizadas') +
           (d.failed ? tr(' · ' + d.failed + ' com erro', ' · ' + d.failed + ' failed', ' · ' + d.failed + ' con error') : ''));
-      action(box, tr('Ver mais apps', 'Browse more apps', 'Ver más apps'), function () { store.flowAll = 'idle'; commOpen = -1; commAct = 0; renderCommunity(); });
+      action(box, tr('Ver mais apps', 'Browse more apps', 'Ver más apps'), function () { store.flowAll = 'idle'; commOpen = -1; commAct = 0; applyUpdateRow(); renderCommunity(); });
     } else {
       line(box, '', tr('Cada uma é baixada na TV, o hash SHA-256 é conferido e instalada por cima: as apps e seus ajustes são mantidos.',
           'Each one is downloaded on the TV, its SHA-256 hash checked, and installed over the old one: the apps and their settings are kept.',
@@ -1862,7 +1866,7 @@
     if (st.zone === Z.COMM) {
       if (commOpen >= 0) {
         if (store.flow !== 'working') store.flow = 'idle';   // a running install carries on in the background
-        if (store.flowAll !== 'working') store.flowAll = 'idle';
+        if (store.flowAll !== 'working') { store.flowAll = 'idle'; applyUpdateRow(); }
         commOpen = -1;
         renderCommunity();
         return;
