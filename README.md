@@ -66,7 +66,10 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   and Lithuania (Wikimedia Commons, free licences only, author and licence on screen), the picks' photos, or both. Chosen in
   *Home Settings → Screensaver*. No root needed. **It stays above LG's own screensaver** (the clock one): while FreeTV's is on, if
   the TV switches to its screensaver, FreeTV sends it away within a second or two. For that the TV asks **once** for permission
-  (power state and screen): accept it.
+  (power state and screen), a few seconds after FreeTV opens: **accept it**, or LG's clock will cover FreeTV's photos. A prompt nobody
+  answered is asked again ten minutes later; a "no" is asked again after three days.
+- **FreeTV on the start screen.** While FreeTV starts (when you turn the TV on, for example), the TV shows FreeTV's name, logo and
+  version (`home/splash.png`, drawn by `tools/make_splash.py`), no longer "Free My TV".
 - **A real Home button.** Press **Home** in any app and you come back to FreeTV, not LG's home. Leaving an app with
   **Back** brings you here too: the helper waits a bit over a second for LG to settle, then opens FreeTV once, with no
   back and forth. When the TV turns on, the helper opens FreeTV (on some TVs LG's home shows for a couple of
@@ -322,7 +325,10 @@ de LG, y **todo se puede deshacer**.
   Andalucía, España y Lituania (Wikimedia Commons, solo licencias libres, con autor y licencia en pantalla), las fotos de las
   sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root. **Va por encima del salvapantallas de
   LG** (el del reloj): mientras está el de FreeTV, si la tele pasa a su salvapantallas, FreeTV lo aparta en uno o dos segundos. Para
-  eso la tele pide permiso **una vez** (estado de energía y pantalla): acéptalo.
+  eso la tele pide permiso **una vez** (estado de energía y pantalla), unos segundos después de abrirse FreeTV: **acéptalo**, o el reloj de
+  LG tapará las fotos de FreeTV. Si nadie contesta, lo vuelve a preguntar a los diez minutos; si dices que no, a los tres días.
+- **FreeTV en la pantalla de arranque.** Mientras FreeTV se abre (al encender la tele, por ejemplo), la tele enseña el nombre, el logo y
+  la versión de FreeTV (`home/splash.png`, dibujada por `tools/make_splash.py`), ya no «Free My TV».
 - **El botón Home de verdad.** Pulsas **Home** en cualquier app y vuelves a FreeTV, no al inicio de LG. Al salir de una
   app con **Atrás** también vuelves aquí: el ayudante espera algo más de un segundo a que LG se asiente y entonces abre
   FreeTV, una sola vez, sin ir y venir. Al encender la tele, el ayudante abre FreeTV (en algunas teles se ve el inicio de LG un par de segundos antes).

@@ -64,3 +64,6 @@ live in the person's `localStorage` (`fmtv.prefs`).
 
 Menus are frosted glass (`frostWanted()`, class `frost` on `body`; a sheet must keep a fixed opacity and fade only its `.box`, or the blur disappears during the fade). Settings are sections (`settingCats()`, `settingRows()`), the quick panel and TV health are tile sheets (`openTiles`, `quickTiles`, `healthTiles`), plus search, sleep timer, kids mode with a PIN, calm mode and accent colours. Sleep timer, health and the first start guide are webOS only (`TV.name === 'webos'`); the rest is shared with Samsung. New text goes through `tr(pt, en, es)` and, for German and Russian, `home/strings.js`. Text and screenshots of a change belong in the README (both languages).
 
+## Start screen and LG's screensaver
+
+`home/appinfo.json` is titled FreeTV and its `splashBackground` is `home/splash.png`: after changing the version, run `python3 tools/make_splash.py` (tests/run.js fails otherwise). LG's clock screensaver is sent away by `TV.holdScreen` through the remote control API, which needs the TV's yes once: `TV.pairScreen` asks it a few seconds after FreeTV is on screen, never when the screensaver starts (nobody answers then, and old versions kept that as a no for ever). `registerScreenSaverRequest` subscribes from a Developer Mode app, but in 9 idle minutes on webOS 6.5 LG sent it no request, so it is not used.

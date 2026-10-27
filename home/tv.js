@@ -38,7 +38,7 @@ var TV = (function () {
   // The TV asks once to allow it; the key it gives back is kept.
   var SSAP_KEY = 'fmtv.ssapKey', SSAP_REFUSED = 'fmtv.ssapRefused';
 
-  // A "no" on the TV's prompt is kept for three days; a prompt nobody answered (or any other error) only for an hour. Older
+  // A "no" on the TV's prompt is kept for three days; a prompt nobody answered (or any other error) only for ten minutes. Older
   // versions kept any error for ever (value '1'): that is forgotten.
   function refused(name) {
     var at = 0;
@@ -47,7 +47,7 @@ var TV = (function () {
   }
   function refuse(name, m) {
     var said = /deni|reject/i.test(JSON.stringify((m && (m.error || m.payload)) || ''));
-    try { localStorage.setItem(name, String(Date.now() + (said ? 3 * 864e5 : 36e5))); } catch (e) {}
+    try { localStorage.setItem(name, String(Date.now() + (said ? 3 * 864e5 : 6e5))); } catch (e) {}
   }
 
   /** One call to the remote control API; done(result) with null on failure. */
