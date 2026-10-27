@@ -38,6 +38,18 @@ var TV = (function () {
   // The TV asks once to allow it; the key it gives back is kept.
   var SSAP_KEY = 'fmtv.ssapKey', SSAP_REFUSED = 'fmtv.ssapRefused';
 
+  // A "no" on the TV's prompt is kept for three days; a prompt nobody answered (or any other error) only for an hour. Older
+  // versions kept any error for ever (value '1'): that is forgotten.
+  function refused(name) {
+    var at = 0;
+    try { at = +localStorage.getItem(name) || 0; } catch (e) {}
+    return at > 1 && Date.now() < at;
+  }
+  function refuse(name, m) {
+    var said = /deni|reject/i.test(JSON.stringify((m && (m.error || m.payload)) || ''));
+    try { localStorage.setItem(name, String(Date.now() + (said ? 3 * 864e5 : 36e5))); } catch (e) {}
+  }
+
   /** One call to the remote control API; done(result) with null on failure. */
   function ssap(uri, done) {
     var ws = null, finished = false, key = null;
@@ -66,7 +78,7 @@ var TV = (function () {
         ws.send(JSON.stringify({type: 'request', id: 'call', uri: 'ssap://' + uri}));
       } else if (m.id === 'call' || m.type === 'error') {
         if (m.id === 'register' && m.type === 'error') {
-          try { localStorage.setItem(SSAP_REFUSED, '1'); } catch (e) {}   // the person said no on the TV
+          refuse(SSAP_REFUSED, m);
         }
         finish(m.type !== 'error' && m.payload && m.payload.returnValue !== false ? m.payload : null);
       }
@@ -77,8 +89,48 @@ var TV = (function () {
   // LG's own screensaver (the clock) starts after its idle time and goes over FreeTV's, whatever FreeTV does: the TV's power state turns to
   // "Screen Saver". The remote control API can read that state and turn the screen on again, which sends LG's screensaver away. It asks
   // the TV once to allow it (power state and screen: turnOnScreen needs more than CONTROL_POWER); the key it gives back is kept.
+  // It is asked when FreeTV opens (powerPair), while someone is looking: asked when the screensaver starts, nobody answered it.
   var POWER_KEY = 'fmtv.ssapPowerKey2', POWER_REFUSED = 'fmtv.ssapPowerRefused';
-  var power = {on: false, ws: null, timer: 0, retry: 0};
+  var power = {on: false, ws: null, timer: 0, retry: 0, pairing: false};
+  var POWER_MANIFEST = {manifestVersion: 1, appVersion: '1.0', permissions: ['READ_POWER_STATE', 'CONTROL_POWER', 'CONTROL_TV_SCREEN', 'CONTROL_DISPLAY']};
+
+  function powerKey() {
+    try { return localStorage.getItem(POWER_KEY); } catch (e) { return null; }
+  }
+
+  /** Asks the TV for the power permission when FreeTV has none yet; done(ok). The TV shows its prompt (up to 90 seconds to answer). */
+  function powerPair(done) {
+    done = done || function () {};
+    if (!webos || power.pairing) { done(false); return; }
+    if (powerKey()) { done(true); return; }
+    if (refused(POWER_REFUSED)) { done(false); return; }
+    power.pairing = true;
+    var ws = null, finished = false;
+    var timer = setTimeout(function () { finish(false, null); }, 90000);
+    function finish(ok, m) {
+      if (finished) return;
+      finished = true;
+      power.pairing = false;
+      clearTimeout(timer);
+      if (!ok) refuse(POWER_REFUSED, m);
+      try { ws.close(); } catch (e) {}
+      done(ok);
+    }
+    try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { finish(false, null); return; }
+    ws.onopen = function () {
+      ws.send(JSON.stringify({type: 'register', id: 'register', payload: {forcePairing: false, pairingType: 'PROMPT', manifest: POWER_MANIFEST}}));
+    };
+    ws.onmessage = function (event) {
+      var m = null;
+      try { m = JSON.parse(event.data); } catch (e) {}
+      if (!m) return;
+      if (m.type === 'registered') {
+        try { localStorage.setItem(POWER_KEY, m.payload['client-key']); localStorage.removeItem(POWER_REFUSED); } catch (e) {}
+        finish(true, m);
+      } else if (m.id === 'register' && m.type === 'error') finish(false, m);
+    };
+    ws.onerror = function () { finish(false, null); };
+  }
 
   function powerStop() {
     power.on = false;
@@ -90,9 +142,8 @@ var TV = (function () {
 
   function powerStart() {
     if (!webos || power.on) return;
-    var refused = false, key = null;
-    try { refused = !!localStorage.getItem(POWER_REFUSED); key = localStorage.getItem(POWER_KEY); } catch (e) {}
-    if (refused) return;   // the person said no on the TV
+    var key = powerKey();
+    if (!key) return;   // no prompt while the screensaver is on: nobody is there to answer it (powerPair asks)
     power.on = true;
     var ws = null;
     function send(id, uri) { try { ws.send(JSON.stringify({type: 'request', id: id, uri: 'ssap://' + uri})); } catch (e) {} }
@@ -110,10 +161,7 @@ var TV = (function () {
     try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { power.on = false; return; }
     power.ws = ws;
     ws.onopen = function () {
-      var payload = {forcePairing: false, pairingType: 'PROMPT',
-        manifest: {manifestVersion: 1, appVersion: '1.0', permissions: ['READ_POWER_STATE', 'CONTROL_POWER', 'CONTROL_TV_SCREEN', 'CONTROL_DISPLAY']}};
-      if (key) payload['client-key'] = key;
-      ws.send(JSON.stringify({type: 'register', id: 'register', payload: payload}));
+      ws.send(JSON.stringify({type: 'register', id: 'register', payload: {forcePairing: false, pairingType: 'PROMPT', manifest: POWER_MANIFEST, 'client-key': key}}));
     };
     ws.onmessage = function (event) {
       var m = null;
@@ -123,7 +171,7 @@ var TV = (function () {
         try { localStorage.setItem(POWER_KEY, m.payload['client-key']); } catch (e) {}
         ask();
       } else if (m.id === 'register' && m.type === 'error') {
-        try { localStorage.setItem(POWER_REFUSED, '1'); } catch (e) {}
+        try { localStorage.removeItem(POWER_KEY); } catch (e) {}   // the TV forgot this key: powerPair asks again next time FreeTV opens
         powerStop();
       } else if (m.id === 'state' && m.payload && m.payload.state && m.payload.state !== 'Active') {
         send('wake', 'com.webos.service.tvpower/power/turnOnScreen');   // LG's screensaver took over: send it away
@@ -403,6 +451,12 @@ var TV = (function () {
     /** While FreeTV's screensaver is on (true), LG's own is kept away; false when it ends. */
     holdScreen: function (on) { if (on) powerStart(); else powerStop(); },
 
+    /** Asks once, while someone is looking, for what holdScreen needs; done(ok). */
+    pairScreen: powerPair,
+
+    /** Whether holdScreen can keep LG's screensaver away (the TV has allowed it). */
+    canHoldScreen: function () { return webos && !!powerKey(); },
+
     /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]; on LG, Live TV is one more; on Samsung with
         TizenBrew, its YouTube AdFree and Twitch AdFree modules ("tizenbrew:npm/<package>"). Both get FreeTV's Store icon. */
     apps: function (done) {
@@ -447,8 +501,9 @@ var TV = (function () {
         // Denied to Developer Mode apps (webOS 6 and newer): once the TV has allowed the remote control API, it lists
         // every app with its icon; until then, the known apps the TV says it has, while the TV asks once (an answer
         // only counts from the next load on, and a "no" isn't asked again).
-        var paired = false, refused = false;
-        try { paired = !!localStorage.getItem(SSAP_KEY); refused = !!localStorage.getItem(SSAP_REFUSED); } catch (e) {}
+        var paired = false, no = false;
+        try { paired = !!localStorage.getItem(SSAP_KEY); } catch (e) {}
+        no = refused(SSAP_REFUSED);
         if (paired) {
           ssap('com.webos.applicationManager/listLaunchPoints', function (res2) {
             if (res2) done(list(res2)); else fallbackApps(done);
@@ -457,7 +512,7 @@ var TV = (function () {
         }
         if (staticApps().length) { fallbackApps(done); return; }   // no prompt on the TV when the list is already here
         knownApps(done);
-        if (!refused) ssap('com.webos.applicationManager/listLaunchPoints', function () {});
+        if (!no) ssap('com.webos.applicationManager/listLaunchPoints', function () {});
       });
     },
 

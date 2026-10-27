@@ -145,5 +145,22 @@ Promise.resolve()
     });
   })
   .then(function () {
+    return ok('the TV shows FreeTV and this version while it starts', function () {
+      var info = JSON.parse(fs.readFileSync(path.join(root, 'home', 'appinfo.json'), 'utf8'));
+      assert.strictEqual(info.title, 'FreeTV');
+      assert.strictEqual(info.splashBackground, 'splash.png');
+      var png = fs.readFileSync(path.join(root, 'home', info.splashBackground)), at = 8, version = null;
+      while (at < png.length) {   // the version tools/make_splash.py wrote in a tEXt chunk
+        var len = png.readUInt32BE(at), type = png.toString('latin1', at + 4, at + 8);
+        if (type === 'tEXt') {
+          var kv = png.toString('latin1', at + 8, at + 8 + len).split('\0');
+          if (kv[0] === 'version') version = kv[1];
+        }
+        at += 12 + len;
+      }
+      assert.strictEqual(version, info.version, 'run python3 tools/make_splash.py after changing the version');
+    });
+  })
+  .then(function () {
     console.log('\n' + passed + ' checks passed' + (process.exitCode ? ', some FAILED' : ''));
   });

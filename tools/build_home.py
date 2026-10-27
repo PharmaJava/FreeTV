@@ -64,7 +64,7 @@ def read_config(path):
     }
 
 
-LG_ONLY = ['renewal.js', 'extras.js', 'extras.css', 'helper-control.js', 'native-bootstrap.js', 'appinfo.json']
+LG_ONLY = ['renewal.js', 'extras.js', 'extras.css', 'helper-control.js', 'native-bootstrap.js', 'appinfo.json', 'splash.png']
 
 
 def files(config, tizen=False):

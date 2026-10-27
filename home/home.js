@@ -2804,7 +2804,16 @@
     if (document.hidden) { hideSaver(); return; }
     idleAt = Date.now();
     loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); Data.refresh(); });
+    askScreen();
   });
+
+  // Keeping LG's screensaver (the clock) away from ours needs the TV's yes once. It is asked here, a few seconds after FreeTV is
+  // on screen and someone is using it, never when the screensaver starts (nobody would answer).
+  function askScreen() {
+    if (TV.name !== 'webos' || TV.canHoldScreen()) return;
+    setTimeout(function () { if (!document.hidden && !saverOn) TV.pairScreen(); }, 6000);
+  }
+  askScreen();
 
   I18N.set(Prefs.language());
   fit();
