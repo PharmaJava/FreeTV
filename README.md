@@ -9,7 +9,7 @@
 
 ![FreeTV on an LG OLED](docs/screenshot.png)
 
-<table><tr><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td><td width="33%"><img src="docs/screens/anadir-canal.jpg" alt="Add a channel with the TV keyboard"><br><sub>Add a channel with the TV keyboard</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="The Store marks apps with a new version"><br><sub>The Store marks apps with a new version</sub></td></tr><tr><td width="33%"><img src="docs/screens/tienda-actualizar-todo.jpg" alt="Update all, one after the other"><br><sub>Update all, one after the other</sub></td><td width="33%"><img src="docs/screens/tienda.jpg" alt="The Store: community apps without root"><br><sub>The Store: community apps without root</sub></td><td></td></tr></table>
+<table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
 LG's home screen is full of ads. FreeTV sets it aside (it does not delete it) and puts its own: your apps as real square
 icons, recommendations only from the services you have an account in, your city's weather and the market quotes you care
@@ -45,7 +45,8 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   Press OK on an app for its page and, if it **needs no root**, an **Install on this TV** button: the TV downloads the package,
   checks its SHA-256 hash and installs it, no computer (if you turn that on while installing FreeTV). Anything that needs root
   is **not installed**. See [Community apps](#community-apps-ad-free-youtube-kodi-jellyfin).
-- **App updates.** The TV knows which version of each installed app you have, and the catalogue says the latest. In the Store an app
+- **App updates.** The TV knows which version of each installed app you have, and the catalogue says the latest. The Store lists your
+  installed apps first, each with **✓ its version · up to date** (or the new version), and shows the free space on the TV. An app
   with a newer version is marked ("update 1.2.3"), its page says *Update available (v1.2 → v1.3)* and an **Update** button installs it
   over the old one with the same checks (no root, https, SHA-256 hash); the app and its settings are kept. **Update all (N)** at the
   top of the list brings them all up to date, one after the other. Apps that ask for a confirmation because of their warning (Open
@@ -62,8 +63,20 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   **Back** brings you here too: the helper waits a bit over a second for LG to settle, then opens FreeTV once, with no
   back and forth. When the TV turns on, the helper opens FreeTV (on some TVs LG's home shows for a couple of
   seconds first).
-- **Developer Mode renewal** (beta): LG's Developer Mode expires after ~40 days; *Home Settings → Developer Mode
-  renewal* has a panel to renew it from the TV itself.
+- **Developer Mode stays on by itself.** LG's Developer Mode session lasts 1000 hours (~41 days). *Home Settings → Developer Mode: time
+  left* shows what is left (and has **Renew now**), and *Renew Developer Mode by itself* (on by default) asks LG for 1000 more hours
+  when less than 14 days are left, the same request as the **EXTEND** button of LG's Developer Mode app. **Confirmed on a real TV:**
+  879 h left → 999 h 59 min after the request. It runs from the TV itself (through the store's Developer Mode shell: needs the store
+  permission asked at the end of `install.sh`); your session token never leaves the TV and is never logged. A TV that stays off for the
+  whole 41 days cannot renew. The old *Developer Mode renewal* (beta) panel from the helper is still there.
+- **Your settings survive a reinstall.** Reinstalling FreeTV used to empty its settings (language, shelf, channels, hidden apps…). A
+  copy is kept in the store service's folder (which a reinstall keeps) and comes back by itself on the first start after a reinstall.
+- **Start tab.** *Home Settings → Start tab* (or hold OK on a tab) picks the tab FreeTV opens on, or "the last used".
+- **Hide LG's clutter.** *Hold OK on an app in All Apps → Hide from here* (sports alerts, art gallery, home panel and LG Channels start
+  hidden; *Hidden apps* in Home Settings brings them back). They stay installed: LG's system apps cannot be removed without root.
+- **LG privacy check.** *Home Settings → LG privacy* reads the TV's own state and tells you if LG's ACR (it listens to what you watch and
+  sends fingerprints to an advertiser) is on, with the menu path to turn it off. **FreeTV does not remove LG's trackers (it cannot
+  without root)**; see [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) for what we measured and what to turn off.
 - **Emergency exit:** hold **Home** for 2 seconds and you are back on LG's home; FreeTV stops intercepting the button.
 
 ## What you need
@@ -203,7 +216,7 @@ Got one of these? Tell us how it went in an [Issue](https://github.com/PharmaJav
 Tested on **one LG OLED** (webOS with Node 8.12 and Chrome 79; Samsung and Android TV: see the table above): Home button, return after **Back**, reordering, quotes,
 picks and the **store** (the TV's service opens its session, installs a package with its hash checked and refuses the dangerous
 cases: root, wrong hash, an id outside the catalogue, an unconfirmed warning…). The `serve` variant (through the computer) was
-tested with simulated tools, not on a TV. Kodi did not fit for lack of free space on the TV. Cold boot depends on your TV and firmware. Other LG models may differ. **Samsung is experimental (not tried by us on a TV) and other brands are not supported here.** Renewal is **beta** and unconfirmed on TVs without root.
+tested with simulated tools, not on a TV. Kodi did not fit for lack of free space on the TV. Cold boot depends on your TV and firmware. Other LG models may differ. **Samsung is experimental (not tried by us on a TV) and other brands are not supported here.** The Developer Mode renewal from the TV (see above) was confirmed on one TV; the helper's own beta panel is not.
 
 ## Credits
 
@@ -224,7 +237,7 @@ affiliated with LG.
 
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
-<table><tr><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td><td width="33%"><img src="docs/screens/anadir-canal.jpg" alt="Añadir un canal con el teclado de la tele"><br><sub>Añadir un canal con el teclado de la tele</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="La Tienda marca las apps con versión nueva"><br><sub>La Tienda marca las apps con versión nueva</sub></td></tr><tr><td width="33%"><img src="docs/screens/tienda-actualizar-todo.jpg" alt="Actualizar todo, una tras otra"><br><sub>Actualizar todo, una tras otra</sub></td><td width="33%"><img src="docs/screens/tienda.jpg" alt="La Tienda: apps de la comunidad sin root"><br><sub>La Tienda: apps de la comunidad sin root</sub></td><td></td></tr></table>
+<table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
 
 La pantalla de inicio de LG está llena de publicidad. FreeTV la deja de lado (no la borra) y pone la suya: tus apps como
 iconos cuadrados de verdad, recomendaciones solo de los servicios donde tienes cuenta, el tiempo de tu ciudad y las
@@ -261,8 +274,9 @@ de LG, y **todo se puede deshacer**.
   OK en una app ves su ficha y, si **no pide root**, el botón **Instalar en esta tele**: la tele descarga el paquete, comprueba su
   hash SHA-256 y lo instala, sin ordenador (si lo activas al instalar FreeTV). Lo que pide root **no se instala**. Ver
   [Apps de la comunidad](#apps-de-la-comunidad-youtube-sin-anuncios-kodi-jellyfin).
-- **Actualizaciones de las apps.** La tele sabe qué versión tienes de cada app instalada y el catálogo dice cuál es la última. En la
-  Tienda, la app con versión nueva sale marcada («actualización 1.2.3»), su ficha dice *Actualización disponible (v1.2 → v1.3)* y un
+- **Actualizaciones de las apps.** La tele sabe qué versión tienes de cada app instalada y el catálogo dice cuál es la última. La Tienda
+  enseña primero tus apps instaladas, cada una con **✓ su versión · al día** (o la nueva) y el espacio libre de la tele. La app con
+  versión nueva sale marcada («actualización 1.2.3»), su ficha dice *Actualización disponible (v1.2 → v1.3)* y un
   botón **Actualizar** la instala encima con la misma comprobación (sin root, https, hash SHA-256); las apps y sus ajustes se conservan.
   Arriba de la lista aparece **Actualizar todo (N)**, que las pone al día una tras otra. Las que piden confirmación por su aviso (Open
   Service Menu, Auto Dev Token Refresh, Homebrew Channel) no entran en «Actualizar todo»: se actualizan una a una, confirmando.
@@ -277,8 +291,22 @@ de LG, y **todo se puede deshacer**.
 - **El botón Home de verdad.** Pulsas **Home** en cualquier app y vuelves a FreeTV, no al inicio de LG. Al salir de una
   app con **Atrás** también vuelves aquí: el ayudante espera algo más de un segundo a que LG se asiente y entonces abre
   FreeTV, una sola vez, sin ir y venir. Al encender la tele, el ayudante abre FreeTV (en algunas teles se ve el inicio de LG un par de segundos antes).
-- **Renovación del Modo Desarrollador** (beta): el Modo Desarrollador de LG caduca a los ~40 días; en
-  *Ajustes de inicio → Renovación del Modo Desarrollador* hay un panel para renovarlo desde la propia tele.
+- **El Modo Desarrollador se mantiene solo.** La sesión del Modo Desarrollador de LG dura 1000 horas (~41 días). *Ajustes de inicio → Modo
+  Desarrollador: tiempo restante* te dice lo que queda (y tiene **Renovar ahora**), y *Renovar el Modo Desarrollador sola* (activado por
+  defecto) le pide a LG otras 1000 horas cuando quedan menos de 14 días: es la misma petición que el botón **EXTEND** de la app Developer
+  Mode de LG. **Confirmado en una tele real:** de 879 h pasó a 999 h 59 min. Lo hace la propia tele (por el shell de Modo Desarrollador de la
+  tienda: necesita el permiso de la tienda que pregunta `install.sh` al final); tu token de sesión no sale de la tele ni se escribe en
+  ningún registro. Una tele apagada los 41 días enteros no puede renovar. El panel antiguo *Renovación del Modo Desarrollador* (beta) del
+  ayudante sigue ahí.
+- **Tus ajustes sobreviven a reinstalar.** Antes, reinstalar FreeTV vaciaba sus ajustes (idioma, estante, canales, apps ocultas…). Ahora
+  una copia vive en la carpeta del servicio de la tienda (que la reinstalación conserva) y vuelve sola en el primer arranque.
+- **Pestaña de inicio.** *Ajustes de inicio → Pestaña de inicio* (o mantén OK sobre una pestaña) elige en cuál se abre FreeTV, o «la última usada».
+- **Oculta el desorden de LG.** *Mantén OK sobre una app en Todas las apps → Ocultar de aquí* (alertas de deportes, galería de arte, panel de
+  casa y LG Channels salen ocultas; *Apps ocultas* en Ajustes las devuelve). Siguen instaladas: las apps de sistema de LG no se pueden
+  quitar sin root.
+- **Revisión de privacidad de LG.** *Ajustes de inicio → Privacidad de LG* lee el estado de la tele y te dice si el ACR de LG (escucha lo
+  que ves y manda huellas a un anunciante) está activo, con el camino del menú para apagarlo. **FreeTV no quita los rastreadores de LG
+  (sin root no puede)**; mira [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) para lo que medimos y lo que debes apagar.
 - **Salida de emergencia:** mantén **Home** 2 segundos y vuelves al inicio de LG; FreeTV deja de interceptar el botón.
 
 ## Qué necesitas
@@ -379,7 +407,10 @@ Cuando acabe: abre cualquier app y pulsa **Home**, o apaga y enciende la tele.
 | Cambiar el salvapantallas | *Ajustes de inicio → Salvapantallas* (paisajes, sugerencias o ambos) |
 | Elegir de qué servicios sugerir, animación y cuántas | *Ajustes de inicio → Sugerencias* |
 | Quitar o poner las cotizaciones | *Ajustes de inicio* (Bitcoin, Ethereum, Solana, XRP, S&P 500, NASDAQ 100) |
-| Renovar el Modo Desarrollador | *Ajustes de inicio → Renovación del Modo Desarrollador* (o **EXTEND** en la app Developer Mode) |
+| Ver o renovar el Modo Desarrollador | *Ajustes de inicio → Modo Desarrollador: tiempo restante* → *Renovar ahora* (o **EXTEND** en la app Developer Mode); se renueva sola con menos de 14 días |
+| Elegir con qué pestaña arranca | *Ajustes de inicio → Pestaña de inicio*, o mantén OK sobre la pestaña |
+| Ocultar o mostrar apps de LG | Mantén OK sobre la app en *Todas las apps* → *Ocultar de aquí*; *Ajustes de inicio → Apps ocultas* |
+| Saber si LG te rastrea | *Ajustes de inicio → Privacidad de LG* |
 | Volver al inicio de LG | Mantén **Home** 2 segundos |
 | Reactivar el botón Home tras esa pulsación larga | *Ajustes de inicio → Reactivar el botón Home* |
 
@@ -473,8 +504,8 @@ de un tercero) detrás de una confirmación aparte. El catálogo y las apps las 
 - Otras LG (sobre todo modelos antiguos o muy nuevos) pueden comportarse distinto. El ayudante del botón Home es de otra
   persona y su autor lo probó en otras dos teles; FreeTV añade dos arreglos (ver [cómo funciona](docs/COMO-FUNCIONA.md)).
 - Samsung y Android TV: ver la tabla de arriba; en esas teles no hemos probado FreeTV.
-- La renovación automática del Modo Desarrollador es **beta** y sin confirmar en teles sin root: sigue mirando el
-  contador y usa **EXTEND**.
+- La renovación del Modo Desarrollador desde la tele (arriba) está confirmada en una tele; el panel beta del ayudante no. Si la tele
+  está apagada todo el plazo, caduca: mira el contador.
 - Al salir de una app con **Atrás** se ve el inicio de LG algo más de un segundo antes de que aparezca FreeTV; es lo que tarda
   LG en asentarse. Con menos espera, LG volvía a ponerse delante y se veía ir y venir.
 
