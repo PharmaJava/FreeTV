@@ -1,0 +1,31 @@
+name: checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the store service's one dependency
+        run: cd store-service && npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+      - name: No keys or private files in the repository
+        run: python3 tools/check_secrets.py --all
+      - name: Python tools compile
+        run: python3 -m py_compile tools/*.py tizen/*.py
+      - name: Scripts of the home and the store service are valid
+        run: |
+          for f in home/*.js store-service/*.js; do node --check "$f"; done
+      - name: The home builds (without any key)
+        run: |
+          python3 tools/build_home.py --config config.example.properties
+          for f in out/home/*.js; do node --check "$f"; done
+      - name: Checks that need no TV
+        run: node tests/run.js

@@ -375,6 +375,31 @@ var TV = (function () {
     /** The YouTube app the Custom tab opens its channels in: YouTube AdFree on LG (it takes LG's YouTube id), Samsung's own YouTube. */
     youtube: samsung ? ['9Ur5IzDKqV.TizenYouTube', '111299001912'] : ['youtube.leanback.v4'],
 
+    /** Puts the TV in standby (the sleep timer), through the remote control API; done(ok). */
+    turnOff: function (done) {
+      if (!webos) { if (done) done(false); return; }
+      var ws = null, over = false, key = null;
+      function finish(ok) { if (over) return; over = true; try { ws.close(); } catch (e) {} if (done) done(ok); }
+      try { key = localStorage.getItem(POWER_KEY); } catch (e) {}
+      try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { finish(false); return; }
+      setTimeout(function () { finish(false); }, 15000);
+      ws.onopen = function () {
+        var payload = {forcePairing: false, pairingType: 'PROMPT',
+          manifest: {manifestVersion: 1, appVersion: '1.0', permissions: ['READ_POWER_STATE', 'CONTROL_POWER', 'CONTROL_TV_SCREEN', 'CONTROL_DISPLAY']}};
+        if (key) payload['client-key'] = key;
+        ws.send(JSON.stringify({type: 'register', id: 'register', payload: payload}));
+      };
+      ws.onmessage = function (event) {
+        var m = null;
+        try { m = JSON.parse(event.data); } catch (e) {}
+        if (!m) return;
+        if (m.type === 'registered') ws.send(JSON.stringify({type: 'request', id: 'off', uri: 'ssap://system/turnOff'}));
+        else if (m.id === 'off') finish(m.type !== 'error');
+        else if (m.id === 'register' && m.type === 'error') finish(false);
+      };
+      ws.onerror = ws.onclose = function () { finish(false); };
+    },
+
     /** While FreeTV's screensaver is on (true), LG's own is kept away; false when it ends. */
     holdScreen: function (on) { if (on) powerStart(); else powerStop(); },
 

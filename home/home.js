@@ -156,18 +156,22 @@
       }
       if (!out.length) out = apps.slice(0, MAX_SHELF);
     }
+    if (Prefs.kids()) {
+      out = out.filter(kidsAllowed);
+      if (!out.length) out = apps.filter(kidsAllowed).slice(0, 1);
+    }
     shelf = out;
-    var hidden = Prefs.hiddenApps();
+    var hidden = Prefs.kids() ? apps.map(function (x) { return x.id; }) : Prefs.hiddenApps();
     others = apps.filter(function (x) { return hidden.indexOf(x.id) < 0; });   // All Apps lists every app, the ones on the shelf too, but the hidden ones
   }
 
   // MARK: - Focus
 
-  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community', DLG: 'dialog'};
-  var st = {zone: Z.SHELF, top: 0, tab: firstTab(), card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0};
+  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community', TILES: 'tiles', DLG: 'dialog'};
+  var st = {zone: Z.SHELF, top: 0, tab: firstTab(), card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0, tile: 0};
   var cards = [];
 
-  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM || st.zone === Z.DLG; }
+  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM || st.zone === Z.TILES || st.zone === Z.DLG; }
 
   function updateFocus() {
     var i, list;
@@ -185,7 +189,7 @@
       // keep the focused card inside the screen, and let the blurred background follow it
       cardShift = st.card > 0 ? Math.max(0, cardLeft(st.card) + cardW(st.card) - 1840) : 0;
       $('cards').style.webkitTransform = $('cards').style.transform = cardShift ? 'translateX(' + (-cardShift) + 'px)' : '';
-      if (cards[st.card] && cards[st.card] !== bgShown) { bgShown = cards[st.card]; backdrop(cardBackdrop(bgShown)); }
+      if (cards[st.card] && cards[st.card] !== bgShown) { bgShown = cards[st.card]; backdrop(bgFor(cardBackdrop(bgShown))); }
     }
     list = $('tiles').children;
     for (i = 0; i < list.length; i++) {
@@ -203,6 +207,8 @@
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
     focusRows($('community'), commOpen < 0 ? st.comm : commAct, st.zone === Z.COMM);
     focusRows($('dialog'), dlg.index, st.zone === Z.DLG);
+    list = document.querySelectorAll('#tilesheet .tile');
+    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TILES && st.tile === i);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
   }
 
@@ -234,10 +240,45 @@
 
   // Five tabs: Custom (YouTube shortcuts for the children), Continue watching (what was opened from here), then the TMDB picks.
   var TABS = 5, TAB_KIND = [null, null, null, 'movie', 'tv'];
+
+  /** How many tabs there are: all five, only the first two in calm mode, only the first in kids mode. */
+  function tabCount() { return Prefs.kids() ? 1 : Prefs.calm() ? 2 : 5; }
   function localTab() { return st.tab < 2; }
 
+  function frostWanted() {
+    var m = Prefs.glass();
+    if (m === 'off') return false;
+    if (m === 'on') return true;
+    var can = !!(window.CSS && CSS.supports && (CSS.supports('backdrop-filter', 'blur(2px)') || CSS.supports('-webkit-backdrop-filter', 'blur(2px)')));
+    var ch = /Chrom(?:e|ium)\/(\d+)/.exec(navigator.userAgent || '');
+    return can && (!ch || +ch[1] >= 76);
+  }
+
+  /** The look the person chose: frosted glass, calm mode, the accent colour, and the tabs that go with them. */
+  function applyLook() {
+    setClass(body, 'frost', frostWanted());
+    setClass(body, 'calm', Prefs.calm());
+    setClass(body, 'kids', Prefs.kids());
+    ['mint', 'blue', 'rose', 'amber'].forEach(function (a) { setClass(body, 'acc-' + a, Prefs.accent() === a); });
+    var n = tabCount();
+    if (n !== TABS) {
+      TABS = n;
+      if (st.tab >= TABS) { st.tab = 0; renderCards(); }
+      if (st.zone === Z.TOP && st.top >= TABS && st.top < 5) st.top = 0;
+      renderTop();
+    }
+  }
+
+  /** What is behind the home: the focused card's picture, or one of the landscapes (a new one every half hour). */
+  function bgFor(url) {
+    if (Prefs.wallpaper() !== 'places' || typeof LANDSCAPES === 'undefined' || !LANDSCAPES.length) return url;
+    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(LANDSCAPES[Math.floor(Date.now() / 1800000) % LANDSCAPES.length][0]) + '?width=480';
+  }
+
+  function refreshBackdrop() { bgUrl = null; backdrop(bgFor(bgShown ? cardBackdrop(bgShown) : '')); }
+
   /** The tab to open on: the person's choice, or the one they used last. */
-  function firstTab() { var t = Prefs.startTab(); return t === 'last' ? Prefs.lastTab() : t; }
+  function firstTab() { var t = Prefs.startTab(); t = t === 'last' ? Prefs.lastTab() : t; return Math.min(t, tabCount() - 1); }
 
   function tabNames() {
     return [tr('Personalizado', 'Custom', 'Personalizado'), tr('Continuar assistindo', 'Continue watching', 'Continuar viendo'),
@@ -424,7 +465,7 @@
     st.card = Math.min(st.card, Math.max(0, list.length - 1));
     if (!list.length && st.zone === Z.CARDS) st.zone = Z.SHELF;
     bgShown = list.length ? list[0] : null;
-    backdrop(list.length ? cardBackdrop(list[0]) : '');
+    backdrop(bgFor(list.length ? cardBackdrop(list[0]) : ''));
     updateFocus();
   }
 
@@ -506,6 +547,7 @@
       drawerItems.push({label: x.label || tr('TV aberta', 'Live TV', 'TV en vivo'), symbol: x.symbol, off: !x.connected, run: launcher(x.id, x.label)});
     }
     drawerInputs = drawerItems.length;
+    if (!Prefs.kids()) drawerItems.push({label: tr('Painel rápido', 'Quick panel', 'Panel rápido'), symbol: 'sparkles', run: function () { openTiles('quick'); }});
     drawerItems.push({label: tr('Todos os Apps', 'All Apps', 'Todas las apps'), symbol: 'apps', run: openApps});
     drawerItems.push({label: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), symbol: 'settings', run: openSettings});
     drawerItems.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), symbol: 'tv_settings', run: tvSettings});
@@ -641,11 +683,13 @@
   }
 
   function closeSheets() {
+    settingsCat = null;
     setClass($('apps'), 'open', false);
     setClass($('settings'), 'open', false);
     setClass($('shelfedit'), 'open', false);
     setClass($('suggest'), 'open', false);
     setClass($('community'), 'open', false);
+    setClass($('tilesheet'), 'open', false);
     setClass($('dialog'), 'open', false);
     st.zone = Z.SHELF;
     updateFocus();
@@ -653,65 +697,107 @@
 
   // MARK: - Home Settings
 
+  var settingsCat = null, settingsCatRow = 0;
+
+  function settingCats() {
+    var cats = [
+      {id: 'home', icon: 'home', label: tr('Início', 'Home', 'Inicio')},
+      {id: 'look', icon: 'sparkles', label: tr('Aparência', 'Look', 'Aspecto')},
+      {id: 'widgets', icon: 'partly_cloudy_day', label: tr('Widgets', 'Widgets', 'Widgets')},
+      {id: 'apps', icon: 'apps', label: tr('Apps', 'Apps', 'Apps')}
+    ];
+    cats.push({id: 'privacy', icon: 'lock', label: tr('Privacidade e crianças', 'Privacy and kids', 'Privacidad y niños')});
+    cats.push({id: 'care', icon: 'settings', label: tr('Manutenção', 'Maintenance', 'Mantenimiento')});
+    return cats;
+  }
+
+  function settingsTitle() {
+    var main = tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio');
+    if (!settingsCat) return main;
+    var c = settingCats().filter(function (x) { return x.id === settingsCat; })[0];
+    return c ? c.label : main;
+  }
+
   function settingRows() {
+    if (!settingsCat) {
+      return settingCats().map(function (c) {
+        return {label: c.label, icon: c.icon, value: '›', step: function (d) { if (d >= 0) { settingsCatRow = st.row; settingsCat = c.id; st.row = 0; renderSettings(); } }};
+      });
+    }
     var lang = Prefs.language(), unit = Prefs.temperature(), theme = Prefs.theme();
     var auto = tr('Automático', 'Automatic', 'Automático'), on = tr('Ligado', 'On', 'Activado'), off = tr('Desligado', 'Off', 'Desactivado');
-    var rows = [
-      {label: tr('Idioma', 'Language', 'Idioma'), value: lang === 'ru' ? 'Русский' : lang === 'de' ? 'Deutsch' : lang === 'pt' ? 'Português' : lang === 'en' ? 'English' : lang === 'es' ? 'Español' : auto,
-        step: function (d) { cycle('language', ['auto', 'de', 'en', 'es', 'pt', 'ru'], lang, d); I18N.set(Prefs.language()); renderAll(); }},
-      {label: tr('Temperatura', 'Temperature', 'Temperatura'), value: unit === 'C' ? '°C' : unit === 'F' ? '°F' : auto,
-        step: function (d) { cycle('temperature', ['auto', 'C', 'F'], unit, d); renderPanels(); }},
-      {label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
-        step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }},
-      {label: tr('Aba inicial', 'Start tab', 'Pestaña de inicio'), value: Prefs.startTab() === 'last' ? tr('A última usada', 'The last used', 'La última usada') : tabNames()[Prefs.startTab()],
-        step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }},
-      {label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
-        step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }},
-      {label: tr('Widget de cotações', 'Quotes widget', 'Widget de cotizaciones'), toggle: Prefs.quotes(),
-        step: function () { Prefs.set('quotes', !Prefs.quotes()); Data.settingsChanged(); }}
-    ];
-    var names = ['Bitcoin', 'Ethereum', 'Solana', tr('Dólar', 'Dollar', 'Dólar')];
-    var count = Data.currency === 'BRL' ? 4 : 3;
-    var shown = [];
-    for (var c = 0; c < count; c++) shown.push(c);
-    shown.push(4, 5, 6);   // XRP, then the iShares S&P 500 and NASDAQ 100 (dollars)
-    for (var s = 0; s < shown.length; s++) {
-      (function (i) {
-        rows.push({label: i < 4 ? names[i] : Data.coinName(i), toggle: Prefs.quotes() && Prefs.coin(i), dim: !Prefs.quotes(),
-          step: function () { if (Prefs.quotes()) { Prefs.setCoin(i, !Prefs.coin(i)); Data.settingsChanged(); } }});
-      })(shown[s]);
-    }
-    rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
-    rows.push({label: tr('Sugestões', 'Suggestions', 'Sugerencias'), value: '›', step: function (d) { if (d >= 0) openSuggest(); }});
-    var modes = ['both', 'places', 'picks'], names = {
-      both: tr('Paisagens e sugestões', 'Places and picks', 'Paisajes y sugerencias'),
-      places: tr('Paisagens', 'Places', 'Paisajes'),
-      picks: tr('Sugestões', 'Picks', 'Sugerencias')};
-    rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
-      step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
-    rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});   // Samsung: TizenBrew's modules
-    if (TV.name === 'webos') rows.push({label: tr('Atualizar apps sozinha', 'Update apps by itself', 'Actualizar apps solas'), toggle: Prefs.autoUpdate(), step: function () {
-      var on = !Prefs.autoUpdate();
-      Prefs.set('autoUpdate', on);
-      if (on) {
-        Prefs.set('updCheckedAt', 0);
-        svcCheck();
-        setTimeout(function () {
-          if (store.svc === 'ok') { toast(tr('Uma vez por dia, a TV atualiza as apps que você já instalou.', 'Once a day the TV updates the apps you already installed.', 'Una vez al día la tele actualiza las apps que ya instalaste.')); autoUpdate(); }
-          else toast(tr('Precisa da permissão da loja: bash install.sh no computador.', 'It needs the store permission: bash install.sh on the computer.', 'Necesita el permiso de la tienda: bash install.sh en el ordenador.'));
-        }, 4000);
+    var rows = [];
+    if (settingsCat === 'home') {
+      rows.push({label: tr('Idioma', 'Language', 'Idioma'), value: lang === 'ru' ? 'Русский' : lang === 'de' ? 'Deutsch' : lang === 'pt' ? 'Português' : lang === 'en' ? 'English' : lang === 'es' ? 'Español' : auto,
+        step: function (d) { cycle('language', ['auto', 'de', 'en', 'es', 'pt', 'ru'], lang, d); I18N.set(Prefs.language()); renderAll(); }});
+      rows.push({label: tr('Aba inicial', 'Start tab', 'Pestaña de inicio'), value: Prefs.startTab() === 'last' ? tr('A última usada', 'The last used', 'La última usada') : tabNames()[Prefs.startTab()],
+        step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }});
+      rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
+      rows.push({label: tr('Sugestões', 'Suggestions', 'Sugerencias'), value: '›', step: function (d) { if (d >= 0) openSuggest(); }});
+      var modes = ['both', 'places', 'picks'], names = {
+        both: tr('Paisagens e sugestões', 'Places and picks', 'Paisajes y sugerencias'),
+        places: tr('Paisagens', 'Places', 'Paisajes'),
+        picks: tr('Sugestões', 'Picks', 'Sugerencias')};
+      rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
+        step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
+    } else if (settingsCat === 'look') {
+      rows.push({label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
+        step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }});
+      rows.push({label: tr('Vidro fosco', 'Frosted glass', 'Cristal esmerilado'), value: Prefs.glass() === 'on' ? on : Prefs.glass() === 'off' ? off : auto,
+        step: function (d) { cycle('glass', ['auto', 'on', 'off'], Prefs.glass(), d); applyLook(); }});
+      var accents = {mint: tr('Menta', 'Mint', 'Menta'), blue: tr('Azul', 'Blue', 'Azul'), rose: tr('Rosa', 'Rose', 'Rosa'), amber: tr('Âmbar', 'Amber', 'Ámbar')};
+      rows.push({label: tr('Cor de destaque', 'Accent colour', 'Color de acento'), value: accents[Prefs.accent()],
+        step: function (d) { cycle('accent', ['mint', 'blue', 'rose', 'amber'], Prefs.accent(), d); applyLook(); }});
+      rows.push({label: tr('Fundo', 'Background', 'Fondo'), value: Prefs.wallpaper() === 'places' ? tr('Paisagens', 'Landscapes', 'Paisajes') : tr('A capa em foco', 'The focused cover', 'La portada en foco'),
+        step: function () { Prefs.set('wallpaper', Prefs.wallpaper() === 'places' ? 'cards' : 'places'); refreshBackdrop(); }});
+      rows.push({label: tr('Modo calmo', 'Calm mode', 'Modo calma'), toggle: Prefs.calm(), step: function () { Prefs.set('calm', !Prefs.calm()); applyLook(); }});
+    } else if (settingsCat === 'widgets') {
+      rows.push({label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
+        step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }});
+      rows.push({label: tr('Temperatura', 'Temperature', 'Temperatura'), value: unit === 'C' ? '°C' : unit === 'F' ? '°F' : auto,
+        step: function (d) { cycle('temperature', ['auto', 'C', 'F'], unit, d); renderPanels(); }});
+      rows.push({label: tr('Widget de cotações', 'Quotes widget', 'Widget de cotizaciones'), toggle: Prefs.quotes(),
+        step: function () { Prefs.set('quotes', !Prefs.quotes()); Data.settingsChanged(); }});
+      var cnames = ['Bitcoin', 'Ethereum', 'Solana', tr('Dólar', 'Dollar', 'Dólar')];
+      var count = Data.currency === 'BRL' ? 4 : 3;
+      var shown = [];
+      for (var c = 0; c < count; c++) shown.push(c);
+      shown.push(4, 5, 6);   // XRP, then the iShares S&P 500 and NASDAQ 100 (dollars)
+      for (var sh = 0; sh < shown.length; sh++) {
+        (function (i) {
+          rows.push({label: i < 4 ? cnames[i] : Data.coinName(i), toggle: Prefs.quotes() && Prefs.coin(i), dim: !Prefs.quotes(),
+            step: function () { if (Prefs.quotes()) { Prefs.setCoin(i, !Prefs.coin(i)); Data.settingsChanged(); } }});
+        })(shown[sh]);
       }
-    }});
-    if (TV.name === 'webos') {
-      rows.push({label: tr('Modo Desenvolvedor: tempo restante', 'Developer Mode: time left', 'Modo Desarrollador: tiempo restante'), value: devText(), step: function (d) { if (d >= 0) openDevMode(); }});
-      rows.push({label: tr('Renovar o Modo Desenvolvedor sozinha', 'Renew Developer Mode by itself', 'Renovar el Modo Desarrollador sola'), toggle: Prefs.devAuto(), step: function () { Prefs.set('devAuto', !Prefs.devAuto()); }});
+    } else if (settingsCat === 'apps') {
+      rows.push({label: commTitle(), value: '›', step: function (d) { if (d >= 0) openCommunity(); }});   // Samsung: TizenBrew's modules
+      if (TV.name === 'webos') {
+        rows.push({label: tr('Atualizar apps sozinha', 'Update apps by itself', 'Actualizar apps solas'), toggle: Prefs.autoUpdate(), step: function () {
+          var on2 = !Prefs.autoUpdate();
+          Prefs.set('autoUpdate', on2);
+          if (on2) {
+            Prefs.set('updCheckedAt', 0);
+            svcCheck();
+            setTimeout(function () {
+              if (store.svc === 'ok') { toast(tr('Uma vez por dia, a TV atualiza as apps que você já instalou.', 'Once a day the TV updates the apps you already installed.', 'Una vez al día la tele actualiza las apps que ya instalaste.')); autoUpdate(); }
+              else toast(tr('Precisa da permissão da loja: bash install.sh no computador.', 'It needs the store permission: bash install.sh on the computer.', 'Necesita el permiso de la tienda: bash install.sh en el ordenador.'));
+            }, 4000);
+          }
+        }});
+        rows.push({label: tr('Apps ocultas', 'Hidden apps', 'Apps ocultas'), value: String(Prefs.hiddenApps().length), step: function (d) { if (d >= 0) openHiddenApps(); }});
+      }
+    } else if (settingsCat === 'privacy') {
+      if (TV.name === 'webos') rows.push({label: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), value: privacyText(), step: function (d) { if (d >= 0) openPrivacy(); }});
+      else rows.push({label: tr('Privacidade da TV', 'TV privacy', 'Privacidad de la tele'), value: '›', step: function (d) { if (d >= 0) openTvPrivacy(); }});
+      rows.push({label: tr('Modo crianças', 'Kids mode', 'Modo niños'), value: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Desligado', 'Off', 'Desactivado'), step: function (d) { if (d >= 0) { closeSheets(); if (Prefs.kids()) kidsExit(); else kidsStart(); } }});
+    } else if (settingsCat === 'care') {
+      if (TV.name === 'webos') {
+        rows.push({label: tr('Modo Desenvolvedor: tempo restante', 'Developer Mode: time left', 'Modo Desarrollador: tiempo restante'), value: devText(), step: function (d) { if (d >= 0) openDevMode(); }});
+        rows.push({label: tr('Renovar o Modo Desenvolvedor sozinha', 'Renew Developer Mode by itself', 'Renovar el Modo Desarrollador sola'), toggle: Prefs.devAuto(), step: function () { Prefs.set('devAuto', !Prefs.devAuto()); }});
+      }
+      if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
+      rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     }
-    if (TV.name === 'webos') {
-      rows.push({label: tr('Apps ocultas', 'Hidden apps', 'Apps ocultas'), value: String(Prefs.hiddenApps().length), step: function (d) { if (d >= 0) openHiddenApps(); }});
-      rows.push({label: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), value: privacyText(), step: function (d) { if (d >= 0) openPrivacy(); }});
-    }
-    if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
-    rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
   }
 
@@ -727,12 +813,13 @@
     box.innerHTML = '';
     var title = el('div', 'title', box);
     sym('settings', title);
-    title.appendChild(document.createTextNode(tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio')));
+    title.appendChild(document.createTextNode(settingsTitle()));
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
     rowsNow = settingRows();
     list.style.height = Math.min(rowsNow.length, 7) * 78 + 'px';
     for (var i = 0; i < rowsNow.length; i++) {
-      var r = rowsNow[i], row = el('div', 'row' + (r.dim ? ' dim' : ''), holder, r.label);
+      var r = rowsNow[i], row = el('div', 'row' + (r.dim ? ' dim' : '') + (r.icon ? ' hasico' : ''), holder, r.label);
+      if (r.icon) sym(r.icon, row).className += ' ico';
       if (r.toggle !== undefined) setClass(el('div', 'toggle', row), 'on', r.toggle);
       else {
         var v = el('span', 'value', row);
@@ -741,7 +828,7 @@
       }
       hover(row, Z.SETTINGS, i);
     }
-    el('div', 'hint', box, tr('OK ou as setas mudam o valor.', 'OK or the arrows change the value.', 'OK o las flechas cambian el valor.'));
+    el('div', 'hint', box, settingsCat ? tr('OK ou as setas mudam o valor · Voltar sobe', 'OK or the arrows change the value · Back goes up', 'OK o las flechas cambian el valor · Atrás sube') : tr('OK abre uma seção', 'OK opens a section', 'OK abre una sección'));
     updateFocus();
   }
 
@@ -1152,6 +1239,15 @@
 
   // MARK: - Apps hidden from All Apps, and what LG's TV does with your viewing
 
+  function openTvPrivacy() {
+    showDialog(tr('Privacidade da TV', 'TV privacy', 'Privacidad de la tele'), [
+      {text: tr('A Samsung também reconhece o que você vê (ACR). Desligue nos ajustes da TV: Geral → Termos e privacidade (ou Suporte → Termos e políticas) → Serviços de informação de visualização e Publicidade baseada em interesses.',
+          'Samsung also recognises what you watch (ACR). Turn it off in the TV\'s settings: General → Terms & Privacy (or Support → Terms & Policies) → Viewing Information Services and Interest-Based Advertisement.',
+          'Samsung también reconoce lo que ves (ACR). Apágalo en los ajustes de la tele: General → Términos y privacidad (o Soporte → Términos y políticas) → Servicios de información de visualización y Publicidad basada en intereses.')},
+      {text: tr('Os nomes mudam conforme o ano da TV. Mais em docs/PRIVACIDAD.md.', 'Names change with the TV\'s year. More in docs/PRIVACIDAD.md.', 'Los nombres cambian según el año de la tele. Más en docs/PRIVACIDAD.md.')}
+    ], [{label: tr('Fechar', 'Close', 'Cerrar')}], 0);
+  }
+
   function openHiddenApps() {
     var ids = Prefs.hiddenApps(), names = ids.map(function (id) {
       for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return apps[i].title;
@@ -1203,6 +1299,275 @@
       showDialog(title, lines, [{label: tr('Fechar', 'Close', 'Cerrar')}], 0);
       if (st.zone === Z.SETTINGS) renderSettings();
     });
+  }
+
+
+  // MARK: - Tile sheets: the quick panel and the TV's health, big glass tiles you move over with the arrows
+
+  var tileSheet = {kind: '', defs: []}, HIDDEN_RE = /^(com\.webos\.app\.(home|homeconnect|discovery|launcher)|com\.local\.nativehome|io\.freemytv|com\.gathin\.tvhome[\w.]*)$/;
+
+  function tileDefs() { return tileSheet.kind === 'health' ? healthTiles() : quickTiles(); }
+
+  function openTiles(kind) {
+    if (Prefs.kids()) { kidsExit(); return; }
+    tileSheet.kind = kind;
+    tileSheet.defs = tileDefs();
+    st.tile = 0;
+    st.zone = Z.TILES;
+    renderTiles();
+    setClass($('tilesheet'), 'open', true);
+    updateFocus();
+    if (kind === 'health') refreshHealth();
+  }
+
+  function renderTiles() {
+    var box = $('tilesheet').firstChild;
+    box.innerHTML = '';
+    var title = el('div', 'title', box), health = tileSheet.kind === 'health';
+    sym(health ? 'health' : 'sparkles', title);
+    title.appendChild(document.createTextNode(health ? tr('Saúde da TV', 'TV health', 'Salud de la tele') : tr('Painel rápido', 'Quick panel', 'Panel rápido')));
+    var n = tileSheet.defs.length, cols = n <= 4 ? 2 : 3, rows = Math.ceil(n / cols), tw = cols === 2 ? 440 : 372, gap = 42, th = 250;
+    box.style.width = (cols * tw + (cols - 1) * gap + 60) + 'px';
+    box.style.left = Math.round((1920 - (cols * tw + (cols - 1) * gap + 60)) / 2) + 'px';
+    box.style.top = Math.round((1080 - (rows * th + (rows - 1) * gap + 190)) / 2) + 'px';
+    var wrap = el('div', 'tiles2', box);
+    wrap.style.height = (rows * th + (rows - 1) * gap) + 'px';
+    tileSheet.defs.forEach(function (t, i) {
+      var tile = el('div', 'tile' + (t.on ? ' on' : ''), wrap);
+      tile.style.width = tw + 'px';
+      tile.style.left = (i % cols) * (tw + gap) + 'px';
+      tile.style.top = Math.floor(i / cols) * (th + gap) + 'px';
+      sym(t.sym, tile);
+      if (t.dot) el('div', 'dot' + (t.dot === 'ok' ? '' : ' ' + t.dot), tile);
+      el('div', 'name', tile, t.name);
+      el('div', 'sub', tile, t.sub || '');
+      hover(tile, Z.TILES, i);
+    });
+    el('div', 'hint', box, tileSheet.kind === 'health' ? tr('OK abre a seção · Voltar fecha', 'OK opens the section · Back closes', 'OK abre la sección · Atrás cierra') : tr('OK usa · Voltar fecha', 'OK uses it · Back closes', 'OK lo usa · Atrás cierra')).style.marginTop = '22px';
+    updateFocus();
+  }
+
+  function quickTiles() {
+    return quickAll().filter(function (t) { return TV.name === 'webos' || (t.sym !== 'timer' && t.sym !== 'health'); });
+  }
+
+  function quickAll() {
+    var on = tr('Ligado', 'On', 'Activado'), off = tr('Desligado', 'Off', 'Desactivado'), left = sleep.end ? Math.max(1, Math.ceil((sleep.end - Date.now()) / 60000)) : 0;
+    return [
+      {sym: 'search', name: tr('Procurar', 'Search', 'Buscar'), sub: tr('Apps, canais, YouTube', 'Apps, channels, YouTube', 'Apps, canales, YouTube'), run: function () { closeSheets(); openSearch(); }},
+      {sym: 'calm', name: tr('Modo calmo', 'Calm mode', 'Modo calma'), sub: Prefs.calm() ? on : off, on: Prefs.calm(), run: function () { Prefs.set('calm', !Prefs.calm()); applyLook(); }},
+      {sym: 'timer', name: tr('Desligar em…', 'Sleep timer', 'Apagar en…'), sub: left ? tr('Faltam ' + left + ' min', left + ' min left', 'Quedan ' + left + ' min') : off, on: !!left, run: sleepNext},
+      {sym: 'kids', name: tr('Modo crianças', 'Kids mode', 'Modo niños'), sub: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Só os canais deles', 'Only their channels', 'Solo sus canales'), on: Prefs.kids(), run: function () { closeSheets(); kidsStart(); }},
+      {sym: 'health', name: tr('Saúde da TV', 'TV health', 'Salud de la tele'), sub: healthSummary(), run: function () { openTiles('health'); }},
+      {sym: 'settings', name: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), sub: tr('Aparência, apps, privacidade…', 'Look, apps, privacy…', 'Aspecto, apps, privacidad…'), run: function () { closeSheets(); openSettings(); }}
+    ];
+  }
+
+  // --- the TV's health: Developer Mode, updates, space, LG's ACR, the store's permission, FreeTV's own version
+
+  var latestVer = '';
+
+  function versionCheck(done) {
+    if (TV.name !== 'webos') { if (done) done(); return; }
+    Data.getJson('https://raw.githubusercontent.com/PharmaJava/FreeTV/main/home/appinfo.json', function (err, d) {
+      if (!err && d && d.version) latestVer = String(d.version);
+      if (done) done();
+    });
+  }
+
+  function healthSummary() {
+    var bad = 0;
+    healthTiles().forEach(function (t) { if (t.dot && t.dot !== 'ok') bad++; });
+    return bad ? (bad === 1 ? tr('1 coisa para olhar', '1 thing to look at', '1 cosa que mirar') : tr(bad + ' coisas para olhar', bad + ' things to look at', bad + ' cosas que mirar')) : tr('Tudo em ordem', 'All good', 'Todo en orden');
+  }
+
+  function healthTiles() {
+    var days = dev.hours === null ? null : dev.hours / 24, ver = (window.CONFIG && CONFIG.version) || '', newer = latestVer && ver && isNewerVersion(latestVer, ver);
+    var n = store.updList.length, free = store.freeMb;
+    return [
+      {sym: 'sync', name: tr('Modo Desenvolvedor', 'Developer Mode', 'Modo Desarrollador'), sub: days === null ? '…' : devDays(dev.hours), dot: days === null ? '' : days < 7 ? 'bad' : days < 14 ? 'warn' : 'ok', run: function () { closeSheets(); openDevMode(); }},
+      {sym: 'apps', name: tr('Atualizações', 'Updates', 'Actualizaciones'), sub: store.svc !== 'ok' ? '…' : n ? (n === 1 ? tr('1 app com versão nova', '1 app has a new version', '1 app con versión nueva') : tr(n + ' apps com versão nova', n + ' apps have a new version', n + ' apps con versión nueva')) : tr('Tudo em dia', 'Everything is up to date', 'Todo al día'), dot: store.svc !== 'ok' ? '' : n ? 'warn' : 'ok', run: function () { closeSheets(); openCommunity(true); }},
+      {sym: 'tv', name: tr('Espaço livre', 'Free space', 'Espacio libre'), sub: free ? free + ' MB' : '…', dot: !free ? '' : free < 60 ? 'bad' : free < 150 ? 'warn' : 'ok', run: function () { closeSheets(); openCommunity(true); }},
+      {sym: 'lock', name: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), sub: !privacy ? '…' : !privacy.ok ? '?' : privacy.acr || privacy.send ? tr('O ACR está ligado', 'ACR is on', 'El ACR está activo') : tr('O ACR está desligado', 'ACR is off', 'El ACR está apagado'), dot: !privacy || !privacy.ok ? '' : privacy.acr || privacy.send ? 'warn' : 'ok', run: function () { closeSheets(); openPrivacy(); }},
+      {sym: 'check', name: tr('Loja na TV', 'Store on the TV', 'Tienda en la tele'), sub: store.svc === 'ok' ? tr('Pronta', 'Ready', 'Lista') : store.svc === 'checking' ? '…' : tr('Sem permissão: bash install.sh', 'No permission: bash install.sh', 'Sin permiso: bash install.sh'), dot: store.svc === 'ok' ? 'ok' : store.svc === 'checking' ? '' : 'warn'},
+      {sym: 'home', name: 'FreeTV', sub: (ver ? 'v' + ver : '') + (newer ? tr(' · há a v' + latestVer, ' · v' + latestVer + ' is out', ' · ya está la v' + latestVer) : latestVer ? tr(' · em dia', ' · up to date', ' · al día') : ''), dot: newer ? 'warn' : ver ? 'ok' : ''}
+    ];
+  }
+
+  function refreshHealth() {
+    function again() { if (st.zone === Z.TILES && tileSheet.kind === 'health') { tileSheet.defs = healthTiles(); renderTiles(); } }
+    if (store.svc === 'none' || store.svc === 'off') svcCheck();
+    svcUpdates(again);
+    privacyCheck(again);
+    versionCheck(again);
+    if (dev.hours === null) devTick(0, again);
+  }
+
+  // --- the sleep timer: 15, 30, 60, 90 minutes, a warning with 30 seconds left, any key cancels it
+
+  var sleep = {end: 0, timer: 0, warning: false, preset: 0};
+
+  function sleepCancel(quiet) {
+    clearTimeout(sleep.timer);
+    sleep.end = 0;
+    sleep.warning = false;
+    sleep.preset = 0;
+    if (!quiet) toast(tr('Temporizador desligado', 'Sleep timer off', 'Temporizador apagado'));
+  }
+
+  function sleepSet(minutes) {
+    clearTimeout(sleep.timer);
+    sleep.warning = false;
+    sleep.end = Date.now() + minutes * 60000;
+    sleep.timer = setTimeout(function () {
+      sleep.warning = true;
+      toast(tr('A TV vai desligar em 30 segundos. Aperte qualquer botão para cancelar.', 'The TV turns off in 30 seconds. Press any button to cancel.', 'La tele se apaga en 30 segundos. Pulsa cualquier botón para cancelar.'));
+      sleep.timer = setTimeout(function () {
+        sleep.end = 0;
+        sleep.warning = false;
+        TV.turnOff(function (ok) { if (!ok) toast(tr('Não consegui desligar a TV.', 'Could not turn the TV off.', 'No pude apagar la tele.')); });
+      }, 30000);
+    }, minutes * 60000 - 30000);
+    toast(tr('A TV desliga em ' + minutes + ' minutos', 'The TV turns off in ' + minutes + ' minutes', 'La tele se apaga en ' + minutes + ' minutos'));
+  }
+
+  function sleepNext() {
+    var presets = [0, 15, 30, 60, 90];
+    sleep.preset = (sleep.preset + 1) % presets.length;
+    if (!presets[sleep.preset]) sleepCancel(); else sleepSet(presets[sleep.preset]);
+  }
+
+  // --- search: apps, Custom channels, Store apps, and YouTube AdFree's own search
+
+  var searchQuery = '';
+
+  function openSearch() {
+    showDialog(tr('Procurar', 'Search', 'Buscar'), [
+      {text: tr('Escreva com o teclado da TV e aperte Enter.', 'Type with the TV keyboard and press Enter.', 'Escribe con el teclado de la tele y pulsa Intro.')}
+    ], [{label: tr('Procurar', 'Search', 'Buscar'), run: function () { runSearch(searchQuery); }}, {label: cancelText()}], 0);
+    var box = $('dialog').firstChild, input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'chaninput';
+    input.value = searchQuery;
+    input.setAttribute('placeholder', tr('Ex.: Netflix, Bluey, Kodi…', 'E.g. Netflix, Bluey, Kodi…', 'Ej.: Netflix, Bluey, Kodi…'));
+    input.oninput = function () { searchQuery = input.value; };
+    input.onEnter = function (v) { searchQuery = v; runSearch(v); };
+    box.insertBefore(input, box.querySelector('.row'));
+    setTimeout(function () { try { input.focus(); } catch (e) {} }, 250);
+  }
+
+  function runSearch(q) {
+    q = String(q || '').replace(/^\s+|\s+$/g, '');
+    if (!q) { openSearch(); return; }
+    var ql = q.toLowerCase(), results = [];
+    function has(t) { return String(t || '').toLowerCase().indexOf(ql) >= 0; }
+    apps.forEach(function (a) { if (has(a.title) && !HIDDEN_RE.test(a.id)) results.push({label: a.title, run: launcher(a.id, a.title)}); });
+    allChannels().forEach(function (c) { if (has(c.title)) results.push({label: c.title + '  ·  YouTube', run: function () { openChannel(c); }}); });
+    commList.forEach(function (p) {
+      if (!p.special && has(p.title)) results.push({label: p.title + '  ·  ' + tr('Loja', 'Store', 'Tienda'), run: function () {
+        openCommunity(true);
+        setTimeout(function () { var i = commList.indexOf(p); if (i >= 0) { commOpen = i; commAct = 0; st.comm = i; renderCommunity(); } }, 500);
+      }});
+    });
+    if (findApp(YOUTUBE)) results.push({label: tr('Procurar «' + q + '» no YouTube', 'Search "' + q + '" on YouTube', 'Buscar «' + q + '» en YouTube'), run: function () {
+      remember('app:' + YOUTUBE, 'YouTube AdFree');
+      TV.launch(YOUTUBE, {contentTarget: {intent: 'SearchContent', intentParam: q}}, function (ok) { if (!ok) toast(tr('Não deu para abrir o YouTube', 'Could not open YouTube', 'No se pudo abrir YouTube')); });
+    }});
+    var buttons = results.slice(0, 7).map(function (r) { return {label: r.label, run: r.run}; });
+    buttons.push({label: tr('Procurar outra coisa', 'Search for something else', 'Buscar otra cosa'), run: openSearch});
+    buttons.push({label: cancelText()});
+    showDialog(tr('Resultados', 'Results', 'Resultados'), results.length ? [] : [{text: tr('Nada com «' + q + '».', 'Nothing for "' + q + '".', 'Nada con «' + q + '».')}], buttons, 0);
+  }
+
+  // --- kids mode: only the Custom tab and the apps chosen for them; a 4-digit PIN leaves it (it keeps FreeTV's own screens from the little
+  //     ones; it does not lock LG's other apps: holding Home for 2 seconds still goes to LG's home)
+
+  var pin = {on: false, digits: '', title: '', text: '', cb: null};
+
+  function askPin(title, text, cb) {
+    pin = {on: true, digits: '', title: title, text: text, cb: cb};
+    renderPin();
+  }
+
+  function renderPin() {
+    var dots = '';
+    for (var i = 0; i < 4; i++) dots += (i < pin.digits.length ? '●' : '○') + (i < 3 ? '  ' : '');
+    showDialog(pin.title, [{text: pin.text}, {cls: 'pin', text: dots}], [{label: cancelText(), run: function () { pin.on = false; }}], 0);
+  }
+
+  /** A digit key while the PIN is being asked; true when the key was for it. */
+  function pinKey(k) {
+    if (!pin.on) return false;
+    var digit = k >= 48 && k <= 57 ? k - 48 : k >= 96 && k <= 105 ? k - 96 : -1;
+    if (digit < 0) return false;
+    pin.digits += digit;
+    if (pin.digits.length < 4) { renderPin(); return true; }
+    var cb = pin.cb, d = pin.digits;
+    pin.on = false;
+    closeDialog();
+    cb(d);
+    return true;
+  }
+
+  function kidsAllowed(app) { return TV.youtube.indexOf(app.id) >= 0 || app.id === YOUTUBE; }
+
+  function kidsStart() {
+    if (Prefs.kids()) { toast(tr('O modo crianças já está ligado', 'Kids mode is already on', 'El modo niños ya está activado')); return; }
+    askPin(tr('Modo crianças: escolha um PIN', 'Kids mode: choose a PIN', 'Modo niños: elige un PIN'), tr('Digite 4 números com o controle. Com ele você sai do modo.', 'Type 4 digits with the remote. It is what leaves the mode.', 'Escribe 4 cifras con el mando. Con él sales del modo.'), function (first) {
+      askPin(tr('Repita o PIN', 'Repeat the PIN', 'Repite el PIN'), tr('Os mesmos 4 números.', 'The same 4 digits.', 'Las mismas 4 cifras.'), function (second) {
+        if (first !== second) { toast(tr('Os PINs não coincidem', 'The PINs do not match', 'Los PIN no coinciden')); return; }
+        Prefs.set('kidsPin', first);
+        Prefs.set('kids', true);
+        kidsChanged();
+        toast(tr('Modo crianças ligado', 'Kids mode on', 'Modo niños activado'));
+      });
+    });
+  }
+
+  function kidsExit() {
+    askPin(tr('Sair do modo crianças', 'Leave kids mode', 'Salir del modo niños'), tr('Digite o PIN.', 'Type the PIN.', 'Escribe el PIN.'), function (d) {
+      if (d !== Prefs.kidsPin()) { toast(tr('PIN incorreto', 'Wrong PIN', 'PIN incorrecto')); return; }
+      Prefs.set('kids', false);
+      kidsChanged();
+      toast(tr('Modo crianças desligado', 'Kids mode off', 'Modo niños desactivado'));
+    });
+  }
+
+  function kidsChanged() {
+    applyLook();
+    pickShelf();
+    st.tab = 0;
+    st.zone = Z.SHELF;
+    st.shelf = 0;
+    renderTop();
+    renderCards();
+    renderShelf();
+    renderDrawer();
+    updateFocus();
+  }
+
+  // --- first run: language, the tab to open on, and a look at LG's privacy (only on a TV that has no saved settings)
+
+  function startOnboarding() {
+    if (TV.name !== 'webos' || Prefs.onboarded()) return;
+    function end() { Prefs.set('onboarded', true); }
+    function step3() {
+      showDialog(tr('Privacidade', 'Privacy', 'Privacidad'), [
+        {text: tr('A LG pode escutar o que você vê para vender anúncios (ACR). O FreeTV não consegue desligar isso, mas diz se está ligado: Ajustes de início → Privacidade e crianças.',
+            'LG\'s TV can listen to what you watch to sell ads (ACR). FreeTV cannot turn it off, but it tells you if it is on: Home Settings → Privacy and kids.',
+            'La tele de LG puede escuchar lo que ves para vender anuncios (ACR). FreeTV no puede apagarlo, pero te dice si está activo: Ajustes de inicio → Privacidad y niños.')}
+      ], [{label: tr('Entendi', 'Got it', 'Entendido'), run: end}], 0);
+    }
+    function step2() {
+      var names = tabNames();
+      showDialog(tr('Com qual aba abrir?', 'Which tab to open on?', '¿Con qué pestaña abrir?'), [], [0, 2, 1].map(function (i) {
+        return {label: names[i], run: function () { Prefs.set('startTab', i); step3(); }};
+      }).concat([{label: tr('A última que usei', 'The last one I used', 'La última que usé'), run: function () { Prefs.set('startTab', 'last'); step3(); }}]), 0);
+    }
+    var langs = [['es', 'Español'], ['en', 'English'], ['pt', 'Português'], ['de', 'Deutsch'], ['ru', 'Русский']];
+    showDialog('FreeTV', [{text: 'Language · Idioma · Idioma'}], langs.map(function (l) {
+      return {label: l[1], run: function () { Prefs.set('language', l[0]); I18N.set(l[0]); renderAll(); step2(); }};
+    }), 0);
   }
 
   // MARK: - Developer Mode: how long the session has left, and keeping it going. LG's session lasts 1000 hours (about 41 days) and its
@@ -1573,6 +1938,7 @@
   }
 
   function closeDialog() {
+    pin.on = false;
     dlg.token++;
     setClass($('dialog'), 'open', false);
     st.zone = dlg.from;
@@ -1814,6 +2180,7 @@
     input.value = chanQuery;
     input.setAttribute('placeholder', tr('Ex.: Bluey', 'E.g. Bluey', 'Ej.: Bluey'));
     input.oninput = function () { chanQuery = input.value; };
+    input.onEnter = function (v) { chanQuery = v; searchChannels(v); };
     box.insertBefore(input, box.querySelector('.row'));
     setTimeout(function () { try { input.focus(); } catch (e) {} }, 250);   // the TV opens its keyboard
   }
@@ -1886,6 +2253,7 @@
 
   /** What holding OK opens where the focus is (null: OK only acts when it is pressed). */
   function holdMenu() {
+    if (Prefs.kids()) return null;
     if (st.zone === Z.TOP && st.top < TABS) { var tab = st.top; return function () { openTabMenu(tab); }; }
     var p = st.zone === Z.CARDS ? cards[st.card] : null;
     if (p && st.tab === 0 && p.local === 'channel') return function () { openChannelMenu(p.chan); };
@@ -1994,6 +2362,12 @@
       case Z.EDIT:
         editShelf(0);
         return;
+      case Z.TILES:
+        if (tileSheet.defs[st.tile] && tileSheet.defs[st.tile].run) {
+          tileSheet.defs[st.tile].run();
+          if (st.zone === Z.TILES) { tileSheet.defs = tileDefs(); renderTiles(); }
+        }
+        return;
       case Z.COMM:
         if (commOpen < 0 && commList[st.comm]) { commOpen = st.comm; commAct = 0; renderCommunity(); }
         else if (commOpen >= 0 && commActs[commAct]) commActs[commAct]();
@@ -2017,7 +2391,7 @@
       case Z.SHELF:
         if (grabbed >= 0) { if (dx) shift(dx); return; }   // a picked-up app only moves sideways
         if (dx) st.shelf = Math.max(0, Math.min(shelf.length - 1, st.shelf + dx));
-        else if (dy > 0) { openDrawer(); return; }
+        else if (dy > 0) { if (Prefs.kids()) { kidsExit(); return; } openDrawer(); return; }
         else if (dy < 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = nearest(cardNodes, centerX(tiles[st.shelf])); }
           else { st.zone = Z.TOP; st.top = st.tab; }
@@ -2030,7 +2404,7 @@
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(0, Math.min(TABS + 2, st.top + dx));
+          st.top = Math.max(0, Math.min(Prefs.kids() ? TABS - 1 : TABS + 2, st.top + dx));
           if (st.top < TABS) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < TABS ? 0 : cards.length - 1); }
@@ -2056,6 +2430,10 @@
         if (dy) st.edit = Math.max(0, Math.min(apps.length - 1, st.edit + dy));
         else if (dx) editShelf(dx);
         break;
+      case Z.TILES:
+        if (dx) st.tile = Math.max(0, Math.min(tileSheet.defs.length - 1, st.tile + dx));
+        else if (dy) { var tc = tileSheet.defs.length <= 4 ? 2 : 3; if (st.tile + dy * tc >= 0 && st.tile + dy * tc < tileSheet.defs.length) st.tile += dy * tc; }
+        break;
       case Z.COMM:
         if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
         else if (commOpen >= 0 && dy) commAct = Math.max(0, Math.min(commActs.length - 1, commAct + dy));
@@ -2074,7 +2452,13 @@
   function back() {
     if (grabbed >= 0) { drop(); return; }
     if (st.zone === Z.DLG) { closeDialog(); return; }
-    if (st.zone === Z.EDIT) { setClass($('shelfedit'), 'open', false); openSettings(); st.row = rowsNow.length - 2; updateFocus(); return; }
+    if (st.zone === Z.EDIT) {
+      setClass($('shelfedit'), 'open', false);
+      openSettings();
+      for (var e = 0; e < rowsNow.length; e++) if (rowsNow[e].label === tr('Prateleira', 'Shelf', 'Estante')) st.row = e;
+      updateFocus();
+      return;
+    }
     if (st.zone === Z.COMM) {
       if (commOpen >= 0) {
         if (store.flow !== 'working') store.flow = 'idle';   // a running install carries on in the background
@@ -2097,8 +2481,10 @@
       updateFocus();
       return;
     }
+    if (st.zone === Z.SETTINGS && settingsCat) { settingsCat = null; st.row = settingsCatRow; renderSettings(); return; }
     if (sheetOpen()) { closeSheets(); return; }
     if (st.zone === Z.DRAWER) { closeDrawer(); return; }
+    if (Prefs.kids()) { kidsExit(); return; }
     if (st.zone !== Z.SHELF && shelf.length) { st.zone = Z.SHELF; updateFocus(); return; }
     TV.back();
   }
@@ -2109,7 +2495,7 @@
   function hover(node, zone, index) {
     node.onmouseover = function () {
       if (st.zone === Z.DLG) return;
-      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM))) return;
+      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM || zone === Z.TILES))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
       if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
       if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
@@ -2123,6 +2509,7 @@
       else if (zone === Z.EDIT) st.edit = index;
       else if (zone === Z.SUGG) st.sug = index;
       else if (zone === Z.COMM) st.comm = index;
+      else if (zone === Z.TILES) st.tile = index;
       updateFocus();
     };
     // The Magic Remote's wheel, with the pointer on screen, clicks instead of sending OK: holding it on the shelf picks the app up,
@@ -2303,10 +2690,15 @@
     // 1537: what the TV sends when its screen comes back from LG's screensaver (and FreeTV sends that one away): not a person.
     if (k === 1537) return;
     if (poke()) { e.preventDefault(); return; }   // the first press only wakes the screen
+    if (sleep.warning) { sleepCancel(); e.preventDefault(); return; }   // any key keeps the TV on
+    if (pin.on) {
+      if (pinKey(k)) { e.preventDefault(); return; }
+      if (k === TV.keys.back || k === 27) { pin.on = false; closeDialog(); e.preventDefault(); return; }
+    }
     var field = document.activeElement && document.activeElement.tagName === 'INPUT' ? document.activeElement : null;
     if (field) {
       // Typing with the TV's keyboard: the letters go to the field; Enter searches; Back or the arrows leave the field.
-      if (k === 13) { e.preventDefault(); chanQuery = field.value; field.blur(); searchChannels(chanQuery); }
+      if (k === 13) { e.preventDefault(); field.blur(); if (field.onEnter) field.onEnter(field.value); }
       else if (k === TV.keys.back || k === 27 || k === TV.keys.up || k === TV.keys.down) { e.preventDefault(); field.blur(); }
       return;
     }
@@ -2318,7 +2710,7 @@
         okHeld = false;
         if (grabbed >= 0) { okHeld = true; drop(); return; }
         clearTimeout(okTimer);
-        if (st.zone === Z.SHELF) okTimer = setTimeout(function () { okHeld = true; grab(st.shelf); }, OK_HOLD);
+        if (st.zone === Z.SHELF) { if (!Prefs.kids()) okTimer = setTimeout(function () { okHeld = true; grab(st.shelf); }, OK_HOLD); }
         else okTimer = setTimeout(function () { var open = holdMenu(); okHeld = true; if (open) open(); }, OK_HOLD);
       }
       return;
@@ -2413,6 +2805,7 @@
 
   I18N.set(Prefs.language());
   fit();
+  applyLook();
   renderTop();
   var openedForStore = takeStoreHost(window.PalmSystem && window.PalmSystem.launchParams);   // started by `community.py serve`
   loadApps(function () {
@@ -2452,7 +2845,7 @@
     svcCall('prefsLoad', {}, function (r) {
       var data = r && r.returnValue && r.data;
       restorePending = false;
-      if (!data || !data['fmtv.prefs']) return;
+      if (!data || !data['fmtv.prefs']) { if (freshInstall) setTimeout(startOnboarding, 1500); return; }
       try {
         // What this page wrote on its own meanwhile (the Store's icon, say) stays under what the person had chosen.
         var mine = JSON.parse(localStorage.getItem('fmtv.prefs') || '{}'), saved = JSON.parse(data['fmtv.prefs']), k;
@@ -2472,11 +2865,13 @@
     setTimeout(function () { svcCall('status', {}, function () {}); }, 20000);
     setTimeout(autoUpdate, 90000);
     setTimeout(devAuto, 120000);
+    setTimeout(function () { versionCheck(); }, 180000);
     setTimeout(function () { privacyCheck(function () { if (st.zone === Z.SETTINGS) renderSettings(); }); }, 150000);
     setInterval(function () { if (Date.now() - dev.at > 6 * 3600 * 1000) devAuto(); }, 1800 * 1000);
     setInterval(autoUpdate, 3600 * 1000);   // it only acts when a day has passed since the last time
   }
 
+  setInterval(function () { if (Prefs.wallpaper() === 'places') backdrop(bgFor('')); }, 600000);   // a new landscape every half hour
   setInterval(function () {
     renderClock();
     checkNight();

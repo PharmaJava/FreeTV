@@ -53,6 +53,17 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** Frosted glass on the panels: 'auto' (where the TV can), 'on', 'off'. */
+    glass: function () { return pick('glass', 'auto'); },
+    /** Calm mode: no quotes, no clock, only the Custom and Continue watching tabs. */
+    calm: function () { return pick('calm', false) === true; },
+    accent: function () { var a = pick('accent', 'mint'); return a === 'blue' || a === 'rose' || a === 'amber' ? a : 'mint'; },
+    /** What is behind the home: the focused card's picture ('cards') or the landscapes of the screensaver ('places'). */
+    wallpaper: function () { return pick('wallpaper', 'cards') === 'places' ? 'places' : 'cards'; },
+    /** Kids mode: only the Custom tab and the apps chosen for them; the PIN (4 digits) leaves it. */
+    kids: function () { return pick('kids', false) === true && /^\d{4}$/.test(pick('kidsPin', '')); },
+    kidsPin: function () { return String(pick('kidsPin', '')); },
+    onboarded: function () { return pick('onboarded', false) === true; },
     /** The tab FreeTV opens on: 0 Custom, 1 Continue watching, 2 Explore, 3 Movies, 4 Shows, or 'last' (the one used last). */
     startTab: function () { var t = pick('startTab', 0); return t === 'last' || (t === +t && t >= 0 && t <= 4) ? t : 0; },
     lastTab: function () { var t = pick('lastTab', 0); return t === +t && t >= 0 && t <= 4 ? t : 0; },
