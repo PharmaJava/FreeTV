@@ -47,6 +47,7 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   ("Series · Netflix", "Movie · Prime Video"). The first, wider one adds genre and length.
 - **Markets in dollars:** Bitcoin, Ethereum, Solana and **XRP (Ripple)** (Binance), and iShares **S&P 500** and **NASDAQ 100**
   (CSPX and CNDX, in dollars). Each one can be switched off. Information only, not investment advice.
+- **A clock** at the top right, left of the round buttons (14:34), always on time to the minute.
 - **Weather** for your city, with sunrise and sunset; the screen goes dark at night.
 - **An app store, on the TV itself.** The **Store** icon on the shelf (and *Home Settings → Community apps*) opens the
   [webOS Homebrew](https://repo.webosbrew.org) catalogue: ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex, RetroArch…
@@ -306,6 +307,7 @@ de LG, y **todo se puede deshacer**.
   dónde verla** («Serie · Netflix», «Película · Prime Video»). La primera, más grande, trae género y duración.
 - **Mercados en dólares:** Bitcoin, Ethereum, Solana y **XRP (Ripple)** (Binance), y el **S&P 500** y el **NASDAQ 100** de
   iShares (CSPX y CNDX, en dólares). Cada uno se puede apagar en Ajustes. Son datos informativos, no un consejo de inversión.
+- **Un reloj** arriba a la derecha, a la izquierda de los botones redondos (14:34), siempre en hora al minuto.
 - **El tiempo** de tu ciudad, con amanecer y atardecer; la pantalla se oscurece de noche.
 - **Una tienda de apps, en la propia tele.** El icono **Tienda** del estante (y *Ajustes de inicio → Apps de la comunidad*) abre el
   catálogo de [webOS Homebrew](https://repo.webosbrew.org): YouTube sin anuncios, Kodi, Jellyfin, Moonlight, Plex nativo, RetroArch… Con
