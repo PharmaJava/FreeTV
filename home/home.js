@@ -493,7 +493,16 @@
     img.src = url;
   }
 
+  // The small clock left of the round buttons, set again right as each minute starts.
+  var topClockTimer = 0;
+  function tickTopClock() {
+    clearTimeout(topClockTimer);
+    $('topclock').textContent = Data.time(Date.now());
+    topClockTimer = setTimeout(tickTopClock, 60000 - Date.now() % 60000 + 50);
+  }
+
   function renderClock() {
+    tickTopClock();
     var d = new Date(), c = $('clock');
     c.firstChild.textContent = Data.time(d.getTime());
     try {
