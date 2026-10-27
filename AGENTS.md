@@ -47,6 +47,8 @@ Read [`docs/GUIA-IA.md`](docs/GUIA-IA.md) first: it is written for exactly this.
 Community screen install through the computer (the TV app itself cannot install without root); it answers only the TV's IP, only catalogue
 ids, and every install is confirmed on the TV. The TV side of it (launch params from `ares-launch -p`) is untested on real hardware. **Never install anything on the person's TV without their yes for that app.** Store/LG apps cannot be removed from the computer (`FAILED_REMOVE`); installing an app whose id belongs to a store app (YouTube AdFree) while the original is present half-breaks the original's launcher entry: the person must delete the original on the TV first |
 | `home/tizenbrew.js` | Samsung only: TizenBrew's modules (YouTube AdFree = TizenTube, Twitch AdFree = Twizen, the Store's search on npm). Opens a module with an app control to TizenBrew, lists/adds/removes them over TizenBrew's service (`ws://127.0.0.1:8081`, only up once TizenBrew was opened). Always ask before adding a module |
+| `tests/run.js` | `node tests/run.js`: the store service's logic with a mocked TV shell (versions, updates, Developer Mode renewal) and a parse check of `home/`. CI (`.github/workflows/ci.yml`) runs it, `tools/check_secrets.py --all` and a keyless build on every push. Run it before pushing |
+| `tools/make_symbols.py` | Draws FreeTV's own symbols (search, kids, health, calm, lock, timer) into `assets/symbols/`, same weight as the Material ones |
 | `tizen/` | Samsung: `build.py` (unsigned/signed .wgt), `install.py` (SDB over Wi-Fi). Experimental, untested by us on a Samsung |
 | `android/` | Free My TV's Android app, unchanged (`build.sh`, `app/`). Not built or tested by us. Never commit its `config.properties`, `*.keystore` or `*.apk` |
 
@@ -57,3 +59,8 @@ WebSocket (Chrome DevTools Protocol) you can `Runtime.evaluate`, `Page.captureSc
 `Input.dispatchKeyEvent` (call `Page.bringToFront` and `Emulation.setFocusEmulationEnabled` first, or the page ignores
 keys). `Prefs` (settings) and `Data` (weather, quotes, picks) are globals. Put the reset values back after tests: they
 live in the person's `localStorage` (`fmtv.prefs`).
+
+## Look and menus (home.js)
+
+Menus are frosted glass (`frostWanted()`, class `frost` on `body`; a sheet must keep a fixed opacity and fade only its `.box`, or the blur disappears during the fade). Settings are sections (`settingCats()`, `settingRows()`), the quick panel and TV health are tile sheets (`openTiles`, `quickTiles`, `healthTiles`), plus search, sleep timer, kids mode with a PIN, calm mode and accent colours. Sleep timer, health and the first start guide are webOS only (`TV.name === 'webos'`); the rest is shared with Samsung. New text goes through `tr(pt, en, es)` and, for German and Russian, `home/strings.js`. Text and screenshots of a change belong in the README (both languages).
+

@@ -11,6 +11,14 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### New: frosted glass and menus by section
+
+Menus are now frosted glass over your home screen, with settings in sections and a **quick panel** (open it from the drawer).
+
+<p align="center"><img src="docs/gifs/panel-rapido.gif" width="32%" alt="Quick panel: search, calm mode, sleep timer, kids mode, TV health, settings"> <img src="docs/gifs/ajustes.gif" width="32%" alt="Settings in sections, with the accent colour changing live"> <img src="docs/gifs/salud.gif" width="32%" alt="TV health: Developer Mode, updates, free space, privacy, store and FreeTV version"></p>
+
+<table><tr><td width="50%"><img src="docs/screens/panel-rapido.jpg" alt="Quick panel: search, calm mode, sleep timer, kids mode, TV health, settings"><br><sub>Quick panel: search, calm mode, sleep timer, kids mode, TV health, settings</sub></td><td width="50%"><img src="docs/screens/salud-tele.jpg" alt="TV health at a glance (green is fine, amber deserves a look)"><br><sub>TV health at a glance (green is fine, amber deserves a look)</sub></td></tr><tr><td width="50%"><img src="docs/screens/ajustes-secciones.jpg" alt="Home Settings, in sections"><br><sub>Home Settings, in sections</sub></td><td width="50%"><img src="docs/screens/aspecto.jpg" alt="Look: theme, frosted glass, accent colour, background, calm mode"><br><sub>Look: theme, frosted glass, accent colour, background, calm mode</sub></td></tr></table>
+
 LG's home screen is full of ads. FreeTV sets it aside (it does not delete it) and puts its own: your apps as real square
 icons, recommendations only from the services you have an account in, your city's weather and the market quotes you care
 about. No rooting: it installs like any app through LG's **Developer Mode**, and **everything can be undone**.
@@ -77,6 +85,20 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
 - **LG privacy check.** *Home Settings → LG privacy* reads the TV's own state and tells you if LG's ACR (it listens to what you watch and
   sends fingerprints to an advertiser) is on, with the menu path to turn it off. **FreeTV does not remove LG's trackers (it cannot
   without root)**; see [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) for what we measured and what to turn off.
+- **Frosted glass, minimal.** Every menu, dialog and panel is frosted glass over your home screen (blur and saturation, the way a
+  phone does it), with one accent colour for focus. *Home Settings → Look*: theme, frosted glass (automatic uses it only where the TV's
+  browser can do it; older TVs get a plain dark panel), **accent colour** (mint, blue, rose, amber), **background** (the focused cover, or
+  landscapes) and **calm mode** (hides the market quotes and the clock).
+- **Settings in sections.** Home, Look, Widgets, Apps, Privacy and kids, Maintenance, each with its icon, instead of one long list.
+- **Quick panel.** From the drawer: **search** (apps, your channels, the Store and YouTube, with the TV's keyboard), **calm mode**,
+  **sleep timer** (off, 15, 30, 60, 90 minutes; it warns you 30 seconds before and any key cancels it), **kids mode**, **TV health**
+  and settings.
+- **Kids mode.** One switch and FreeTV shows only the kids' channels, hides the settings and the drawer and ignores the long presses.
+  You pick a 4-digit PIN with the remote; the PIN gets you out. Back and Home cannot.
+- **TV health.** One card: Developer Mode days left, updates waiting, free space, whether LG's ACR is listening, whether the store
+  works, and whether there is a newer FreeTV. Green is fine; amber deserves a look; OK opens the section.
+- **First start guide (LG).** A fresh install asks which tab to open on and explains the privacy note, once.
+- **A notice when FreeTV has a new version** (from its GitHub releases). It does not install by itself.
 - **Emergency exit:** hold **Home** for 2 seconds and you are back on LG's home; FreeTV stops intercepting the button.
 
 ## What you need
@@ -211,6 +233,11 @@ installing. Details in [docs/COMUNIDAD.md](docs/COMUNIDAD.md) (Spanish).
 
 Got one of these? Tell us how it went in an [Issue](https://github.com/PharmaJava/FreeTV/issues).
 
+**Which look and menus reach which TV.** Frosted glass, sections, quick panel, search, kids mode, calm mode and accent colours live in the shared `home/` code, so the Samsung package gets them too (it builds and packs; we have not run it on a
+Samsung). The sleep timer, TV health, the first start guide and everything that talks to LG's TV (Developer Mode, the Store, the privacy check, saved settings)
+are LG only. The Android TV app is Free My TV's native one and has none of this yet: it needs the Android SDK to build, which we do not
+have here, and we will not edit it blind.
+
 ## Tested, and limits
 
 Tested on **one LG OLED** (webOS with Node 8.12 and Chrome 79; Samsung and Android TV: see the table above): Home button, return after **Back**, reordering, quotes,
@@ -238,6 +265,14 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### Nuevo: cristal esmerilado y menús por secciones
+
+Los menús ahora son cristal esmerilado sobre tu pantalla de inicio, con los ajustes por secciones y un **panel rápido** (se abre desde el cajón).
+
+<p align="center"><img src="docs/gifs/panel-rapido.gif" width="32%" alt="Panel rápido: buscar, modo calma, apagar en, modo niños, salud de la tele, ajustes"> <img src="docs/gifs/ajustes.gif" width="32%" alt="Ajustes por secciones; el color de acento cambia al momento"> <img src="docs/gifs/salud.gif" width="32%" alt="Salud de la tele: Modo Desarrollador, actualizaciones, espacio, privacidad, tienda y versión de FreeTV"></p>
+
+<table><tr><td width="50%"><img src="docs/screens/panel-rapido.jpg" alt="Panel rápido: buscar, modo calma, apagar en, modo niños, salud de la tele, ajustes"><br><sub>Panel rápido: buscar, modo calma, apagar en, modo niños, salud de la tele, ajustes</sub></td><td width="50%"><img src="docs/screens/salud-tele.jpg" alt="La salud de la tele de un vistazo (verde, bien; ámbar, mira esto)"><br><sub>La salud de la tele de un vistazo (verde, bien; ámbar, mira esto)</sub></td></tr><tr><td width="50%"><img src="docs/screens/ajustes-secciones.jpg" alt="Ajustes de inicio, por secciones"><br><sub>Ajustes de inicio, por secciones</sub></td><td width="50%"><img src="docs/screens/aspecto.jpg" alt="Aspecto: tema, cristal esmerilado, color de acento, fondo, modo calma"><br><sub>Aspecto: tema, cristal esmerilado, color de acento, fondo, modo calma</sub></td></tr></table>
 
 La pantalla de inicio de LG está llena de publicidad. FreeTV la deja de lado (no la borra) y pone la suya: tus apps como
 iconos cuadrados de verdad, recomendaciones solo de los servicios donde tienes cuenta, el tiempo de tu ciudad y las
@@ -307,6 +342,20 @@ de LG, y **todo se puede deshacer**.
 - **Revisión de privacidad de LG.** *Ajustes de inicio → Privacidad de LG* lee el estado de la tele y te dice si el ACR de LG (escucha lo
   que ves y manda huellas a un anunciante) está activo, con el camino del menú para apagarlo. **FreeTV no quita los rastreadores de LG
   (sin root no puede)**; mira [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) para lo que medimos y lo que debes apagar.
+- **Cristal esmerilado y minimalismo.** Todos los menús, diálogos y paneles son cristal esmerilado sobre tu pantalla de inicio (desenfoque y
+  saturación, como en un móvil), con un solo color de acento para el foco. *Ajustes de inicio → Aspecto*: tema, cristal esmerilado
+  (en automático solo se usa donde el navegador de la tele puede; las teles antiguas llevan un panel oscuro liso), **color de acento** (menta,
+  azul, rosa, ámbar), **fondo** (la portada en foco, o paisajes) y **modo calma** (oculta las cotizaciones y el reloj).
+- **Ajustes por secciones.** Inicio, Aspecto, Widgets, Apps, Privacidad y niños, Mantenimiento, cada una con su icono, en vez de una lista larga.
+- **Panel rápido.** Desde el cajón: **buscar** (apps, tus canales, la Tienda y YouTube, con el teclado de la tele), **modo calma**,
+  **apagar en** (no, 15, 30, 60, 90 minutos; avisa 30 segundos antes y cualquier tecla lo cancela), **modo niños**, **salud de la tele**
+  y ajustes.
+- **Modo niños.** Un interruptor y FreeTV solo enseña los canales de los peques, esconde los ajustes y el cajón e ignora las pulsaciones largas.
+  Eliges un PIN de 4 cifras con el mando; con el PIN sales. Atrás y Home no.
+- **Salud de la tele.** Una tarjeta: días de Modo Desarrollador, actualizaciones pendientes, espacio libre, si el ACR de LG escucha, si la
+  tienda funciona y si hay una versión nueva de FreeTV. Verde, bien; ámbar, mira esto; OK abre la sección.
+- **Guía del primer arranque (LG).** Una instalación nueva te pregunta con qué pestaña abrir y te explica el aviso de privacidad, una sola vez.
+- **Aviso cuando hay una versión nueva de FreeTV** (en sus releases de GitHub). No se instala sola.
 - **Salida de emergencia:** mantén **Home** 2 segundos y vuelves al inicio de LG; FreeTV deja de interceptar el botón.
 
 ## Qué necesitas
@@ -491,6 +540,14 @@ de un tercero) detrás de una confirmación aparte. El catálogo y las apps las 
 | Samsung hasta 2016, Fire TV, Roku… | Nada | [Alternativa: un reproductor Google TV por HDMI](docs/OTRAS-TELES.md) |
 
 ¿Tienes una de estas teles? Cuéntanos cómo te fue en una [Issue](https://github.com/PharmaJava/FreeTV/issues).
+
+
+**Qué estilo y menús llegan a cada tele.** El cristal esmerilado, las secciones, el panel rápido, la búsqueda, el modo niños, el modo calma
+y los colores de acento viven en el código compartido de `home/`, así que el paquete de Samsung los trae
+también (se compila y se empaqueta; no lo hemos probado en una Samsung). El apagado programado, la salud de la tele, la guía del primer arranque y todo lo que habla con
+la tele de LG (Modo Desarrollador, la Tienda, la revisión de privacidad, los ajustes guardados) son solo de LG. La app de Android TV es la
+nativa de Free My TV y aún no tiene nada de esto: para compilarla hace falta el SDK de Android, que aquí no tenemos, y no la vamos a
+tocar a ciegas.
 
 ## Probado y límites
 

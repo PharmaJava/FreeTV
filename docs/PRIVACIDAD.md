@@ -46,3 +46,7 @@ Fuentes: guías públicas sobre los ajustes de LG (por ejemplo
 [Tom's Guide](https://www.tomsguide.com/tvs/your-tv-is-watching-you-how-to-turn-off-data-collection-on-lg-samsung-roku-and-more) y
 [AppleInsider](https://appleinsider.com/inside/mac/tips/how-to-stop-your-lg-or-samsung-smart-tv-from-tracking-you)) y la lectura directa
 de la configuración de la tele.
+
+## Si tienes una Samsung
+
+Samsung hace lo mismo con otro nombre: reconoce lo que ves en pantalla («servicios de información de visionado») y lo usa para publicidad. FreeTV tampoco puede apagarlo en Samsung. Los nombres cambian según el año y el modelo; busca el equivalente en *Ajustes → Asistencia → Términos y política de privacidad (o «Opciones de privacidad»)*: apaga los *Servicios de información de visionado* y la *Publicidad basada en intereses*, y activa la opción de limitar el seguimiento de anuncios. No lo hemos comprobado en una Samsung.
