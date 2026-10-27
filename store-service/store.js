@@ -148,7 +148,13 @@ Store.prototype.updates = async function (conn) {
       break;
     }
   }
-  return {list: list, installed: installed};
+  // How much each installed app takes, and what is free (the reason Kodi did not fit): `du` over the Developer Mode apps.
+  var sizes = {}, du = await this.exec(conn, 'du -sk /media/developer/apps/usr/palm/applications/* 2>/dev/null'), lines = du.out.split('\n'), n;
+  for (n = 0; n < lines.length; n++) {
+    var m2 = /^(\d+)\s+.*\/applications\/([A-Za-z0-9._-]+)$/.exec(lines[n].trim());
+    if (m2) sizes[m2[2]] = Math.max(1, Math.round(parseInt(m2[1], 10) / 1024));
+  }
+  return {list: list, installed: installed, sizes: sizes, freeMb: await this.freeMb(conn)};
 };
 
 Store.prototype.freeMb = async function (conn) {
@@ -254,6 +260,62 @@ Store.prototype.run = async function (appId, flag, opts) {
     }
     if (!opts.inBatch) this.busy = false;
   }
+};
+
+var DEVMODE_TOKEN = '/var/luna/preferences/devmode_enabled';
+var DEVMODE_URL = 'https://developer.lge.com/secure/';
+
+/**
+ * Asks LG how long the Developer Mode session has left, from the TV's own shell (the Developer Mode user can read the session file;
+ * an app service cannot). The token is read inside the command and never leaves it: what comes back is LG's answer, with the token
+ * masked, and it is never logged. Resolves {ok, hours} or {ok:false, error}.
+ */
+Store.prototype.devmodeLeft = async function (conn, operation) {
+  var cmd = 'T=$(tr -d "\\r\\n " < ' + DEVMODE_TOKEN + ') && [ -n "$T" ] && curl -sS -m 30 "' + DEVMODE_URL +
+    (operation === 'extend' ? 'Reset' : 'Check') + 'DevModeSession.dev?sessionToken=$T" 2>&1 | sed "s/$T/<hidden>/g"';
+  var r = await this.exec(conn, cmd), answer;
+  try { answer = JSON.parse(r.out.trim()); } catch (e) { return {ok: false, error: 'LG no contestó como se esperaba.'}; }
+  if (answer.result !== 'success') return {ok: false, error: 'LG dijo «' + String(answer.errorMsg || answer.result || '').slice(0, 80) + '».'};
+  if (operation === 'extend') return {ok: true, hours: null};
+  var m = /^(\d+):(\d\d):(\d\d)$/.exec(String(answer.errorMsg || ''));
+  if (!m) return {ok: false, error: 'No entiendo el tiempo que dice LG.'};
+  return {ok: true, hours: parseInt(m[1], 10) + parseInt(m[2], 10) / 60 + parseInt(m[3], 10) / 3600};
+};
+
+/** Looks, and extends when less than `below` hours are left (or always with below = Infinity). Resolves {ok, before, after, extended, error}. */
+Store.prototype.devmodeTick = async function (below) {
+  var conn = null;
+  try {
+    conn = await this.connect();
+    var before = await this.devmodeLeft(conn, 'check');
+    if (!before.ok) return {ok: false, error: before.error};
+    if (before.hours >= below) return {ok: true, before: before.hours, after: before.hours, extended: false};
+    var done = await this.devmodeLeft(conn, 'extend');
+    if (!done.ok) return {ok: false, before: before.hours, error: done.error};
+    var after = await this.devmodeLeft(conn, 'check');
+    if (!after.ok) return {ok: false, before: before.hours, error: after.error};
+    // Only a countdown that grew counts as renewed: a generic "success" is not enough.
+    if (after.hours <= before.hours + 1 / 60) return {ok: false, before: before.hours, after: after.hours, error: 'LG dijo que sí, pero el contador no ha subido.'};
+    return {ok: true, before: before.hours, after: after.hours, extended: true};
+  } catch (e) {
+    return {ok: false, error: String(e && e.message || e)};
+  } finally {
+    if (conn) { try { conn.end(); } catch (e) {} }
+  }
+};
+
+/**
+ * Is LG's ACR (automatic content recognition: it listens to the sound of what is on, and sends fingerprints to an advertising partner)
+ * running? Read-only: the TV writes its state to /tmp/acr.xml. Resolves {ok, acr, send, audio, solution, popup}.
+ */
+Store.prototype.privacy = async function (conn) {
+  var r = await this.exec(conn, 'head -c 6000 /tmp/acr.xml 2>/dev/null');
+  var xml = r.out;
+  if (xml.indexOf('<acr_config') < 0) return {ok: false, error: 'La tele no tiene el fichero del ACR (o no se puede leer).'};
+  function attr(name) { var m = new RegExp('\\b' + name + '="([^"]*)"').exec(xml); return m ? m[1] : ''; }
+  var audio = /<audio[^>]*capture="(\w+)"/.exec(xml);
+  return {ok: true, acr: attr('ACR_On') === 'true', launched: attr('ACRServiceLaunched') === 'true', send: attr('send_data') === 'true',
+          audio: !!audio && audio[1] === 'true', solution: attr('ACRSolution'), country: attr('CountryCode')};
 };
 
 var PROTECTED = /^(com\.gathin\.|com\.local\.nativehome$|freetv\.store$)/;   // FreeTV's own pieces are never removed from here

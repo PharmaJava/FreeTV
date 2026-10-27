@@ -43,7 +43,7 @@ service.register('updates', function (message) {
   var s = current();
   if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
   s.connect().then(function (conn) {
-    return s.updates(conn).then(function (r) { try { conn.end(); } catch (e) {} message.respond({returnValue: true, updates: r.list, installed: r.installed}); },
+    return s.updates(conn).then(function (r) { try { conn.end(); } catch (e) {} message.respond({returnValue: true, updates: r.list, installed: r.installed, sizes: r.sizes, freeMb: r.freeMb}); },
       function (e) { try { conn.end(); } catch (x) {} message.respond({returnValue: false, error: String(e && e.message || e)}); });
   }, function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
 });
@@ -80,6 +80,51 @@ service.register('channels', function (message) {
   youtube.search((message.payload || {}).query, function (err, list) {
     message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, channels: list});
   });
+});
+
+/**
+ * The Developer Mode session. {below: hours}: extend only when less is left (default 336 = 14 days; 0 only looks; 100000 always extends).
+ * Keeps a short history in state/devmode.json (when, hours left, what was done), never the token.
+ */
+var HISTORY = path.join(dir, 'devmode.json');
+function readJson(file, fallback) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return fallback; } }
+function writeJson(file, value) {
+  try { fs.writeFileSync(file + '.tmp', JSON.stringify(value)); fs.renameSync(file + '.tmp', file); return true; } catch (e) { return false; }
+}
+
+service.register('devmode', function (message) {
+  var s = current(), p = message.payload || {}, below = p.below === undefined ? 336 : Math.max(0, Number(p.below) || 0);
+  var history = readJson(HISTORY, []);
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso', history: history}); return; }
+  s.devmodeTick(below).then(function (r) {
+    var last = history[history.length - 1];
+    var entry = {at: Date.now(), ok: r.ok, hours: r.after !== undefined ? r.after : r.before, extended: !!r.extended, error: r.error || ''};
+    if (r.extended || !r.ok || !last || entry.at - last.at > 6 * 3600 * 1000) { history.push(entry); history = history.slice(-30); writeJson(HISTORY, history); }
+    message.respond({returnValue: true, ok: r.ok, hours: entry.hours, extended: !!r.extended, error: r.error || '', history: history});
+  });
+});
+
+/** The settings the person chose (and the keys of the TV's remote API) survive a reinstall of FreeTV: the page keeps a copy here. */
+var PREFS = path.join(dir, 'prefs.json');
+var PREF_KEYS = /^fmtv\.(prefs|devApps|ssapKey|ssapPowerKey2|ssapRefused|ssapPowerRefused)$/;
+service.register('prefsSave', function (message) {
+  var data = (message.payload || {}).data, clean = {}, k;
+  if (!data || typeof data !== 'object') { message.respond({returnValue: false, error: 'sin datos'}); return; }
+  for (k in data) if (Object.prototype.hasOwnProperty.call(data, k) && PREF_KEYS.test(k) && typeof data[k] === 'string' && data[k].length < 200000) clean[k] = data[k];
+  message.respond(writeJson(PREFS, clean) ? {returnValue: true} : {returnValue: false, error: 'no se pudo escribir'});
+});
+service.register('prefsLoad', function (message) {
+  message.respond({returnValue: true, data: readJson(PREFS, null)});
+});
+
+/** LG's ACR state (see store.js privacy). */
+service.register('privacy', function (message) {
+  var s = current();
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  s.connect().then(function (conn) {
+    return s.privacy(conn).then(function (r) { try { conn.end(); } catch (e) {} message.respond({returnValue: true, privacy: r}); },
+      function (e) { try { conn.end(); } catch (x) {} message.respond({returnValue: false, error: String(e && e.message || e)}); });
+  }, function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
 });
 
 service.register('job', function (message) {

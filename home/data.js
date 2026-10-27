@@ -53,9 +53,16 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** Apps hidden from All Apps (they stay installed). Until the person changes it: LG's sports alerts, art gallery, home panel and LG Channels. */
+    hiddenApps: function () {
+      var r = pick('hiddenApps', null);
+      return r instanceof Array ? r : ['com.webos.app.sportsteamsettings', 'com.webos.app.igallery', 'com.webos.app.homeconnect', 'com.webos.app.lgchannels'];
+    },
     /** Update the installed community apps by itself, once a day (off until the person turns it on: that is their permission). */
     autoUpdate: function () { return pick('autoUpdate', false) === true; },
     updCheckedAt: function () { return pick('updCheckedAt', 0) || 0; },
+    /** Extend the Developer Mode session by itself when less than 14 days are left (on unless the person turns it off). */
+    devAuto: function () { return pick('devAuto', true) !== false; },
     /** The Custom tab: the keys of its shortcuts in the order the person chose, and the ones they took away. */
     chanOrder: function () { var r = pick('chanOrder', []); return r instanceof Array ? r : []; },
     /** Channels added from the TV itself (searched on YouTube by the store service): [{key, title, kind, id, thumb, latest, added}]. */
@@ -84,7 +91,7 @@ var Prefs = (function () {
       s[key] = on;
       this.set('services', s);
     },
-    set: function (name, value) { v[name] = value; save(); this.version++; },
+    set: function (name, value) { v[name] = value; save(); this.version++; if (window.onPrefsChanged) window.onPrefsChanged(); },
     setCoin: function (i, on) {
       var c = (pick('coins', null) || [true, true, true, true, true, true, true]).slice();
       c[i] = on;

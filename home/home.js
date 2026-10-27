@@ -153,7 +153,8 @@
       if (!out.length) out = apps.slice(0, MAX_SHELF);
     }
     shelf = out;
-    others = apps.slice();   // All Apps lists every app, the ones on the shelf too
+    var hidden = Prefs.hiddenApps();
+    others = apps.filter(function (x) { return hidden.indexOf(x.id) < 0; });   // All Apps lists every app, the ones on the shelf too, but the hidden ones
   }
 
   // MARK: - Focus
@@ -678,6 +679,14 @@
         }, 4000);
       }
     }});
+    if (TV.name === 'webos') {
+      rows.push({label: tr('Modo Desenvolvedor: tempo restante', 'Developer Mode: time left', 'Modo Desarrollador: tiempo restante'), value: devText(), step: function (d) { if (d >= 0) openDevMode(); }});
+      rows.push({label: tr('Renovar o Modo Desenvolvedor sozinha', 'Renew Developer Mode by itself', 'Renovar el Modo Desarrollador sola'), toggle: Prefs.devAuto(), step: function () { Prefs.set('devAuto', !Prefs.devAuto()); }});
+    }
+    if (TV.name === 'webos') {
+      rows.push({label: tr('Apps ocultas', 'Hidden apps', 'Apps ocultas'), value: String(Prefs.hiddenApps().length), step: function (d) { if (d >= 0) openHiddenApps(); }});
+      rows.push({label: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), value: privacyText(), step: function (d) { if (d >= 0) openPrivacy(); }});
+    }
     if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
     rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -730,7 +739,7 @@
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
   var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0,
-    updList: [], updates: {}, installed: {}, flowAll: 'idle', batch: null, cur: ''}, storeTimer = 0;
+    updList: [], updates: {}, installed: {}, instKnown: false, sizes: {}, freeMb: 0, flowAll: 'idle', batch: null, cur: ''}, storeTimer = 0;
 
   function commTitle() { return tr('Apps da comunidade', 'Community apps', 'Apps de la comunidad'); }
 
@@ -825,10 +834,34 @@
   function svcApps(done) {
     svcCall('apps', {}, function (r) {
       var ok = !!(r && r.returnValue && r.apps);
-      if (ok) { try { localStorage.setItem('fmtv.devApps', JSON.stringify(r.apps)); } catch (e) {} }
+      if (ok) { try { localStorage.setItem('fmtv.devApps', JSON.stringify(r.apps)); } catch (e) {} if (commList.length) applyUpdateRow(); }
       if (done) done(ok);
     });
   }
+
+  /** {id: version} of the apps Developer Mode installed: from the store service when it is there, else from the list FreeTV remembers. */
+  function instMap() {
+    if (store.instKnown) return store.installed;
+    var m = {};
+    try { (JSON.parse(localStorage.getItem('fmtv.devApps')) || []).forEach(function (a) { if (a && a.id) m[a.id] = a.version || ''; }); } catch (e) {}
+    return m;
+  }
+
+  /** 1.2.10 > 1.2.9; a release is newer than its beta (the same rule as the store service). */
+  function versionParts(v) {
+    var m = /^v?(\d+(?:\.\d+)*)(.*)$/i.exec(String(v || '').replace(/^\s+|\s+$/g, ''));
+    return m ? {n: m[1].split('.').map(Number), pre: /[A-Za-z]/.test(m[2])} : null;
+  }
+  function isNewerVersion(a, b) {
+    var x = versionParts(a), y = versionParts(b), i;
+    if (!x || !y) return false;
+    for (i = 0; i < Math.max(x.n.length, y.n.length); i++) {
+      if ((x.n[i] || 0) !== (y.n[i] || 0)) return (x.n[i] || 0) > (y.n[i] || 0);
+    }
+    return y.pre && !x.pre;
+  }
+
+  var commInst = {};
 
   /** Which installed apps have a newer version in the catalogue (asked of the store service); the Store marks them. */
   function svcUpdates(done) {
@@ -836,6 +869,9 @@
       if (r && r.returnValue && r.updates) {
         store.updList = r.updates;
         store.installed = r.installed || {};
+        store.instKnown = true;
+        store.sizes = r.sizes || {};
+        store.freeMb = r.freeMb || 0;
         store.updates = {};
         r.updates.forEach(function (u) { store.updates[u.id] = u; });
         applyUpdateRow();
@@ -854,6 +890,8 @@
     if (n > 0) commList.unshift({id: '*updates', special: true, manifest: {},
       title: tr('Atualizar tudo (' + n + ')', 'Update all (' + n + ')', 'Actualizar todo (' + n + ')')});
     // the same app stays selected / open when a row comes or goes above it
+    commInst = instMap();
+    commList.sort(commOrder);
     if (row) st.comm = Math.max(0, commList.indexOf(row));
     if (open) commOpen = commList.indexOf(open);
   }
@@ -968,11 +1006,9 @@
     if (commList.length) return;
     Data.getJson(CATALOGUE, function (err, data) {
       if (err || !data || !data.packages) { commState = 'error'; renderCommunity(); return; }
-      commList = data.packages.filter(function (p) { return p && p.id && p.manifest; }).sort(function (a, b) {
-        var ra = a.manifest.rootRequired ? 1 : 0, rb = b.manifest.rootRequired ? 1 : 0;
-        if (ra !== rb) return ra - rb;
-        return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
-      });
+      commInst = instMap();
+      commList = data.packages.filter(function (p) { return p && p.id && p.manifest; }).sort(commOrder);
+      applyUpdateRow();
       commState = 'ready';
       renderCommunity();
       EXTRA.forEach(function (src) {
@@ -981,7 +1017,7 @@
           d2.packages.forEach(function (p) {
             if (p && p.manifest && src.ids.indexOf(p.id) >= 0 && !commList.some(function (o) { return o.id === p.id; })) commList.push(p);
           });
-          if (commOpen < 0) { commList.sort(commOrder); renderCommunity(); }
+          if (commOpen < 0) { commInst = instMap(); commList.sort(commOrder); renderCommunity(); }
         });
       });
     });
@@ -989,6 +1025,8 @@
 
   function commOrder(a, b) {
     if (a.special || b.special) return a.special ? -1 : 1;
+    var ia = commInst[a.id] !== undefined ? 0 : 1, ib = commInst[b.id] !== undefined ? 0 : 1;
+    if (ia !== ib) return ia - ib;
     var ra = a.manifest.rootRequired ? 1 : 0, rb = b.manifest.rootRequired ? 1 : 0;
     if (ra !== rb) return ra - rb;
     return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
@@ -1089,6 +1127,137 @@
     });
   }
 
+  // MARK: - Apps hidden from All Apps, and what LG's TV does with your viewing
+
+  function openHiddenApps() {
+    var ids = Prefs.hiddenApps(), names = ids.map(function (id) {
+      for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return apps[i].title;
+      return null;
+    }).filter(function (n) { return n; });
+    showDialog(tr('Apps ocultas', 'Hidden apps', 'Apps ocultas'), [
+      {text: names.length ? names.join(' · ') : tr('Nenhuma.', 'None.', 'Ninguna.')},
+      {text: tr('Continuam instaladas: só saem de «Todas as apps». Segure OK numa app para ocultá-la.', 'They stay installed: they only leave "All Apps". Hold OK on an app to hide it.', 'Siguen instaladas: solo salen de «Todas las apps». Mantén OK sobre una app para ocultarla.')}
+    ], [{label: tr('Mostrar todas', 'Show them all', 'Mostrar todas'), run: function () {
+      Prefs.set('hiddenApps', []);
+      pickShelf();
+      toast(tr('Apps ocultas: nenhuma', 'Hidden apps: none', 'Apps ocultas: ninguna'));
+    }}, {label: tr('Fechar', 'Close', 'Cerrar')}], 0);
+  }
+
+  var privacy = null;   // what the TV says about LG's ACR: {acr, send, audio, solution} or {ok:false, error}
+
+  function privacyText() {
+    if (!privacy) return '›';
+    if (!privacy.ok) return '?';
+    return privacy.acr || privacy.send ? tr('ACR ligado ⚠', 'ACR on ⚠', 'ACR activo ⚠') : tr('ACR desligado ✓', 'ACR off ✓', 'ACR apagado ✓');
+  }
+
+  function privacyCheck(done) {
+    if (TV.name !== 'webos') { if (done) done(); return; }
+    svcCall('privacy', {}, function (r) {
+      privacy = r && r.returnValue && r.privacy ? r.privacy : {ok: false, error: r && r.error === 'sin permiso'
+          ? tr('Falta o acesso da loja: bash install.sh no computador.', 'The store permission is missing: bash install.sh on the computer.', 'Falta el permiso de la tienda: bash install.sh en el ordenador.')
+          : tr('A TV não respondeu.', 'The TV did not answer.', 'La tele no respondió.')};
+      if (done) done();
+    });
+  }
+
+  function openPrivacy() {
+    var title = tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG');
+    var token = showDialog(title, [{text: tr('Olhando a TV…', 'Looking at the TV…', 'Mirando la tele…')}], [], 0);
+    privacyCheck(function () {
+      if (dlg.token !== token || st.zone !== Z.DLG) return;
+      var lines = [];
+      if (!privacy.ok) lines.push({cls: 'warn', text: privacy.error});
+      else if (privacy.acr || privacy.send) {
+        lines.push({cls: 'warn', text: tr('O ACR da LG está LIGADO' + (privacy.audio ? ' e escuta o som do que você vê' : '') + (privacy.solution ? ' (' + privacy.solution + ')' : '') + '. O FreeTV não consegue desligá-lo.',
+            'LG\'s ACR is ON' + (privacy.audio ? ' and listens to the sound of what you watch' : '') + (privacy.solution ? ' (' + privacy.solution + ')' : '') + '. FreeTV cannot turn it off.',
+            'El ACR de LG está ACTIVO' + (privacy.audio ? ' y escucha el sonido de lo que ves' : '') + (privacy.solution ? ' (' + privacy.solution + ')' : '') + '. FreeTV no puede apagarlo.')});
+        lines.push({text: tr('Desligue você, nos ajustes da LG: Geral → Sistema → Configurações adicionais → Live Plus (desligado); Configurações da tela inicial → Promoção (desligado); Publicidade → Limitar rastreamento (ligado); Contratos do usuário → desmarque as opções.',
+            'Turn it off in LG\'s own settings: General → System → Additional Settings → Live Plus (off); Home Settings → Home Promotion (off); Advertisement → Limit Ad Tracking (on); User Agreements → untick the optional ones.',
+            'Apágalo en los ajustes de LG: General → Sistema → Ajustes adicionales → Live Plus (apagado); Ajustes de inicio → Promoción (apagado); Publicidad → Limitar seguimiento (activado); Acuerdos de usuario → desmarca los opcionales.')});
+      } else lines.push({text: tr('O ACR da LG está desligado. Confira também a publicidade e as promoções (docs/PRIVACIDAD.md).', 'LG\'s ACR is off. Also check the advertising and promotion settings (docs/PRIVACIDAD.md).', 'El ACR de LG está apagado. Revisa también la publicidad y las promociones (docs/PRIVACIDAD.md).')});
+      showDialog(title, lines, [{label: tr('Fechar', 'Close', 'Cerrar')}], 0);
+      if (st.zone === Z.SETTINGS) renderSettings();
+    });
+  }
+
+  // MARK: - Developer Mode: how long the session has left, and keeping it going. LG's session lasts 1000 hours (about 41 days) and its
+  // EXTEND button asks LG for 1000 more: the store service (on the TV, through its own Developer Mode shell) does the same ask when less
+  // than 14 days are left. The session token never leaves the TV.
+
+  var dev = {hours: null, ok: true, error: '', history: [], at: 0, busy: false, extended: false};
+
+  function devDays(h) {
+    var d = Math.floor(h / 24);
+    return d >= 2 ? tr(d + ' dias', d + ' days', d + ' días') : tr(Math.round(h) + ' horas', Math.round(h) + ' hours', Math.round(h) + ' horas');
+  }
+
+  function devText() {
+    if (dev.hours === null) return dev.busy ? '…' : (dev.error ? '!' : '›');
+    return devDays(dev.hours) + (dev.ok ? '' : ' !');
+  }
+
+  /** Asks the store service; it extends only when less than `below` hours are left (0: just look). */
+  function devTick(below, done) {
+    if (TV.name !== 'webos' || dev.busy) { if (done) done(dev); return; }
+    dev.busy = true;
+    svcCall('devmode', {below: below}, function (r) {
+      dev.busy = false;
+      dev.at = Date.now();
+      if (r && r.returnValue) {
+        if (typeof r.hours === 'number') dev.hours = r.hours;
+        dev.ok = !!r.ok;
+        dev.error = r.error || '';
+        dev.extended = !!r.extended;
+        dev.history = r.history || dev.history;
+      } else {
+        dev.ok = false;
+        dev.error = r && r.error === 'sin permiso' ? tr('Falta o acesso da loja: bash install.sh no computador.', 'The store permission is missing: bash install.sh on the computer.', 'Falta el permiso de la tienda: bash install.sh en el ordenador.')
+            : (r && r.error) || tr('A TV não respondeu.', 'The TV did not answer.', 'La tele no respondió.');
+      }
+      if (done) done(dev);
+    });
+  }
+
+  function devAuto() {
+    devTick(Prefs.devAuto() ? 336 : 0, function (d) {
+      if (d.extended) toast(tr('Modo Desenvolvedor renovado: ', 'Developer Mode renewed: ', 'Modo Desarrollador renovado: ') + devDays(d.hours));
+      else if (d.hours !== null && d.hours < 120) toast(tr('Modo Desenvolvedor: restam ', 'Developer Mode: ', 'Modo Desarrollador: quedan ') + devDays(d.hours) +
+          (d.ok ? '' : tr('. Abra o app Developer Mode e toque em EXTEND.', '. Open the Developer Mode app and press EXTEND.', '. Abre la app Developer Mode y pulsa EXTEND.')));
+    });
+  }
+
+  function openDevMode() {
+    var title = tr('Modo Desenvolvedor', 'Developer Mode', 'Modo Desarrollador');
+    var token = showDialog(title, [{text: tr('Perguntando à LG…', 'Asking LG…', 'Preguntando a LG…')}], [], 0);
+    devTick(0, function (d) {
+      if (dlg.token !== token || st.zone !== Z.DLG) return;   // closed meanwhile
+      var lines = [];
+      if (d.hours !== null) lines.push({text: tr('Restam ', 'Left: ', 'Quedan ') + devDays(d.hours) + tr(' de sessão (a LG dá 1000 horas e renova até 1000).', ' of session (LG gives 1000 hours and renews up to 1000).', ' de sesión (LG da 1000 horas y se renueva hasta 1000).')});
+      if (!d.ok) lines.push({cls: 'warn', text: d.error});
+      lines.push({text: Prefs.devAuto()
+          ? tr('A TV renova sozinha quando restam menos de 14 dias.', 'The TV renews it by itself when less than 14 days are left.', 'La tele la renueva sola cuando quedan menos de 14 días.')
+          : tr('A renovação automática está desligada: use «Renovar agora» ou o botão EXTEND do app Developer Mode.', 'Automatic renewal is off: use "Renew now" or the EXTEND button of the Developer Mode app.', 'La renovación automática está apagada: usa «Renovar ahora» o el botón EXTEND de la app Developer Mode.')});
+      var hist = (d.history || []).slice(-4).reverse();
+      hist.forEach(function (h) {
+        var when = new Date(h.at);
+        lines.push({text: when.toLocaleDateString(I18N.locale(), {day: 'numeric', month: 'short'}) + '  ' +
+            (h.extended ? tr('renovado', 'renewed', 'renovado') : h.ok ? tr('conferido', 'checked', 'comprobado') : tr('falhou', 'failed', 'falló')) +
+            (typeof h.hours === 'number' ? '  ·  ' + devDays(h.hours) : '')});
+      });
+      showDialog(title, lines, [
+        {label: tr('Renovar agora', 'Renew now', 'Renovar ahora'), run: function () {
+          devTick(100000, function (r) {
+            toast(r.extended ? tr('Renovado: ', 'Renewed: ', 'Renovado: ') + devDays(r.hours) : (r.error || tr('Não foi possível renovar.', 'Could not renew.', 'No se pudo renovar.')));
+            if (st.zone === Z.SETTINGS) renderSettings();
+          });
+        }},
+        {label: tr('Fechar', 'Close', 'Cerrar')}
+      ], 0);
+    });
+  }
+
   /** The automatic update (Home Settings, off until the person turns it on): once a day, in the background, only what is installed. */
   function autoUpdate() {
     if (TV.name !== 'webos' || !Prefs.autoUpdate() || Date.now() - Prefs.updCheckedAt() < 24 * 3600 * 1000) return;
@@ -1147,7 +1316,11 @@
       if (upd) line(box, 'good', tr('Atualização disponível (v' + upd.from + ' → v' + upd.to + '). As apps e seus ajustes são mantidos.',
           'Update available (v' + upd.from + ' → v' + upd.to + '). The app and its settings are kept.',
           'Actualización disponible (v' + upd.from + ' → v' + upd.to + '). La app y sus ajustes se conservan.'));
-      else if (store.svc === 'ok' && store.installed[a.id]) line(box, 'good', tr('Instalada: v' + store.installed[a.id] + ' · em dia.', 'Installed: v' + store.installed[a.id] + ' · up to date.', 'Instalada: v' + store.installed[a.id] + ' · al día.'));
+      else if (instMap()[a.id] !== undefined) {
+        var iv = instMap()[a.id], sz = store.sizes[a.id] ? tr(' · ocupa ' + store.sizes[a.id] + ' MB', ' · takes ' + store.sizes[a.id] + ' MB', ' · ocupa ' + store.sizes[a.id] + ' MB') : '';
+        line(box, 'good', iv ? tr('Instalada: v' + iv + ' · em dia' + sz + '.', 'Installed: v' + iv + ' · up to date' + sz + '.', 'Instalada: v' + iv + ' · al día' + sz + '.')
+            : tr('Instalada' + sz + '.', 'Installed' + sz + '.', 'Instalada' + sz + '.'));
+      }
       line(box, '', tr('Precisa de: ', 'Needs: ', 'Necesita: ') + (req.webosRelease ? 'webOS ' + req.webosRelease : tr('nada especial', 'nothing special', 'nada especial')) +
           (req.deviceSoC ? ' · chip ' + req.deviceSoC.join(', ') : ''));
       if (warn) line(box, 'warn', tr(warn[0], warn[1], warn[2]));
@@ -1193,6 +1366,7 @@
         : tr('Do catálogo webOS Homebrew. Para instalar daqui, conecte o computador (veja qualquer ficha).',
             'From the webOS Homebrew catalogue. To install from here, connect the computer (see any app page).',
             'Del catálogo webOS Homebrew. Para instalar desde aquí, conecta el ordenador (mira cualquier ficha).')).style.marginBottom = '14px';
+    if (store.freeMb) box.lastChild.textContent += '  ·  ' + tr('Espaço livre: ', 'Free space: ', 'Espacio libre: ') + store.freeMb + ' MB';
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
     list.style.height = Math.min(commList.length, 7) * 78 + 'px';
     for (var i = 0; i < commList.length; i++) {
@@ -1200,8 +1374,11 @@
       var root = !!p.manifest.rootRequired;
       if (p.special) el('span', 'tag upd', v, tr('novas versões', 'new versions', 'nuevas versiones'));
       else {
-        if (store.updates[p.id]) el('span', 'tag upd', v, tr('atualização ', 'update ', 'actualización ') + store.updates[p.id].to + '  ');
-        el('span', 'tag' + (root ? ' root' : ''), v, root ? 'root' : tr('sem root', 'no root', 'sin root'));
+        var have = commInst[p.id];
+        if (store.updates[p.id]) el('span', 'tag upd', v, tr('atualização ', 'update ', 'actualización ') + store.updates[p.id].to);
+        else if (have !== undefined) el('span', 'tag ok', v, '✓ ' + (have ? 'v' + have + ' · ' : '') + (isNewerVersion(p.manifest.version, have) ? tr('há uma nova', 'newer exists', 'hay una nueva') : tr('em dia', 'up to date', 'al día')));
+        if (have !== undefined && store.updates[p.id]) el('span', 'tag ok', v, 'v' + have + '  ');
+        if (have === undefined) el('span', 'tag' + (root ? ' root' : ''), v, root ? 'root' : tr('sem root', 'no root', 'sin root'));
       }
       hover(row, Z.COMM, i);
     }
@@ -1700,6 +1877,14 @@
   function openAppMenu(app) {
     var buttons = [{label: tr('Abrir', 'Open', 'Abrir'), run: launcher(app.id, app.title)}];
     if (!PROTECTED.test(app.id)) buttons.push({label: tr('Desinstalar', 'Uninstall', 'Desinstalar'), run: function () { confirmRemove(app); }});
+    buttons.push({label: tr('Ocultar daqui', 'Hide from here', 'Ocultar de aquí'), run: function () {
+      Prefs.set('hiddenApps', Prefs.hiddenApps().concat([app.id]));
+      pickShelf();
+      renderApps();
+      st.grid = Math.max(0, Math.min(st.grid, others.length - 1));
+      updateFocus();
+      toast(app.title + ': ' + tr('oculta (Ajustes → Apps ocultas)', 'hidden (Settings → Hidden apps)', 'oculta (Ajustes → Apps ocultas)'));
+    }});
     buttons.push({label: cancelText()});
     showDialog(app.title, [], buttons, 0);
   }
@@ -2210,10 +2395,52 @@
     Data.refresh();
     if (openedForStore) openCommunity();
   });
+  // The settings are kept in two places: this page's storage, which a reinstall of FreeTV empties, and the store service's folder, which a
+  // reinstall keeps. A copy goes there a few seconds after a change; an empty page asks for it back once.
+  var SAVED_KEYS = ['fmtv.prefs', 'fmtv.devApps', 'fmtv.ssapKey', 'fmtv.ssapPowerKey2', 'fmtv.ssapRefused', 'fmtv.ssapPowerRefused'], savedLast = '', saveTimer = 0;
+
+  function snapshot() {
+    var out = {}, any = false;
+    SAVED_KEYS.forEach(function (k) { try { var v = localStorage.getItem(k); if (v !== null) { out[k] = v; any = true; } } catch (e) {} });
+    return any && out['fmtv.prefs'] !== undefined ? out : null;
+  }
+
+  function saveSettings() {
+    clearTimeout(saveTimer);
+    var data = snapshot();
+    if (!data || TV.name !== 'webos') return;
+    var text = JSON.stringify(data);
+    if (text === savedLast) return;
+    svcCall('prefsSave', {data: data}, function (r) { if (r && r.returnValue) savedLast = text; });
+  }
+
+  window.onPrefsChanged = function () { clearTimeout(saveTimer); saveTimer = setTimeout(saveSettings, 6000); };
+
+  function restoreSettings() {
+    var done = false;
+    try { done = !!localStorage.getItem('fmtv.prefs') || sessionStorage.getItem('fmtv.restored') === '1'; } catch (e) { done = true; }
+    if (done || TV.name !== 'webos') return;
+    svcCall('prefsLoad', {}, function (r) {
+      var data = r && r.returnValue && r.data;
+      try { if (localStorage.getItem('fmtv.prefs')) return; } catch (e) { return; }   // the person changed something meanwhile
+      if (!data || !data['fmtv.prefs']) return;
+      try {
+        SAVED_KEYS.forEach(function (k) { if (typeof data[k] === 'string') localStorage.setItem(k, data[k]); });
+        sessionStorage.setItem('fmtv.restored', '1');
+      } catch (e) { return; }
+      location.reload();
+    });
+  }
+  restoreSettings();
+  if (TV.name === 'webos') setInterval(saveSettings, 10 * 60 * 1000);   // also picks up the keys of the TV's remote API and the app list
+
   // Wake the store service now, so the first visit to the Store does not wait for its cold start (about 30 s on the TV).
   if (TV.name === 'webos') {
     setTimeout(function () { svcCall('status', {}, function () {}); }, 20000);
     setTimeout(autoUpdate, 90000);
+    setTimeout(devAuto, 120000);
+    setTimeout(function () { privacyCheck(function () { if (st.zone === Z.SETTINGS) renderSettings(); }); }, 150000);
+    setInterval(function () { if (Date.now() - dev.at > 6 * 3600 * 1000) devAuto(); }, 1800 * 1000);
     setInterval(autoUpdate, 3600 * 1000);   // it only acts when a day has passed since the last time
   }
 
