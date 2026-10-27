@@ -2409,10 +2409,13 @@
     return any && out['fmtv.prefs'] !== undefined ? out : null;
   }
 
+  var restorePending = false;   // a fresh page must not save its own empty settings over the copy it is about to ask for
+
   function saveSettings() {
     clearTimeout(saveTimer);
     var data = snapshot();
     if (!data || TV.name !== 'webos') return;
+    if (restorePending) { saveTimer = setTimeout(saveSettings, 15000); return; }
     var text = JSON.stringify(data);
     if (text === savedLast) return;
     svcCall('prefsSave', {data: data}, function (r) { if (r && r.returnValue) savedLast = text; });
@@ -2424,8 +2427,10 @@
     var done = !freshInstall;
     try { done = done || sessionStorage.getItem('fmtv.restored') === '1'; } catch (e) { done = true; }
     if (done || TV.name !== 'webos') return;
+    restorePending = true;
     svcCall('prefsLoad', {}, function (r) {
       var data = r && r.returnValue && r.data;
+      restorePending = false;
       if (!data || !data['fmtv.prefs']) return;
       try {
         // What this page wrote on its own meanwhile (the Store's icon, say) stays under what the person had chosen.
