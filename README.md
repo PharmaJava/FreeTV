@@ -9,6 +9,8 @@
 
 ![FreeTV on an LG OLED](docs/screenshot.png)
 
+<table><tr><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td><td width="33%"><img src="docs/screens/anadir-canal.jpg" alt="Add a channel with the TV keyboard"><br><sub>Add a channel with the TV keyboard</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="The Store marks apps with a new version"><br><sub>The Store marks apps with a new version</sub></td></tr><tr><td width="33%"><img src="docs/screens/tienda-actualizar-todo.jpg" alt="Update all, one after the other"><br><sub>Update all, one after the other</sub></td><td width="33%"><img src="docs/screens/tienda.jpg" alt="The Store: community apps without root"><br><sub>The Store: community apps without root</sub></td><td></td></tr></table>
+
 LG's home screen is full of ads. FreeTV sets it aside (it does not delete it) and puts its own: your apps as real square
 icons, recommendations only from the services you have an account in, your city's weather and the market quotes you care
 about. No rooting: it installs like any app through LG's **Developer Mode**, and **everything can be undone**.
@@ -221,6 +223,8 @@ affiliated with LG.
 [English version ↑](#freetv) · [Guía para hacerlo con cualquier IA](docs/GUIA-IA.md) · [Problemas y soluciones](docs/PROBLEMAS.md)
 
 ![FreeTV en una LG OLED](docs/screenshot.png)
+
+<table><tr><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td><td width="33%"><img src="docs/screens/anadir-canal.jpg" alt="Añadir un canal con el teclado de la tele"><br><sub>Añadir un canal con el teclado de la tele</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="La Tienda marca las apps con versión nueva"><br><sub>La Tienda marca las apps con versión nueva</sub></td></tr><tr><td width="33%"><img src="docs/screens/tienda-actualizar-todo.jpg" alt="Actualizar todo, una tras otra"><br><sub>Actualizar todo, una tras otra</sub></td><td width="33%"><img src="docs/screens/tienda.jpg" alt="La Tienda: apps de la comunidad sin root"><br><sub>La Tienda: apps de la comunidad sin root</sub></td><td></td></tr></table>
 
 La pantalla de inicio de LG está llena de publicidad. FreeTV la deja de lado (no la borra) y pone la suya: tus apps como
 iconos cuadrados de verdad, recomendaciones solo de los servicios donde tienes cuenta, el tiempo de tu ciudad y las
