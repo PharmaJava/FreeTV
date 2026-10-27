@@ -164,7 +164,7 @@
   // MARK: - Focus
 
   var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community', DLG: 'dialog'};
-  var st = {zone: Z.SHELF, top: 0, tab: 0, card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0};
+  var st = {zone: Z.SHELF, top: 0, tab: firstTab(), card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0};
   var cards = [];
 
   function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM || st.zone === Z.DLG; }
@@ -236,12 +236,29 @@
   var TABS = 5, TAB_KIND = [null, null, null, 'movie', 'tv'];
   function localTab() { return st.tab < 2; }
 
+  /** The tab to open on: the person's choice, or the one they used last. */
+  function firstTab() { var t = Prefs.startTab(); return t === 'last' ? Prefs.lastTab() : t; }
+
+  function tabNames() {
+    return [tr('Personalizado', 'Custom', 'Personalizado'), tr('Continuar assistindo', 'Continue watching', 'Continuar viendo'),
+      tr('Explorar', 'Explore', 'Explorar'), tr('Filmes', 'Movies', 'Películas'), tr('Séries', 'Shows', 'Series')];
+  }
+
+  /** Hold OK on a tab: make it the one FreeTV opens on (or the last one used). */
+  function openTabMenu(i) {
+    var names = tabNames();
+    showDialog(names[i], [{text: tr('Em qual aba o FreeTV abre ao ligar a TV?', 'Which tab should FreeTV open on when the TV is turned on?', '¿En qué pestaña debe abrirse FreeTV al encender la tele?')}], [
+      {label: tr('Esta aba: ', 'This tab: ', 'Esta pestaña: ') + names[i], run: function () { Prefs.set('startTab', i); toast(names[i] + ': ' + tr('aba inicial', 'start tab', 'pestaña de inicio')); }},
+      {label: tr('A última que usei', 'The last one I used', 'La última que usé'), run: function () { Prefs.set('startTab', 'last'); Prefs.set('lastTab', st.tab); }},
+      {label: cancelText()}
+    ], 0);
+  }
+
   function renderTop() {
     $('title').textContent = tr('Para você', 'For You', 'Para ti');
     var tabs = $('tabs');
     tabs.innerHTML = '';
-    var names = [tr('Personalizado', 'Custom', 'Personalizado'), tr('Continuar assistindo', 'Continue watching', 'Continuar viendo'),
-      tr('Explorar', 'Explore', 'Explorar'), tr('Filmes', 'Movies', 'Películas'), tr('Séries', 'Shows', 'Series')];
+    var names = tabNames();
     for (var i = 0; i < TABS; i++) {
       var t = el('button', 'tab', tabs, names[i]);
       hover(t, Z.TOP, i);
@@ -646,6 +663,8 @@
         step: function (d) { cycle('temperature', ['auto', 'C', 'F'], unit, d); renderPanels(); }},
       {label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
         step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }},
+      {label: tr('Aba inicial', 'Start tab', 'Pestaña de inicio'), value: Prefs.startTab() === 'last' ? tr('A última usada', 'The last used', 'La última usada') : tabNames()[Prefs.startTab()],
+        step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }},
       {label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
         step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }},
       {label: tr('Widget de cotações', 'Quotes widget', 'Widget de cotizaciones'), toggle: Prefs.quotes(),
@@ -1867,6 +1886,7 @@
 
   /** What holding OK opens where the focus is (null: OK only acts when it is pressed). */
   function holdMenu() {
+    if (st.zone === Z.TOP && st.top < TABS) { var tab = st.top; return function () { openTabMenu(tab); }; }
     var p = st.zone === Z.CARDS ? cards[st.card] : null;
     if (p && st.tab === 0 && p.local === 'channel') return function () { openChannelMenu(p.chan); };
     if (p && st.tab === 1 && (p.local === 'channel' || p.local === 'app')) return function () { openRecentMenu(p); };
@@ -1987,6 +2007,7 @@
   function selectTab(i) {
     if (i === st.tab) return;
     st.tab = i;
+    if (Prefs.startTab() === 'last') Prefs.set('lastTab', i);
     renderCards();
   }
 
@@ -2362,7 +2383,7 @@
     closeSheets();
     st.zone = Z.SHELF;
     st.shelf = 0;
-    if (st.tab !== 0) { st.tab = 0; renderCards(); }
+    if (st.tab !== firstTab()) { st.tab = firstTab(); renderCards(); }
     updateFocus();
   }
 

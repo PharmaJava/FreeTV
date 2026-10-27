@@ -53,6 +53,9 @@ var Prefs = (function () {
     /** Whether cartoons and anime may be suggested (off with hide_animation=true, or in Suggestions). */
     animation: function () { return pick('animation', !CONFIG.hideAnimation); },
     pickCount: function () { return pick('pickCount', 12); },
+    /** The tab FreeTV opens on: 0 Custom, 1 Continue watching, 2 Explore, 3 Movies, 4 Shows, or 'last' (the one used last). */
+    startTab: function () { var t = pick('startTab', 0); return t === 'last' || (t === +t && t >= 0 && t <= 4) ? t : 0; },
+    lastTab: function () { var t = pick('lastTab', 0); return t === +t && t >= 0 && t <= 4 ? t : 0; },
     /** Apps hidden from All Apps (they stay installed). Until the person changes it: LG's sports alerts, art gallery, home panel and LG Channels. */
     hiddenApps: function () {
       var r = pick('hiddenApps', null);
