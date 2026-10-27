@@ -10,6 +10,10 @@
 (function () {
   'use strict';
 
+  // Is this the first run after an install? (its storage is empty: before anything of this page writes to it)
+  var freshInstall = false;
+  try { freshInstall = !localStorage.getItem('fmtv.prefs'); } catch (e) {}
+
   function $(id) { return document.getElementById(id); }
 
   function el(tag, cls, parent, text) {
@@ -2417,15 +2421,18 @@
   window.onPrefsChanged = function () { clearTimeout(saveTimer); saveTimer = setTimeout(saveSettings, 6000); };
 
   function restoreSettings() {
-    var done = false;
-    try { done = !!localStorage.getItem('fmtv.prefs') || sessionStorage.getItem('fmtv.restored') === '1'; } catch (e) { done = true; }
+    var done = !freshInstall;
+    try { done = done || sessionStorage.getItem('fmtv.restored') === '1'; } catch (e) { done = true; }
     if (done || TV.name !== 'webos') return;
     svcCall('prefsLoad', {}, function (r) {
       var data = r && r.returnValue && r.data;
-      try { if (localStorage.getItem('fmtv.prefs')) return; } catch (e) { return; }   // the person changed something meanwhile
       if (!data || !data['fmtv.prefs']) return;
       try {
-        SAVED_KEYS.forEach(function (k) { if (typeof data[k] === 'string') localStorage.setItem(k, data[k]); });
+        // What this page wrote on its own meanwhile (the Store's icon, say) stays under what the person had chosen.
+        var mine = JSON.parse(localStorage.getItem('fmtv.prefs') || '{}'), saved = JSON.parse(data['fmtv.prefs']), k;
+        for (k in saved) if (Object.prototype.hasOwnProperty.call(saved, k)) mine[k] = saved[k];
+        localStorage.setItem('fmtv.prefs', JSON.stringify(mine));
+        SAVED_KEYS.forEach(function (key) { if (key !== 'fmtv.prefs' && typeof data[key] === 'string' && !localStorage.getItem(key)) localStorage.setItem(key, data[key]); });
         sessionStorage.setItem('fmtv.restored', '1');
       } catch (e) { return; }
       location.reload();

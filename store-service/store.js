@@ -318,6 +318,24 @@ Store.prototype.privacy = async function (conn) {
           audio: !!audio && audio[1] === 'true', solution: attr('ACRSolution'), country: attr('CountryCode')};
 };
 
+var STATE_DIR = '/media/developer/apps/usr/palm/services/com.gathin.tvhome.store/state';
+
+/**
+ * Installing FreeTV (appinstalld) makes every file of the app group-and-world readable, and key.pem is the Developer Mode key: any
+ * app on the TV could read it. Through its own Developer Mode shell (the owner of the file) the service puts it back to 640.
+ */
+Store.prototype.hardenState = async function () {
+  var conn = null;
+  try {
+    conn = await this.connect();
+    await this.exec(conn, '/bin/chmod 640 ' + STATE_DIR + '/key.pem 2>/dev/null; true');
+  } catch (e) {
+    this.log('harden: ' + (e && e.message ? e.message : e));
+  } finally {
+    if (conn) { try { conn.end(); } catch (e) {} }
+  }
+};
+
 var PROTECTED = /^(com\.gathin\.|com\.local\.nativehome$|freetv\.store$)/;   // FreeTV's own pieces are never removed from here
 
 /**

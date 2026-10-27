@@ -19,7 +19,10 @@ function readKey() {
 function current() {
   var key = readKey();
   if (!key) { store = null; return null; }
-  if (!store || store.key !== key) store = new Store({key: key, log: function (m) { console.log(m); }});
+  if (!store || store.key !== key) {
+    store = new Store({key: key, log: function (m) { console.log(m); }});
+    store.hardenState();   // key.pem back to 640 (a reinstall makes it readable by every app)
+  }
   return store;
 }
 
@@ -89,7 +92,7 @@ service.register('channels', function (message) {
 var HISTORY = path.join(dir, 'devmode.json');
 function readJson(file, fallback) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return fallback; } }
 function writeJson(file, value) {
-  try { fs.writeFileSync(file + '.tmp', JSON.stringify(value)); fs.renameSync(file + '.tmp', file); return true; } catch (e) { return false; }
+  try { fs.writeFileSync(file + '.tmp', JSON.stringify(value)); fs.chmodSync(file + '.tmp', 0o640); fs.renameSync(file + '.tmp', file); return true; } catch (e) { return false; }
 }
 
 service.register('devmode', function (message) {
