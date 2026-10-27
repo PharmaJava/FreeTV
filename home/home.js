@@ -1442,6 +1442,7 @@
   var searchQuery = '';
 
   function openSearch() {
+    showDialog.icon = 'search';
     showDialog(tr('Procurar', 'Search', 'Buscar'), [
       {text: tr('Escreva com o teclado da TV e aperte Enter.', 'Type with the TV keyboard and press Enter.', 'Escribe con el teclado de la tele y pulsa Intro.')}
     ], [{label: tr('Procurar', 'Search', 'Buscar'), run: function () { runSearch(searchQuery); }}, {label: cancelText()}], 0);
@@ -1492,6 +1493,7 @@
   function renderPin() {
     var dots = '';
     for (var i = 0; i < 4; i++) dots += (i < pin.digits.length ? '●' : '○') + (i < 3 ? '  ' : '');
+    showDialog.icon = 'lock';
     showDialog(pin.title, [{text: pin.text}, {cls: 'pin', text: dots}], [{label: cancelText(), run: function () { pin.on = false; }}], 0);
   }
 
@@ -1917,7 +1919,8 @@
     var box = $('dialog').firstChild;
     box.innerHTML = '';
     var head = el('div', 'title', box);
-    sym('apps', head);
+    sym(showDialog.icon || 'apps', head);
+    showDialog.icon = null;
     head.appendChild(document.createTextNode(title));
     for (var i = 0; i < lines.length; i++) line(box, lines[i].cls || '', lines[i].text);
     dlg.acts = [];
