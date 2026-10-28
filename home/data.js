@@ -179,6 +179,33 @@ var Data = (function () {
       if (at <= now) continue;
       w.hours.push({at: at, temp: hr.temperature_2m[i], code: hr.weather_code[i], day: !hr.is_day || hr.is_day[i] !== 0});
     }
+    // The rest of the forecast (FreeTV 2.1): an older saved forecast may not have it, so every part is optional.
+    var c = o.current, d = o.daily;
+    w.feels = c.apparent_temperature;
+    w.humidity = c.relative_humidity_2m;
+    w.wind = c.wind_speed_10m;
+    w.uv = d.uv_index_max ? d.uv_index_max[0] : null;
+    w.hourly = [];
+    for (var j = 0; hr && j < hr.time.length && w.hourly.length < 24; j++) {
+      var t = localTime(hr.time[j], off);
+      if (t + 3600000 <= now) continue;
+      w.hourly.push({at: t, temp: hr.temperature_2m[j], code: hr.weather_code[j], day: !hr.is_day || hr.is_day[j] !== 0,
+        pop: hr.precipitation_probability ? hr.precipitation_probability[j] : null});
+    }
+    w.days = [];
+    for (var k = 0; d.time && k < d.time.length && k < 6; k++) {
+      w.days.push({at: localTime(d.time[k] + 'T12:00', off), max: d.temperature_2m_max[k], min: d.temperature_2m_min[k],
+        code: d.weather_code ? d.weather_code[k] : null, pop: d.precipitation_probability_max ? d.precipitation_probability_max[k] : null});
+    }
+    var m15 = o.minutely_15;
+    w.rainSoon = 0;
+    w.rainAt = 0;
+    for (var q = 0; m15 && m15.time && q < m15.time.length; q++) {
+      var mt = localTime(m15.time[q], off);
+      if (mt + 900000 <= now || mt > now + 3600000) continue;
+      w.rainSoon += m15.precipitation[q] || 0;
+      if (!w.rainAt && m15.precipitation[q] > 0.05) w.rainAt = mt;
+    }
     return w;
   }
 
@@ -187,14 +214,35 @@ var Data = (function () {
     if (fetchingWeather || (now - weatherAt < 30 * 60000 && now >= weatherAt)) return;
     fetchingWeather = true;
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + Place.lat + '&longitude=' + Place.lon
-        + '&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset'
-        + '&hourly=temperature_2m,weather_code,is_day&timezone=auto&forecast_days=2';
+        + '&current=temperature_2m,weather_code,is_day,apparent_temperature,relative_humidity_2m,wind_speed_10m'
+        + '&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weather_code,precipitation_probability_max,uv_index_max'
+        + '&hourly=temperature_2m,weather_code,is_day,precipitation_probability&minutely_15=precipitation&forecast_minutely_15=8'
+        + '&timezone=auto&forecast_days=6';
     get(url, {}, function (err, body) {
       fetchingWeather = false;
       if (err) return;
       weather = parseWeather(body);
       weatherAt = Date.now();
       store('weather', {place: PLACE, body: body, at: weatherAt});
+      changed();
+    });
+    refreshAir();
+  }
+
+  // The air: Open-Meteo's air quality (European index; the US one where the TV is in the US), every hour.
+  var air = stored('air'), fetchingAir = false;
+  if (air && air.place !== PLACE) air = null;
+  function refreshAir() {
+    var now = Date.now();
+    if (fetchingAir || (air && now - air.at < 60 * 60000 && now >= air.at)) return;
+    fetchingAir = true;
+    get('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + Place.lat + '&longitude=' + Place.lon
+        + '&current=european_aqi,us_aqi,pm2_5&timezone=auto', {}, function (err, body) {
+      fetchingAir = false;
+      if (err || !body || !body.current) return;
+      var us = Place.country === 'US';
+      air = {place: PLACE, at: Date.now(), aqi: us ? body.current.us_aqi : body.current.european_aqi, us: us, pm25: body.current.pm2_5};
+      store('air', air);
       changed();
     });
   }
@@ -653,6 +701,14 @@ var Data = (function () {
     refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); },
     settingsChanged: function () { pricesAt = 0; fundsAt = 0; refreshPrices(); changed(); },
     get weather() { return weather; },
+    get air() { return air; },
+    country: Place.country,
+    /** Wind speed in the person's units: km/h, or mph where the temperature is in Fahrenheit. */
+    wind: function (kmh) {
+      if (kmh === undefined || kmh === null || isNaN(kmh)) return '—';
+      var unit = Prefs.temperature(), f = unit === 'F' || (unit === 'auto' && Place.fahrenheit);
+      return f ? Math.round(kmh * 0.621) + ' mph' : Math.round(kmh) + ' km/h';
+    },
     get weatherAt() { return weatherAt; },
     prices: prices,
     changes: changes,
@@ -670,6 +726,10 @@ var Data = (function () {
       if (theme === 'dark') return true;
       if (theme === 'light') return false;
       var d = new Date(at), mins = d.getHours() * 60 + d.getMinutes();
+      if (theme === 'schedule') {
+        var from = +Prefs.opt('darkFrom', 21) * 60, to = +Prefs.opt('darkTo', 8) * 60;
+        return from > to ? mins >= from || mins < to : mins >= from && mins < to;
+      }
       function hm(t, fallback) { if (!t) return fallback; var x = new Date(t); return x.getHours() * 60 + x.getMinutes(); }
       var rise = hm(weather && weather.sunrise, 360), set = hm(weather && weather.sunset, 1080);
       return mins < rise || mins >= set;

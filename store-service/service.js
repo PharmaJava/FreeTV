@@ -109,7 +109,7 @@ service.register('devmode', function (message) {
 
 /** The settings the person chose (and the keys of the TV's remote API) survive a reinstall of FreeTV: the page keeps a copy here. */
 var PREFS = path.join(dir, 'prefs.json');
-var PREF_KEYS = /^fmtv\.(prefs|devApps|ssapKey|ssapPowerKey2|ssapRefused|ssapPowerRefused)$/;
+var PREF_KEYS = /^fmtv\.(prefs|devApps|ssapKey|ssapPowerKey2|ssapRefused|ssapPowerRefused|usage)$/;
 service.register('prefsSave', function (message) {
   var data = (message.payload || {}).data, clean = {}, k;
   if (!data || typeof data !== 'object') { message.respond({returnValue: false, error: 'sin datos'}); return; }
@@ -118,6 +118,34 @@ service.register('prefsSave', function (message) {
 });
 service.register('prefsLoad', function (message) {
   message.respond({returnValue: true, data: readJson(PREFS, null)});
+});
+
+/**
+ * A news feed for FreeTV's News widget: the screen cannot read RSS (no CORS), the TV's service can. {url}: an https address;
+ * the answer is its text, up to 1 MB. Only GET, only https, nothing kept.
+ */
+function fetchText(url, done, hops) {
+  var u = require('url').parse(String(url || ''));
+  if (u.protocol !== 'https:' || !u.hostname) { done(new Error('solo https')); return; }
+  u.headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) FreeTV', 'Accept': 'application/rss+xml, application/xml, text/xml, */*'};
+  var req = require('https').get(u, function (res) {
+    if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && (hops || 0) < 4) {
+      res.resume();
+      fetchText(require('url').resolve(url, res.headers.location), done, (hops || 0) + 1);
+      return;
+    }
+    if (res.statusCode !== 200) { res.resume(); done(new Error('HTTP ' + res.statusCode)); return; }
+    var parts = [], size = 0;
+    res.on('data', function (d) { size += d.length; if (size <= 1024 * 1024) parts.push(d); else req.abort(); });
+    res.on('end', function () { done(null, Buffer.concat(parts).toString('utf8')); });
+  });
+  req.on('error', done);
+  req.setTimeout(15000, function () { req.abort(); });
+}
+service.register('feed', function (message) {
+  fetchText((message.payload || {}).url, function (err, text) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, text: text});
+  });
 });
 
 /** LG's ACR state (see store.js privacy). */

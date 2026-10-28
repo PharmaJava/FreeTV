@@ -168,17 +168,17 @@
 
   // MARK: - Focus
 
-  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community', TILES: 'tiles', DLG: 'dialog'};
+  var Z = {TOP: 'top', CARDS: 'cards', SHELF: 'shelf', DRAWER: 'drawer', APPS: 'apps', SETTINGS: 'settings', EDIT: 'edit', SUGG: 'suggest', COMM: 'community', TILES: 'tiles', DLG: 'dialog', INFO: 'info'};
   var st = {zone: Z.SHELF, top: 0, tab: firstTab(), card: 0, shelf: 0, drawer: 0, grid: 0, row: 0, edit: 0, sug: 0, comm: 0, tile: 0};
   var cards = [];
 
-  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM || st.zone === Z.TILES || st.zone === Z.DLG; }
+  function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.SUGG || st.zone === Z.COMM || st.zone === Z.TILES || st.zone === Z.DLG || st.zone === Z.INFO; }
 
   function updateFocus() {
     var i, list;
     list = $('tabs').children;
     for (i = 0; i < list.length; i++) {
-      setClass(list[i], 'on', i === st.tab);
+      setClass(list[i], 'on', VIS[i] === st.tab);
       setClass(list[i], 'focus', st.zone === Z.TOP && st.top === i);
     }
     list = $('buttons').children;
@@ -197,6 +197,8 @@
       setClass(list[i], 'focus', st.zone === Z.SHELF && st.shelf === i);
       setClass(list[i], 'grab', grabbed === i);
     }
+    list = $('tnames').children;
+    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.SHELF && st.shelf === i);
     list = document.querySelectorAll('#drawer .key');
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.DRAWER && st.drawer === i);
     list = document.querySelectorAll('#apps .cell');
@@ -208,6 +210,7 @@
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
     focusRows($('community'), commOpen < 0 ? st.comm : commAct, st.zone === Z.COMM);
     focusRows($('dialog'), dlg.index, st.zone === Z.DLG);
+    focusRows($('infosheet'), info.index, st.zone === Z.INFO);
     list = document.querySelectorAll('#tilesheet .qtile');
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TILES && st.tile === i);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
@@ -244,7 +247,15 @@
   var TABS = 5, TAB_KIND = [null, null, null, 'movie', 'tv'];
 
   /** How many tabs there are: all five, only the first two in calm mode, only the first in kids mode. */
-  function tabCount() { return Prefs.kids() ? 1 : Prefs.calm() ? 2 : 5; }
+  function tabCount() { return visTabs().length; }
+
+  /** The tabs on the top row, in the person's order (Home Settings → Home → Tabs): calm mode keeps the first two, kids mode the first. */
+  var VIS = [0, 1, 2, 3, 4];
+  function visTabs() {
+    if (Prefs.kids()) return [0];
+    var hidden = Prefs.opt('tabHidden', []) || [], out = tabOrder().filter(function (t) { return hidden.indexOf(t) < 0 && (!Prefs.calm() || t < 2); });
+    return out.length ? out : [Prefs.calm() ? 0 : tabOrder()[0]];
+  }
   function localTab() { return st.tab < 2; }
 
   function frostWanted() {
@@ -264,11 +275,25 @@
     ACCENTS.forEach(function (a) { setClass(body, 'acc-' + a, Prefs.accent() === a); });
     setClass(body, 'lessmotion', Prefs.opt('motion', 'normal') === 'less');
     setClass(body, 'notopclock', Prefs.opt('topClock', true) === false);
+    setClass(body, 'bigtext', Prefs.opt('textSize', 'normal') === 'large');
+    ['clear', 'solid'].forEach(function (g) { setClass(body, 'glass-' + g, Prefs.opt('glassLevel', 'normal') === g); });
+    ['rounder', 'square'].forEach(function (c) { setClass(body, 'corners-' + c, Prefs.opt('corners', 'round') === c); });
+    ['oled', 'light', 'warm', 'minimal'].forEach(function (l) { setClass(body, 'look-' + l, Prefs.opt('look', '') === l); });
+    var small = Prefs.opt('cardSize', 'normal') === 'small';
+    if (small !== hasClass(body, 'smallcards')) {
+      setClass(body, 'smallcards', small);
+      HERO_W = small ? 860 : 1040;
+      SMALL_W = small ? 262 : 320;
+      LOCAL_W = small ? 280 : 340;
+      cards = [];
+      renderCards();
+    }
     renderTitle();
-    var n = tabCount();
-    if (n !== TABS) {
-      TABS = n;
-      if (st.tab >= TABS) { st.tab = 0; renderCards(); }
+    var vis = visTabs();
+    if (vis.join() !== VIS.join()) {
+      VIS = vis;
+      TABS = vis.length;
+      if (VIS.indexOf(st.tab) < 0) { st.tab = VIS[0]; renderCards(); }
       if (st.zone === Z.TOP && st.top >= TABS && st.top < 5) st.top = 0;
       renderTop();
     }
@@ -277,18 +302,21 @@
   /** What is behind the home: the focused card's picture, or one of the landscapes (a new one every half hour). */
   function bgFor(url) {
     if (Prefs.wallpaper() === 'plain') return '';
-    if (Prefs.wallpaper() !== 'places' || typeof LANDSCAPES === 'undefined' || !LANDSCAPES.length) return url;
-    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(LANDSCAPES[Math.floor(Date.now() / 1800000) % LANDSCAPES.length][0]) + '?width=480';
+    if (Prefs.wallpaper() === 'url') return Prefs.opt('wallUrl', '') || url;
+    var places = landscapes();
+    if (Prefs.wallpaper() !== 'places' || !places.length) return url;
+    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(places[Math.floor(Date.now() / 1800000) % places.length][0]) + '?width=480';
   }
 
   function refreshBackdrop() { bgUrl = null; backdrop(bgFor(bgShown ? cardBackdrop(bgShown) : '')); }
 
   /** The tab to open on: the person's choice, or the one they used last. */
-  function firstTab() { var t = Prefs.startTab(); t = t === 'last' ? Prefs.lastTab() : t; return Math.min(t, tabCount() - 1); }
+  function firstTab() { var t = Prefs.startTab(), v = visTabs(); t = t === 'last' ? Prefs.lastTab() : t; return v.indexOf(t) >= 0 ? t : v[0]; }
 
   function tabNames() {
-    return [tr('Personalizado', 'Custom', 'Personalizado'), tr('Continuar assistindo', 'Continue watching', 'Continuar viendo'),
+    var own = Prefs.opt('tabNames', {}) || {}, names = [tr('Personalizado', 'Custom', 'Personalizado'), tr('Continuar assistindo', 'Continue watching', 'Continuar viendo'),
       tr('Explorar', 'Explore', 'Explorar'), tr('Filmes', 'Movies', 'Películas'), tr('Séries', 'Shows', 'Series')];
+    return names.map(function (n, i) { return own[i] || n; });
   }
 
   /** Hold OK on a tab: make it the one FreeTV opens on (or the last one used). */
@@ -297,6 +325,8 @@
     showDialog(names[i], [{text: tr('Em qual aba o FreeTV abre ao ligar a TV?', 'Which tab should FreeTV open on when the TV is turned on?', '¿En qué pestaña debe abrirse FreeTV al encender la tele?')}], [
       {label: tr('Esta aba: ', 'This tab: ', 'Esta pestaña: ') + names[i], run: function () { Prefs.set('startTab', i); toast(names[i] + ': ' + tr('aba inicial', 'start tab', 'pestaña de inicio')); }},
       {label: tr('A última que usei', 'The last one I used', 'La última que usé'), run: function () { Prefs.set('startTab', 'last'); Prefs.set('lastTab', st.tab); }},
+      {label: tr('Renomear esta aba', 'Rename this tab', 'Renombrar esta pestaña'), run: function () { renameTab(i); }},
+      {label: tr('Organizar as abas…', 'Arrange the tabs…', 'Ordenar las pestañas…'), run: function () { openInfo('tabs'); }},
       {label: cancelText()}
     ], 0);
   }
@@ -341,7 +371,7 @@
     tabs.innerHTML = '';
     var names = tabNames();
     for (var i = 0; i < TABS; i++) {
-      var t = el('button', 'tab', tabs, names[i]);
+      var t = el('button', 'tab', tabs, names[VIS[i]]);
       hover(t, Z.TOP, i);
     }
     var buttons = $('buttons');
@@ -369,6 +399,13 @@
       else coin(coins[i], item);
       el('span', '', item, Data.compact(Data.prices[coins[i]]));
     }
+    if (Prefs.quotes()) tickers().forEach(function (t) {
+      var d = quoteData[t.k + ':' + t.s];
+      if (!t.top || !d) return;
+      var it = el('span', 'q', q);
+      el('b', '', it, (t.n || t.s).slice(0, 10).toUpperCase());
+      el('span', '', it, Data.compact(d.price));
+    });
   }
 
   // MARK: - Picks and background
@@ -587,6 +624,16 @@
       face(shelf[i], t, wordFit(shelf[i].title, tw, 30));
       hover(t, Z.SHELF, i);
     }
+    var names = $('tnames'), mode = Prefs.opt('iconNames', 'none');
+    names.innerHTML = '';
+    if (mode !== 'none') {
+      for (var ni = 0; ni < n; ni++) {
+        var lab = el('div', 'tname' + (mode === 'focus' ? ' only' : ''), names, shelf[ni].title);
+        lab.style.left = (left + ni * (tw + gap) - 20) + 'px';
+        lab.style.width = (tw + 40) + 'px';
+        lab.style.top = (854 + SHELF_DROP + 126 + 12) + 'px';
+      }
+    }
     st.shelf = Math.min(st.shelf, Math.max(0, n - 1));
   }
 
@@ -600,9 +647,19 @@
     drawerItems = [];
     for (var i = 0; i < inputs.length; i++) {
       var x = inputs[i];
-      drawerItems.push({label: x.label || tr('TV aberta', 'Live TV', 'TV en vivo'), symbol: x.symbol, off: !x.connected, run: launcher(x.id, x.label)});
+      drawerItems.push({label: inputLabel(x), symbol: x.key === 'live' ? x.symbol : inputKind(x.id)[2] || x.symbol, off: !x.connected, run: launcher(x.id, inputLabel(x))});
     }
     drawerInputs = drawerItems.length;
+    var recentN = 0;
+    if (Prefs.opt('drawerRecent', true) !== false && !Prefs.kids()) {
+      Prefs.recent().forEach(function (r) {
+        if (recentN >= 2 || r.id.indexOf('app:') !== 0) return;
+        var app = findApp(r.id.slice(4));
+        if (!app || shelf.indexOf(app) >= 0) return;
+        recentN++;
+        drawerItems.push({label: app.title, symbol: 'play', run: launcher(app.id, app.title), recent: true});
+      });
+    }
     if (!Prefs.kids()) drawerItems.push({label: tr('Painel rápido', 'Quick panel', 'Panel rápido'), symbol: 'sparkles', run: function () { openTiles('quick'); }});
     drawerItems.push({label: tr('Todos os Apps', 'All Apps', 'Todas las apps'), symbol: 'apps', run: openApps});
     drawerItems.push({label: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), symbol: 'settings', run: openSettings});
@@ -616,6 +673,7 @@
         el('div', 'row-title', d, tr('Atalhos', 'Shortcuts', 'Accesos directos')).style.left = (xPos + 4) + 'px';
       }
       if (k === 0 && drawerInputs) el('div', 'row-title', d, tr('Entradas', 'Inputs', 'Entradas')).style.left = '84px';
+      if (recentN && k === drawerInputs && k > 0) d.lastChild.textContent = tr('Recentes e atalhos', 'Recent and shortcuts', 'Recientes y accesos');
       var item = drawerItems[k], key = el('div', 'key glass' + (item.off ? ' off' : ''), d);
       key.style.left = xPos + 'px';
       key.style.width = tw + 'px';
@@ -746,6 +804,7 @@
     setClass($('suggest'), 'open', false);
     setClass($('community'), 'open', false);
     setClass($('tilesheet'), 'open', false);
+    setClass($('infosheet'), 'open', false);
     setClass($('dialog'), 'open', false);
     st.zone = Z.SHELF;
     updateFocus();
@@ -761,11 +820,64 @@
       {id: 'look', icon: 'sparkles', label: tr('Aparência', 'Look', 'Aspecto')},
       {id: 'widgets', icon: 'partly_cloudy_day', label: tr('Widgets', 'Widgets', 'Widgets')},
       {id: 'apps', icon: 'apps', label: tr('Apps', 'Apps', 'Apps')},
-      {id: 'quick', icon: 'tiles', label: tr('Painel rápido', 'Quick panel', 'Panel rápido')}
+      {id: 'quick', icon: 'tiles', label: tr('Painel rápido', 'Quick panel', 'Panel rápido')},
+      {id: 'remote', icon: 'gamepad', label: tr('Controle remoto', 'Remote', 'Mando')}
     ];
     cats.push({id: 'privacy', icon: 'lock', label: tr('Privacidade e crianças', 'Privacy and kids', 'Privacidad y niños')});
     cats.push({id: 'care', icon: 'settings', label: tr('Manutenção', 'Maintenance', 'Mantenimiento')});
     return cats;
+  }
+
+  // Ready-made styles: each sets a few choices at once (the person can change any of them after).
+  var LOOKS = {
+    '': null,
+    oled: {theme: 'dark', accent: 'blue', wallpaper: 'plain', glassLevel: 'solid'},
+    light: {theme: 'light', accent: 'mint', wallpaper: 'cards', glassLevel: 'clear'},
+    warm: {theme: 'dark', accent: 'amber', wallpaper: 'places', glassLevel: 'normal'},
+    minimal: {theme: 'auto', accent: 'sky', wallpaper: 'plain', calm: true, iconSize: 'small', topDate: false}
+  };
+  function lookName(l) {
+    return {'': tr('Nenhum', 'None', 'Ninguno'), oled: tr('OLED preto puro', 'Pure black OLED', 'OLED negro puro'), light: tr('Vidro claro', 'Clear glass', 'Cristal claro'),
+      warm: tr('Noite quente', 'Warm night', 'Nocturno cálido'), minimal: tr('Minimalista', 'Minimal', 'Minimalista')}[l] || l;
+  }
+  function applyPreset(d) {
+    var keys = ['', 'oled', 'light', 'warm', 'minimal'], now = Prefs.opt('look', ''), next = keys[(keys.indexOf(now) + (d || 1) + keys.length) % keys.length];
+    Prefs.set('look', next);
+    var set = LOOKS[next];
+    if (set) for (var k in set) if (set.hasOwnProperty(k)) Prefs.set(k, set[k]);
+    applyLook();
+    checkNight();
+    refreshBackdrop();
+    renderShelf();
+  }
+  function regionName(r) {
+    return {all: tr('Todos os lugares', 'Everywhere', 'Todos los sitios'), andalucia: 'Andalucía', spain: tr('Espanha', 'Spain', 'España'), lithuania: tr('Lituânia', 'Lithuania', 'Lituania')}[r] || r;
+  }
+  /** The landscapes of the region the person chose. */
+  function landscapes() {
+    if (typeof LANDSCAPES === 'undefined') return [];
+    var r = Prefs.opt('placesRegion', 'all');
+    return LANDSCAPES.filter(function (p) {
+      var place = String(p[1]);
+      return r === 'all' || (r === 'lithuania' ? /lit/i.test(place) : r === 'andalucia' ? /sevilla|andaluc/i.test(place) : !/lit/i.test(place));
+    });
+  }
+  function askWall() {
+    askText(tr('Foto de fundo', 'Background picture', 'Foto de fondo'), tr('O endereço https de uma imagem (JPG ou PNG).', 'The https address of a picture (JPG or PNG).', 'La dirección https de una imagen (JPG o PNG).'),
+      Prefs.opt('wallUrl', ''), function (v) {
+        if (!/^https:\/\//.test(trim(v))) { toast(tr('Precisa começar com https://', 'It must start with https://', 'Tiene que empezar por https://')); return; }
+        Prefs.set('wallUrl', trim(v));
+        Prefs.set('wallpaper', 'url');
+        refreshBackdrop();
+      }, 'https://');
+  }
+  function askImmich() {
+    askText(tr('Álbum do Immich', 'Immich album', 'Álbum de Immich'), tr('O link compartilhado do álbum (https://seu-servidor/share/…).', 'The album\'s shared link (https://your-server/share/…).',
+      'El enlace compartido del álbum (https://tu-servidor/share/…).'), Prefs.opt('immichUrl', ''), function (v) {
+        if (!/^https:\/\/[^\/]+\/share\/[\w-]+/.test(trim(v))) { toast(tr('Não parece um link compartilhado do Immich', 'That does not look like an Immich shared link', 'No parece un enlace compartido de Immich')); return; }
+        Prefs.set('immichUrl', trim(v));
+        cache('saver.immich', null);
+      }, 'https://');
   }
 
   function accentNames() {
@@ -796,11 +908,18 @@
       rows.push({label: tr('Aba inicial', 'Start tab', 'Pestaña de inicio'), value: Prefs.startTab() === 'last' ? tr('A última usada', 'The last used', 'La última usada') : tabNames()[Prefs.startTab()],
         step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }});
       rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
+      rows.push({label: tr('Abas', 'Tabs', 'Pestañas'), value: '›', step: function (d) { if (d >= 0) openInfo('tabs'); }});
+      rows.push({label: tr('Perfis', 'Profiles', 'Perfiles'), value: profileName(profileNow()), step: function (d) { if (d >= 0) openInfo('profiles'); }});
+      rows.push({label: tr('Rotinas', 'Routines', 'Rutinas'), value: String(routines().length), step: function (d) { if (d >= 0) openInfo('routines'); }});
       rows.push({label: tr('Sugestões', 'Suggestions', 'Sugerencias'), value: '›', step: function (d) { if (d >= 0) openSuggest(); }});
-      var modes = ['both', 'places', 'picks'], names = {
+      var modes = ['both', 'places', 'picks', 'potd', 'apod', 'immich', 'clock'], names = {
         both: tr('Paisagens e sugestões', 'Places and picks', 'Paisajes y sugerencias'),
         places: tr('Paisagens', 'Places', 'Paisajes'),
-        picks: tr('Sugestões', 'Picks', 'Sugerencias')};
+        picks: tr('Sugestões', 'Picks', 'Sugerencias'),
+        potd: tr('Foto do dia (Wikimedia)', 'Picture of the day (Wikimedia)', 'Foto del día (Wikimedia)'),
+        apod: tr('Astronomia (NASA)', 'Astronomy (NASA)', 'Astronomía (NASA)'),
+        immich: tr('Minhas fotos (Immich)', 'My photos (Immich)', 'Mis fotos (Immich)'),
+        clock: tr('Relógio grande', 'Big clock', 'Reloj grande')};
       rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
         step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
       var after = Prefs.opt('saverAfter', 2);
@@ -809,16 +928,50 @@
         step: function (d) { cycle('saverAfter', [1, 2, 5, 10, 15, 30, 0], after, d); }});
       rows.push({label: tr('Relógio no protetor de tela', 'Clock on the screensaver', 'Reloj en el salvapantallas'), toggle: Prefs.opt('saverClock', true) !== false,
         step: function () { Prefs.set('saverClock', Prefs.opt('saverClock', true) === false); }});
+      if (Data.saver() === 'immich') rows.push({label: tr('Álbum do Immich', 'Immich album', 'Álbum de Immich'), value: Prefs.opt('immichUrl', '') ? '✓' : '›', step: function (d) { if (d >= 0) askImmich(); }});
+      rows.push({label: tr('Clima no protetor de tela', 'Weather on the screensaver', 'Tiempo en el salvapantallas'), toggle: Prefs.opt('saverWeather', true) !== false,
+        step: function () { Prefs.set('saverWeather', Prefs.opt('saverWeather', true) === false); }});
+      rows.push({label: tr('Mais suave à noite', 'Dimmer at night', 'Más tenue de noche'), toggle: Prefs.opt('saverDim', true) !== false,
+        step: function () { Prefs.set('saverDim', Prefs.opt('saverDim', true) === false); }});
+      if (TV.name === 'webos') {
+        var off = +Prefs.opt('screenOff', 0);
+        rows.push({label: tr('Apagar a tela depois de', 'Screen off after', 'Apagar la pantalla tras'), value: off ? off + ' min' : tr('Nunca', 'Never', 'Nunca'),
+          step: function (d) { cycle('screenOff', [0, 10, 30, 60], off, d); }});
+      }
     } else if (settingsCat === 'look') {
-      rows.push({label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
-        step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }});
+      rows.push({label: tr('Estilo pronto', 'Ready-made style', 'Estilo listo'), value: lookName(Prefs.opt('look', '')), step: function (d) { applyPreset(d); }});
+      rows.push({label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : theme === 'schedule' ? tr('Escuro por horário', 'Dark by schedule', 'Oscuro por horario') : auto,
+        step: function (d) { cycle('theme', ['auto', 'light', 'dark', 'schedule'], theme, d); checkNight(); }});
+      if (theme === 'schedule') {
+        rows.push({label: tr('   escuro a partir das', '   dark from', '   oscuro desde las'), value: pad2(+Prefs.opt('darkFrom', 21)) + ':00', step: function (d) { Prefs.set('darkFrom', (+Prefs.opt('darkFrom', 21) + (d || 1) + 24) % 24); checkNight(); }});
+        rows.push({label: tr('   até as', '   until', '   hasta las'), value: pad2(+Prefs.opt('darkTo', 8)) + ':00', step: function (d) { Prefs.set('darkTo', (+Prefs.opt('darkTo', 8) + (d || 1) + 24) % 24); checkNight(); }});
+      }
       rows.push({label: tr('Vidro fosco', 'Frosted glass', 'Cristal esmerilado'), value: Prefs.glass() === 'on' ? on : Prefs.glass() === 'off' ? off : auto,
         step: function (d) { cycle('glass', ['auto', 'on', 'off'], Prefs.glass(), d); applyLook(); }});
       rows.push({label: tr('Cor de destaque', 'Accent colour', 'Color de acento'), value: accentNames()[Prefs.accent()],
         step: function (d) { cycle('accent', ACCENTS, Prefs.accent(), d); applyLook(); }});
-      var walls = {cards: tr('A capa em foco', 'The focused cover', 'La portada en foco'), places: tr('Paisagens', 'Landscapes', 'Paisajes'), plain: tr('Liso', 'Plain', 'Liso')};
+      var walls = {cards: tr('A capa em foco', 'The focused cover', 'La portada en foco'), places: tr('Paisagens', 'Landscapes', 'Paisajes'), plain: tr('Liso', 'Plain', 'Liso'),
+        url: tr('Minha foto', 'My picture', 'Mi foto')};
       rows.push({label: tr('Fundo', 'Background', 'Fondo'), value: walls[Prefs.wallpaper()],
-        step: function (d) { cycle('wallpaper', ['cards', 'places', 'plain'], Prefs.wallpaper(), d); refreshBackdrop(); }});
+        step: function (d) { cycle('wallpaper', ['cards', 'places', 'plain', 'url'], Prefs.wallpaper(), d); if (Prefs.wallpaper() === 'url' && !Prefs.opt('wallUrl', '')) askWall(); refreshBackdrop(); }});
+      if (Prefs.wallpaper() === 'url') rows.push({label: tr('   endereço da foto', '   picture address', '   dirección de la foto'), value: '›', step: function (d) { if (d >= 0) askWall(); }});
+      if (Prefs.wallpaper() === 'places' || /^(both|places)$/.test(Data.saver())) rows.push({label: tr('Paisagens de', 'Landscapes of', 'Paisajes de'), value: regionName(Prefs.opt('placesRegion', 'all')),
+        step: function (d) { cycle('placesRegion', ['all', 'andalucia', 'spain', 'lithuania'], Prefs.opt('placesRegion', 'all'), d); refreshBackdrop(); }});
+      var gl = Prefs.opt('glassLevel', 'normal');
+      rows.push({label: tr('Intensidade do vidro', 'Glass strength', 'Intensidad del cristal'), value: gl === 'clear' ? tr('Mais transparente', 'More see-through', 'Más transparente') : gl === 'solid' ? tr('Mais opaco', 'More solid', 'Más opaco') : tr('Normal', 'Normal', 'Normal'),
+        step: function (d) { cycle('glassLevel', ['clear', 'normal', 'solid'], gl, d); applyLook(); }});
+      var ts = Prefs.opt('textSize', 'normal');
+      rows.push({label: tr('Tamanho do texto', 'Text size', 'Tamaño del texto'), value: ts === 'large' ? tr('Grande', 'Large', 'Grande') : tr('Normal', 'Normal', 'Normal'),
+        step: function (d) { cycle('textSize', ['normal', 'large'], ts, d); applyLook(); }});
+      var co = Prefs.opt('corners', 'round');
+      rows.push({label: tr('Cantos', 'Corners', 'Esquinas'), value: co === 'square' ? tr('Retos', 'Square', 'Rectas') : co === 'rounder' ? tr('Mais redondos', 'Rounder', 'Más redondeadas') : tr('Redondos', 'Round', 'Redondeadas'),
+        step: function (d) { cycle('corners', ['round', 'rounder', 'square'], co, d); applyLook(); }});
+      var nm = Prefs.opt('iconNames', 'none');
+      rows.push({label: tr('Nomes das apps', 'App names', 'Nombres de las apps'), value: nm === 'all' ? tr('Todos', 'All', 'Todos') : nm === 'focus' ? tr('Só a escolhida', 'Only the focused one', 'Solo la elegida') : tr('Nenhum', 'None', 'Ninguno'),
+        step: function (d) { cycle('iconNames', ['none', 'focus', 'all'], nm, d); renderShelf(); updateFocus(); }});
+      var cs = Prefs.opt('cardSize', 'normal');
+      rows.push({label: tr('Cartões', 'Cards', 'Tarjetas'), value: cs === 'small' ? tr('Menores (mais por fila)', 'Smaller (more per row)', 'Más pequeñas (más por fila)') : tr('Normais', 'Normal', 'Normales'),
+        step: function (d) { cycle('cardSize', ['normal', 'small'], cs, d); applyLook(); }});
       rows.push({label: tr('Título', 'Title', 'Título'), value: Prefs.opt('titleMode', 'tab') === 'greet' ? tr('Saudação', 'Greeting', 'Saludo') : tr('Para você', 'For You', 'Para ti'),
         step: function (d) { cycle('titleMode', ['tab', 'greet'], Prefs.opt('titleMode', 'tab'), d); renderTitle(); }});
       rows.push({label: tr('Seu nome', 'Your name', 'Tu nombre'), value: Prefs.opt('name', '') || '›', step: function (d) { if (d >= 0) askName(); }});
@@ -835,6 +988,16 @@
         step: function (d) { cycle('clock24', ['auto', '24', '12'], c24, d); renderClock(); }});
       rows.push({label: tr('Data ao lado do relógio', 'Date beside the clock', 'Fecha junto al reloj'), toggle: Prefs.opt('topDate', false) === true,
         step: function () { Prefs.set('topDate', Prefs.opt('topDate', false) !== true); renderClock(); }});
+      rows.push({label: tr('Meus widgets', 'My widgets', 'Mis widgets'), value: '›', step: function (d) { if (d >= 0) openInfo('widgets'); }});
+      WIDGETS.forEach(function (w) {
+        rows.push({label: '   ' + widgetName(w), toggle: widgetOn(w), step: function () {
+          var off = (Prefs.opt('widgetsOff', []) || []).filter(function (x) { return x !== w; });
+          if (widgetOn(w)) off.push(w);
+          Prefs.set('widgetsOff', off);
+        }});
+      });
+      rows.push({label: tr('Mercados e alertas', 'Markets and alerts', 'Mercados y alertas'), value: '›', step: function (d) { if (d >= 0) openInfo('markets'); }});
+      rows.push({label: tr('Previsão completa', 'Full forecast', 'Previsión completa'), value: '›', step: function (d) { if (d >= 0) openInfo('weather'); }});
       rows.push({label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
         step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }});
       rows.push({label: tr('Temperatura', 'Temperature', 'Temperatura'), value: unit === 'C' ? '°C' : unit === 'F' ? '°F' : auto,
@@ -868,7 +1031,19 @@
           }
         }});
         rows.push({label: tr('Apps ocultas', 'Hidden apps', 'Apps ocultas'), value: String(Prefs.hiddenApps().length), step: function (d) { if (d >= 0) openHiddenApps(); }});
+        rows.push({label: tr('Repositórios extra', 'Extra repositories', 'Repositorios extra'), value: String((Prefs.opt('repos', []) || []).length), step: function (d) { if (d >= 0) openInfo('repos'); }});
       }
+      rows.push({label: tr('Entradas HDMI', 'HDMI inputs', 'Entradas HDMI'), value: '›', step: function (d) { if (d >= 0) openInfo('inputs'); }});
+      rows.push({label: tr('Apps recentes na gaveta', 'Recent apps in the drawer', 'Apps recientes en el cajón'), toggle: Prefs.opt('drawerRecent', true) !== false,
+        step: function () { Prefs.set('drawerRecent', Prefs.opt('drawerRecent', true) === false); renderDrawer(); }});
+    } else if (settingsCat === 'remote') {
+      rows.push({label: tr('Números 1-9 abrem a prateleira', 'Numbers 1-9 open the shelf', 'Números 1-9 abren el estante'), toggle: Prefs.opt('numKeys', true) !== false,
+        step: function () { Prefs.set('numKeys', Prefs.opt('numKeys', true) === false); }});
+      [[403, tr('Botão vermelho', 'Red button', 'Botón rojo')], [404, tr('Botão verde', 'Green button', 'Botón verde')], [405, tr('Botão amarelo', 'Yellow button', 'Botón amarillo')],
+       [406, tr('Botão azul', 'Blue button', 'Botón azul')]].forEach(function (b) {
+        var c = KEY_COLORS[b[0]], now = Prefs.opt(c[0], c[1]);
+        rows.push({label: b[1], value: keyActionName(now), step: function (d) { cycle(c[0], KEY_ACTIONS, now, d); }});
+      });
     } else if (settingsCat === 'quick') {
       quickAll().forEach(function (t) {
         rows.push({label: t.name, toggle: quickShown(t.id), step: function () { quickShow(t.id, !quickShown(t.id)); }});
@@ -877,10 +1052,25 @@
       if (TV.name === 'webos') rows.push({label: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), value: privacyText(), step: function (d) { if (d >= 0) openPrivacy(); }});
       else rows.push({label: tr('Privacidade da TV', 'TV privacy', 'Privacidad de la tele'), value: '›', step: function (d) { if (d >= 0) openTvPrivacy(); }});
       rows.push({label: tr('Modo crianças', 'Kids mode', 'Modo niños'), value: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Desligado', 'Off', 'Desactivado'), step: function (d) { if (d >= 0) { closeSheets(); if (Prefs.kids()) kidsExit(); else kidsStart(); } }});
+      var kl = +Prefs.opt('kidsLimit', 0);
+      rows.push({label: tr('Tempo máximo no modo crianças', 'Time limit in kids mode', 'Tiempo máximo en modo niños'), value: kl ? kl + ' min' : tr('Sem limite', 'No limit', 'Sin límite'),
+        step: function (d) { cycle('kidsLimit', [0, 30, 60, 90, 120], kl, d); }});
     } else if (settingsCat === 'care') {
       if (TV.name === 'webos') {
         rows.push({label: tr('Modo Desenvolvedor: tempo restante', 'Developer Mode: time left', 'Modo Desarrollador: tiempo restante'), value: devText(), step: function (d) { if (d >= 0) openDevMode(); }});
         rows.push({label: tr('Renovar o Modo Desenvolvedor sozinha', 'Renew Developer Mode by itself', 'Renovar el Modo Desarrollador sola'), toggle: Prefs.devAuto(), step: function () { Prefs.set('devAuto', !Prefs.devAuto()); }});
+      }
+      rows.push({label: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), value: '›', step: function (d) { if (d >= 0) openInfo('usage'); }});
+      if (TV.name === 'webos') {
+        rows.push({label: tr('Guardar uma cópia dos ajustes', 'Save a copy of the settings', 'Guardar una copia de los ajustes'), value: '›', step: function (d) { if (d >= 0) { saveSettings(); toast(tr('Cópia guardada na TV', 'Copy saved on the TV', 'Copia guardada en la tele')); } }});
+        rows.push({label: tr('Restaurar a cópia guardada', 'Restore the saved copy', 'Restaurar la copia guardada'), value: '›', step: function (d) { if (d >= 0) showDialog(tr('Restaurar?', 'Restore?', '¿Restaurar?'), [{text: tr('Os ajustes de agora são trocados pelos da cópia.', 'The settings now are replaced by the copy\'s.', 'Los ajustes de ahora se cambian por los de la copia.')}], [{label: cancelText()}, {label: tr('Sim, restaurar', 'Yes, restore', 'Sí, restaurar'), run: restoreBackup}], 0); }});
+        rows.push({label: tr('Cópia no computador / outra TV', 'Copy on the computer / another TV', 'Copia en el ordenador / otra tele'), value: '›', step: function (d) {
+          if (d >= 0) showDialog(tr('Cópia no computador', 'Copy on the computer', 'Copia en el ordenador'), [
+            {text: tr('No computador, na pasta do FreeTV:', 'On the computer, in the FreeTV folder:', 'En el ordenador, en la carpeta de FreeTV:')},
+            {cls: 'code', text: 'node tools/settings_backup.js <IP> export > mis-ajustes.json'},
+            {text: tr('E para levar a outra TV (ou voltar):', 'And to take it to another TV (or back):', 'Y para llevarla a otra tele (o volver):')},
+            {cls: 'code', text: 'node tools/settings_backup.js <IP> import mis-ajustes.json'}], [{label: 'OK'}], 0);
+        }});
       }
       if (window.HomeExtras) rows = rows.concat(window.HomeExtras.rows());   // Developer Mode renewal, Home button
       rows.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
@@ -1078,20 +1268,125 @@
     });
   }
 
-  /** "Update all (N)" is the first row of the Store's list while there is something to update (the ones that need a confirmation, one by one). */
+  /** "Update all (N)" is the first app row of the Store's list while there is something to update (the ones that need a confirmation, one by one). */
   function applyUpdateRow() {
-    var n = store.updList.filter(function (u) { return !u.flag; }).length, had = commList.length && commList[0].special;
     var open = commOpen >= 0 ? commList[commOpen] : null, row = commList[st.comm];
     if (open && open.special && store.flowAll !== 'idle') return;   // its own page is on screen (progress, result): the row goes when it is closed
-    if (had) commList.shift();
-    if (n > 0) commList.unshift({id: '*updates', special: true, manifest: {},
-      title: tr('Atualizar tudo (' + n + ')', 'Update all (' + n + ')', 'Actualizar todo (' + n + ')')});
     // the same app stays selected / open when a row comes or goes above it
     commInst = instMap();
-    commList.sort(commOrder);
+    commRebuild();
     if (row) st.comm = Math.max(0, commList.indexOf(row));
     if (open) commOpen = commList.indexOf(open);
   }
+
+  // 2.1: search, filters, order, what is new since the last visit, a wish list, extra repositories.
+  var commAll = [], commQuery = '', commNotes = {}, commSpecial = {id: '*updates', special: true, manifest: {}, title: ''};
+  var commCtls = [{id: '*search', ctl: 1, manifest: {}, title: ''}, {id: '*filter', ctl: 2, manifest: {}, title: ''}, {id: '*sort', ctl: 3, manifest: {}, title: ''}];
+  var FEATURED = ['youtube.leanback.v4', 'twitch.adamffdev.v1', 'org.jellyfin.webos', 'org.xbmc.kodi', 'com.limelight.webos', 'com.beb.plxnative', 'com.retroarch.webos', 'com.immich.webos'];
+  var COMM_FILTERS = ['all', 'featured', 'new', 'games', 'media', 'tools', 'noroot', 'installed', 'wish'], COMM_SORTS = ['rec', 'new', 'az'];
+  var GAME_RE = /game|pinball|doom|ninja|2048|openttd|retro|emulat|steam link|moonlight|gamestream|punktfunk/i;
+  var MEDIA_RE = /jellyfin|plex|kodi|youtube|twitch|crunchy|music|player|iptv|video|stream|photo|immich|bili|subsonic|fin\b|movie|cinema|media|radio|spotify/i;
+
+  function commCat(p) { var t = p.title + ' ' + commDesc(p) + ' ' + p.id; return GAME_RE.test(t) ? 'games' : MEDIA_RE.test(t) ? 'media' : 'tools'; }
+  function commSeen() { var s = Prefs.opt('commSeen', null); return s instanceof Array ? s : null; }
+  function commIsNew(p) { var s = commSeen(); return !!s && !p.special && !p.ctl && s.indexOf(p.id) < 0; }
+  function wish() { var w = Prefs.opt('wish', []); return w instanceof Array ? w : []; }
+  function commMarkSeen() { if (commAll.length) Prefs.set('commSeen', commAll.map(function (p) { return p.id; })); }
+
+  function filterName(f) {
+    return {all: tr('Todas', 'All', 'Todas'), featured: tr('Destaques', 'Featured', 'Destacadas'), 'new': tr('Novas', 'New', 'Nuevas'), games: tr('Jogos', 'Games', 'Juegos'),
+      media: tr('Multimídia', 'Media', 'Multimedia'), tools: tr('Utilidades', 'Tools', 'Utilidades'), noroot: tr('Sem root', 'No root', 'Sin root'),
+      installed: tr('Instaladas', 'Installed', 'Instaladas'), wish: tr('Minha lista', 'My list', 'Mi lista')}[f];
+  }
+  function sortName(o) { return {rec: tr('Recomendado', 'Recommended', 'Recomendado'), 'new': tr('Novas primeiro', 'New first', 'Nuevas primero'), az: 'A-Z'}[o]; }
+
+  function commRebuild() {
+    var f = Prefs.opt('commFilter', 'all'), so = Prefs.opt('commSort', 'rec'), q = commQuery.toLowerCase(), w = wish();
+    var list = commAll.filter(function (p) {
+      if (q && (p.title + ' ' + commDesc(p) + ' ' + p.id).toLowerCase().indexOf(q) < 0) return false;
+      if (f === 'games' || f === 'media' || f === 'tools') return commCat(p) === f;
+      if (f === 'noroot') return !p.manifest.rootRequired;
+      if (f === 'installed') return commInst[p.id] !== undefined;
+      if (f === 'wish') return w.indexOf(p.id) >= 0;
+      if (f === 'featured') return FEATURED.indexOf(p.id) >= 0;
+      if (f === 'new') return commIsNew(p);
+      return true;
+    });
+    function az(a, b) { return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1; }
+    list.sort(so === 'az' ? az : so === 'new' ? function (a, b) { return (commIsNew(a) ? 0 : 1) - (commIsNew(b) ? 0 : 1) || commOrder(a, b); } : commOrder);
+    var n = store.updList.filter(function (u) { return !u.flag; }).length;
+    commSpecial.title = tr('Atualizar tudo (' + n + ')', 'Update all (' + n + ')', 'Actualizar todo (' + n + ')');
+    commList = commCtls.concat(n > 0 ? [commSpecial] : [], list);
+  }
+
+  /** A search, filter or order row: OK or the arrows change it. */
+  function commCtl(p, d) {
+    if (p.ctl === 1) {
+      askText(tr('Procurar na Loja', 'Search the Store', 'Buscar en la Tienda'), tr('Nome ou assunto (jellyfin, jogos, vpn…). Vazio mostra tudo.', 'A name or a subject (jellyfin, games, vpn…). Empty shows all.',
+        'Un nombre o un tema (jellyfin, juegos, vpn…). Vacío lo muestra todo.'), commQuery, function (v) { commQuery = trim(v); commRebuild(); st.comm = 0; renderCommunity(); });
+      return;
+    }
+    if (p.ctl === 2) cycle('commFilter', COMM_FILTERS, Prefs.opt('commFilter', 'all'), d);
+    else cycle('commSort', COMM_SORTS, Prefs.opt('commSort', 'rec'), d);
+    commRebuild();
+    renderCommunity();
+  }
+
+  /** The catalogue and the extra sources, once; done() when the main one is in (or failed: commState). */
+  function commLoad(done) {
+    if (commAll.length) { if (done) done(); return; }
+    Data.getJson(CATALOGUE, function (err, data) {
+      if (err || !data || !data.packages) { commState = 'error'; if (done) done(); return; }
+      commInst = instMap();
+      commAll = data.packages.filter(function (p) { return p && p.id && p.manifest; });
+      if (!commSeen()) commMarkSeen();   // the first visit: nothing is "new" yet
+      commRebuild();
+      commState = 'ready';
+      if (done) done();
+      var extra = EXTRA.concat((Prefs.opt('repos', []) || []).map(function (u) { return {url: u, all: true}; }));
+      extra.forEach(function (src) {
+        Data.getJson(src.url, function (e2, d2) {
+          if (e2 || !d2 || !d2.packages) return;   // an extra source that does not answer is just not offered
+          d2.packages.forEach(function (p) {
+            if (p && p.manifest && (src.all || src.ids.indexOf(p.id) >= 0) && !commAll.some(function (o) { return o.id === p.id; })) {
+              if (src.all) p.repo = src.url.replace(/^https:\/\//, '').split('/')[0];
+              commAll.push(p);
+            }
+          });
+          if (commOpen < 0) { commInst = instMap(); commRebuild(); if (st.zone === Z.COMM) renderCommunity(); }
+        });
+      });
+    });
+  }
+
+  INFO.repos = function () {
+    var list = Prefs.opt('repos', []) || [], rows = list.map(function (u) {
+      return {label: u.replace(/^https:\/\//, ''), value: '›', run: function () {
+        showDialog(tr('Tirar este repositório?', 'Remove this repository?', '¿Quitar este repositorio?'), [{text: u}], [{label: cancelText()}, {label: tr('Sim, tirar', 'Yes, remove', 'Sí, quitar'), run: function () {
+          Prefs.set('repos', (Prefs.opt('repos', []) || []).filter(function (x) { return x !== u; }));
+          commAll = [];
+          openInfo('repos');
+        }}], 0);
+      }};
+    });
+    rows.push({label: tr('Adicionar um repositório…', 'Add a repository…', 'Añadir un repositorio…'), value: '›', icon: 'apps', run: function () {
+      askText(tr('Repositório', 'Repository', 'Repositorio'), tr('O endereço https do seu apps.json (formato do webOS Homebrew).', 'The https address of its apps.json (webOS Homebrew format).',
+        'La dirección https de su apps.json (formato de webOS Homebrew).'), '', function (v) {
+          v = trim(v);
+          if (!/^https:\/\/\S+$/.test(v)) { toast(tr('Precisa começar com https://', 'It must start with https://', 'Tiene que empezar por https://')); return; }
+          Data.getJson(v, function (err, d) {
+            if (err || !d || !d.packages) { toast(tr('Não parece um repositório', 'That does not look like a repository', 'No parece un repositorio')); return; }
+            Prefs.set('repos', (Prefs.opt('repos', []) || []).concat([v]).slice(-8));
+            commAll = [];
+            toast(d.packages.length + ' apps');
+            openInfo('repos');
+          });
+        }, 'https://');
+    }});
+    return {title: tr('Repositórios extra', 'Extra repositories', 'Repositorios extra'), icon: 'apps', rows: rows,
+      hint: tr('Só repositórios em que você confia: as apps passam pelas mesmas verificações (sem root, https, SHA-256)', 'Only repositories you trust: their apps go through the same checks (no root, https, SHA-256)',
+        'Solo repositorios de confianza: sus apps pasan las mismas comprobaciones (sin root, https, SHA-256)')};
+  };
 
   /** Is the computer there? (Its answer redraws the screen.) */
   function storeCheck() {
@@ -1194,38 +1489,26 @@
     st.zone = Z.COMM;
     st.comm = 0;
     commOpen = -1;
-    commState = commList.length ? 'ready' : 'loading';
+    commState = commAll.length ? 'ready' : 'loading';
+    if (commAll.length) { commInst = instMap(); commRebuild(); }
     renderCommunity();
     setClass($('community'), 'open', true);
     updateFocus();
     svcCheck();
     storeCheck();
-    if (commList.length) return;
-    Data.getJson(CATALOGUE, function (err, data) {
-      if (err || !data || !data.packages) { commState = 'error'; renderCommunity(); return; }
-      commInst = instMap();
-      commList = data.packages.filter(function (p) { return p && p.id && p.manifest; }).sort(commOrder);
-      applyUpdateRow();
-      commState = 'ready';
-      renderCommunity();
-      EXTRA.forEach(function (src) {
-        Data.getJson(src.url, function (e2, d2) {
-          if (e2 || !d2 || !d2.packages) return;   // an extra source that does not answer is just not offered
-          d2.packages.forEach(function (p) {
-            if (p && p.manifest && src.ids.indexOf(p.id) >= 0 && !commList.some(function (o) { return o.id === p.id; })) commList.push(p);
-          });
-          if (commOpen < 0) { commInst = instMap(); commList.sort(commOrder); renderCommunity(); }
-        });
-      });
-    });
+    if (commAll.length) return;
+    commLoad(function () { applyUpdateRow(); st.comm = commList.length > 3 ? 3 : 0; renderCommunity(); });
   }
 
   function commOrder(a, b) {
+    if (a.ctl || b.ctl) return a.ctl ? (b.ctl ? a.ctl - b.ctl : -1) : 1;
     if (a.special || b.special) return a.special ? -1 : 1;
+    var fa = FEATURED.indexOf(a.id) >= 0 ? 0 : 1, fb = FEATURED.indexOf(b.id) >= 0 ? 0 : 1;
     var ia = commInst[a.id] !== undefined ? 0 : 1, ib = commInst[b.id] !== undefined ? 0 : 1;
     if (ia !== ib) return ia - ib;
     var ra = a.manifest.rootRequired ? 1 : 0, rb = b.manifest.rootRequired ? 1 : 0;
     if (ra !== rb) return ra - rb;
+    if (fa !== fb) return fa - fb;
     return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
   }
 
@@ -1438,7 +1721,7 @@
   /** Columns for a tile sheet: two for up to four tiles, three for six, four for more. */
   function tileCols(n) { return n <= 4 ? 2 : n <= 6 ? 3 : 4; }
 
-  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload'];   // tiles that start hidden (Home Settings → Quick panel)
+  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines'];   // tiles that start hidden (Home Settings → Quick panel)
   function quickShown(id) { return (Prefs.opt('quickHidden', QUICK_OFF) || []).indexOf(id) < 0; }
   function quickShow(id, on) {
     var hidden = (Prefs.opt('quickHidden', QUICK_OFF) || []).filter(function (x) { return x !== id; });
@@ -1448,7 +1731,10 @@
 
   /** The quick panel's tiles: the ones the person keeps, at most twelve. */
   function quickTiles() {
-    return quickAll().filter(function (t) { return quickShown(t.id); }).slice(0, 12);
+    var apps2 = quickApps().map(findApp).filter(function (a) { return a; }).map(function (a) {
+      return {id: 'app:' + a.id, sym: 'play', name: a.title, sub: tr('Abrir', 'Open', 'Abrir'), run: function () { closeSheets(); launcher(a.id, a.title)(); }};
+    });
+    return quickAll().filter(function (t) { return quickShown(t.id); }).concat(apps2).slice(0, 12);
   }
 
   /** Every tile the quick panel can have, for this TV. */
@@ -1466,6 +1752,13 @@
       {id: 'timer', lg: true, sym: 'timer', name: tr('Desligar em…', 'Sleep timer', 'Apagar en…'), sub: left ? tr('Faltam ' + left + ' min', left + ' min left', 'Quedan ' + left + ' min') : off, on: !!left, run: sleepNext},
       {id: 'kids', sym: 'kids', name: tr('Modo crianças', 'Kids mode', 'Modo niños'), sub: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Só os canais deles', 'Only their channels', 'Solo sus canales'), on: Prefs.kids(), run: function () { closeSheets(); kidsStart(); }},
       {id: 'health', lg: true, sym: 'health', name: tr('Saúde da TV', 'TV health', 'Salud de la tele'), sub: healthSummary(), run: function () { openTiles('health'); }},
+      {id: 'weather', sym: Data.weather ? Data.symbol(Data.weather.code, Data.weather.isDay) : 'cloud', name: tr('Clima', 'Weather', 'El tiempo'),
+        sub: Data.weather ? Data.degrees(Data.weather.temp) + ' · ' + Data.condition(Data.weather.code, Data.weather.isDay) : '', run: function () { openInfo('weather'); }},
+      {id: 'markets', sym: 'bitcoin', name: tr('Mercados', 'Markets', 'Mercados'), sub: tr('Gráficos e alertas', 'Charts and alerts', 'Gráficas y alertas'), run: function () { openInfo('markets'); }},
+      {id: 'widgets', sym: 'partly_cloudy_day', name: tr('Meus widgets', 'My widgets', 'Mis widgets'), sub: tr('Calendário, notas, futebol…', 'Calendar, notes, football…', 'Calendario, notas, fútbol…'), run: function () { openInfo('widgets'); }},
+      {id: 'profile', sym: 'home', name: tr('Perfil', 'Profile', 'Perfil'), sub: profileName(profileNow()), run: function () { openInfo('profiles'); }},
+      {id: 'usage', sym: 'timer', name: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), sub: tr('Hoje e esta semana', 'Today and this week', 'Hoy y esta semana'), run: function () { openInfo('usage'); }},
+      {id: 'routines', sym: 'timer', name: tr('Rotinas', 'Routines', 'Rutinas'), sub: String(routines().length), run: function () { openInfo('routines'); }},
       {id: 'theme', sym: 'sunny', name: tr('Tema', 'Theme', 'Tema'), sub: themes[theme], on: theme !== 'auto',
         run: function () { cycle('theme', ['auto', 'light', 'dark'], theme, 1); checkNight(); again(); }},
       {id: 'saver', sym: 'bedtime', name: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), sub: tr('Agora', 'Now', 'Ahora'),
@@ -1496,6 +1789,11 @@
     });
   }
 
+  function newAppsText() {
+    var n = commAll.filter(commIsNew).length;
+    return n ? tr(' · ' + n + ' apps novas', ' · ' + n + ' new apps', ' · ' + n + ' apps nuevas') : '';
+  }
+
   function healthSummary() {
     var bad = 0;
     healthTiles().forEach(function (t) { if (t.dot && t.dot !== 'ok') bad++; });
@@ -1510,7 +1808,7 @@
       {sym: 'apps', name: tr('Atualizações', 'Updates', 'Actualizaciones'), sub: store.svc !== 'ok' ? tr('A verificar…', 'Checking…', 'Comprobando…') : n ? (n === 1 ? tr('1 app com versão nova', '1 app has a new version', '1 app con versión nueva') : tr(n + ' apps com versão nova', n + ' apps have a new version', n + ' apps con versión nueva')) : tr('Tudo em dia', 'Everything is up to date', 'Todo al día'), dot: store.svc !== 'ok' ? '' : n ? 'warn' : 'ok', run: function () { closeSheets(); openCommunity(true); }},
       {sym: 'tv', name: tr('Espaço livre', 'Free space', 'Espacio libre'), sub: free ? free + ' MB' : tr('A verificar…', 'Checking…', 'Comprobando…'), dot: !free ? '' : free < 60 ? 'bad' : free < 150 ? 'warn' : 'ok', run: function () { closeSheets(); openCommunity(true); }},
       {sym: 'lock', name: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), sub: !privacy ? tr('A verificar…', 'Checking…', 'Comprobando…') : !privacy.ok ? '?' : privacy.acr || privacy.send ? tr('O ACR está ligado', 'ACR is on', 'El ACR está activo') : tr('O ACR está desligado', 'ACR is off', 'El ACR está apagado'), dot: !privacy || !privacy.ok ? '' : privacy.acr || privacy.send ? 'warn' : 'ok', run: function () { closeSheets(); openPrivacy(); }},
-      {sym: 'check', name: tr('Loja na TV', 'Store on the TV', 'Tienda en la tele'), sub: store.svc === 'ok' ? tr('Pronta', 'Ready', 'Lista') : store.svc === 'checking' ? tr('A verificar…', 'Checking…', 'Comprobando…') : tr('Sem permissão: bash install.sh', 'No permission: bash install.sh', 'Sin permiso: bash install.sh'), dot: store.svc === 'ok' ? 'ok' : store.svc === 'checking' ? '' : 'warn'},
+      {sym: 'check', name: tr('Loja na TV', 'Store on the TV', 'Tienda en la tele'), sub: store.svc === 'ok' ? tr('Pronta', 'Ready', 'Lista') + newAppsText() : store.svc === 'checking' ? tr('A verificar…', 'Checking…', 'Comprobando…') : tr('Sem permissão: bash install.sh', 'No permission: bash install.sh', 'Sin permiso: bash install.sh'), dot: store.svc === 'ok' ? 'ok' : store.svc === 'checking' ? '' : 'warn'},
       {sym: 'home', name: 'FreeTV', sub: (ver ? 'v' + ver : '') + (newer ? tr(' · há a v' + latestVer, ' · v' + latestVer + ' is out', ' · ya está la v' + latestVer) : latestVer ? tr(' · em dia', ' · up to date', ' · al día') : ''), dot: newer ? 'warn' : ver ? 'ok' : ''}
     ];
   }
@@ -1521,6 +1819,7 @@
     svcUpdates(again);
     privacyCheck(again);
     versionCheck(again);
+    commLoad(again);
     if (dev.hours === null) devTick(0, again);
   }
 
@@ -1640,6 +1939,7 @@
       askPin(tr('Repita o PIN', 'Repeat the PIN', 'Repite el PIN'), tr('Os mesmos 4 números.', 'The same 4 digits.', 'Las mismas 4 cifras.'), function (second) {
         if (first !== second) { toast(tr('Os PINs não coincidem', 'The PINs do not match', 'Los PIN no coinciden')); return; }
         Prefs.set('kidsPin', first);
+        Prefs.set('kidsSince', Date.now());
         Prefs.set('kids', true);
         kidsChanged();
         toast(tr('Modo crianças ligado', 'Kids mode on', 'Modo niños activado'));
@@ -1651,6 +1951,8 @@
     askPin(tr('Sair do modo crianças', 'Leave kids mode', 'Salir del modo niños'), tr('Digite o PIN.', 'Type the PIN.', 'Escribe el PIN.'), function (d) {
       if (d !== Prefs.kidsPin()) { toast(tr('PIN incorreto', 'Wrong PIN', 'PIN incorrecto')); return; }
       Prefs.set('kids', false);
+      Prefs.set('kidsSince', 0);
+      kidsOver = false;
       kidsChanged();
       toast(tr('Modo crianças desligado', 'Kids mode off', 'Modo niños desactivado'));
     });
@@ -1891,6 +2193,29 @@
         action(box, tr('Verificar de novo', 'Check again', 'Comprobar de nuevo'), function () { svcCheck(); storeCheck(); renderCommunity(); });
       }
     }
+    if (['asking', 'working', 'done', 'failed'].indexOf(mine) < 0) {
+      if (m.ipkSize) {
+        var mb = Math.max(1, Math.round(m.ipkSize / 1048576)), fits = !store.freeMb || store.freeMb > mb * 2 + 20;
+        line(box, fits ? '' : 'warn', tr('Tamanho: ', 'Size: ', 'Tamaño: ') + mb + ' MB' + (store.freeMb ? (fits ? tr(' · cabe (livres ' + store.freeMb + ' MB)', ' · fits (' + store.freeMb + ' MB free)', ' · cabe (libres ' + store.freeMb + ' MB)')
+            : tr(' · pode não caber (livres ' + store.freeMb + ' MB)', ' · may not fit (' + store.freeMb + ' MB free)', ' · puede no caber (libres ' + store.freeMb + ' MB)')) : ''));
+      }
+      if (a.repo) line(box, 'warn', tr('Vem do repositório ', 'From the repository ', 'Viene del repositorio ') + a.repo);
+      var gh = /github\.com\/([\w.-]+)\/([\w.-]+)/.exec(m.sourceUrl || '');
+      if (gh && commNotes[a.id] === undefined) {
+        commNotes[a.id] = '';
+        Data.getJson('https://api.github.com/repos/' + gh[1] + '/' + gh[2].replace(/\.git$/, '') + '/releases/latest', function (err, rel) {
+          commNotes[a.id] = !err && rel && rel.body ? rel.body.replace(/[#*`>_\[\]]/g, '').replace(/\(http[^)]*\)/g, '').replace(/\s+/g, ' ').slice(0, 260) : '';
+          if (commNotes[a.id] && st.zone === Z.COMM && commList[commOpen] === a) renderCommunity();
+        });
+      }
+      if (commNotes[a.id]) line(box, '', tr('Novidades: ', 'What\'s new: ', 'Novedades: ') + commNotes[a.id] + (commNotes[a.id].length >= 260 ? '…' : ''));
+      var wished = wish().indexOf(a.id) >= 0;
+      action(box, wished ? tr('Tirar da minha lista', 'Remove from my list', 'Quitar de mi lista') : tr('Guardar na minha lista', 'Save to my list', 'Guardar en mi lista'), function () {
+        Prefs.set('wish', wished ? wish().filter(function (x) { return x !== a.id; }) : wish().concat([a.id]));
+        renderCommunity();
+      });
+      if (instMap()[a.id] !== undefined && !PROTECTED.test(a.id)) action(box, tr('Desinstalar', 'Uninstall', 'Desinstalar'), function () { confirmRemove({id: a.id, title: a.title}); });
+    }
     if (commAct >= commActs.length) commAct = 0;
     el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));
     updateFocus();
@@ -1922,7 +2247,17 @@
     holder.setAttribute('data-visible', 5);
     list.style.height = Math.min(commList.length, 5) * 112 + 'px';
     for (var i = 0; i < commList.length; i++) {
-      var p = commList[i], row = el('div', 'row crow', holder);
+      var p = commList[i], row = el('div', 'row crow' + (p.ctl ? ' ctl' : ''), holder);
+      if (p.ctl) {
+        sym(['search', 'apps', 'sync'][p.ctl - 1], el('div', 'cico csym', row));
+        el('div', 'ctitle', row, [tr('Procurar', 'Search', 'Buscar'), tr('Mostrar', 'Show', 'Mostrar'), tr('Ordenar', 'Order', 'Ordenar')][p.ctl - 1]);
+        el('div', 'cdesc', row, p.ctl === 1 ? (commQuery ? '«' + commQuery + '»' : tr('Por nome ou assunto', 'By name or subject', 'Por nombre o tema'))
+            : p.ctl === 2 ? filterName(Prefs.opt('commFilter', 'all')) + ' · ' + (commList.length - 3 - (commList[3] && commList[3].special ? 1 : 0)) + ' apps'
+            : sortName(Prefs.opt('commSort', 'rec')));
+        el('span', 'value', row, p.ctl === 1 ? '›' : '‹ ›');
+        hover(row, Z.COMM, i);
+        continue;
+      }
       if (p.special) sym('apps', el('div', 'cico csym', row));
       else commIcon(p, row, 'cico');
       el('div', 'ctitle', row, p.title);
@@ -1937,6 +2272,9 @@
         else if (have !== undefined) el('span', 'tag ok', v, '✓ ' + (have ? 'v' + have + ' · ' : '') + (isNewerVersion(p.manifest.version, have) ? tr('há uma nova', 'newer exists', 'hay una nueva') : tr('em dia', 'up to date', 'al día')));
         if (have !== undefined && store.updates[p.id]) el('span', 'tag ok', v, 'v' + have + '  ');
         if (have === undefined) el('span', 'tag' + (root ? ' root' : ''), v, root ? 'root' : tr('sem root', 'no root', 'sin root'));
+        if (commIsNew(p)) el('span', 'tag new', v, tr('Nova', 'New', 'Nueva'));
+        else if (FEATURED.indexOf(p.id) >= 0 && have === undefined) el('span', 'tag star', v, '★');
+        if (wish().indexOf(p.id) >= 0) el('span', 'tag star', v, '♥');
       }
       hover(row, Z.COMM, i);
     }
@@ -2068,7 +2406,14 @@
 
   function launcher(id, name) {
     return function () {
+      if (kidsOver && Prefs.kids()) { checkKidsLimit(); toast(tr('Acabou o tempo de TV', 'TV time is over', 'Se acabó el tiempo de tele')); return; }
       if (id === 'freetv.store') { openCommunity(true); return; }
+      if (id.indexOf('chan:') === 0) {
+        var ch = allChannels().filter(function (c) { return 'chan:' + c.key === id; })[0];
+        if (ch) openChannel(ch);
+        return;
+      }
+      if (id.indexOf('com.gathin.') !== 0) usageStart(id);
       if (id.indexOf('tizenbrew:') === 0) { remember('app:' + id, name || id); openBrewApp(id.slice(10), name || id); return; }
       if (id.indexOf('com.gathin.') !== 0 && id !== 'com.local.nativehome') remember('app:' + id, name || id);
       TV.launch(id, null, function (ok) {
@@ -2299,6 +2644,9 @@
     if (at > 0) buttons.push({label: tr('Mover para a esquerda', 'Move left', 'Mover a la izquierda'), run: function () { moveChannel(c.key, -1); }});
     if (at >= 0 && at < list.length - 1) buttons.push({label: tr('Mover para a direita', 'Move right', 'Mover a la derecha'), run: function () { moveChannel(c.key, 1); }});
     buttons.push({label: tr('Tirar daqui', 'Remove', 'Quitar'), run: function () { removeChannel(c); }});
+    var chOn = (Prefs.opt('chanShelf', []) || []).indexOf(c.key) >= 0;
+    buttons.push({label: chOn ? tr('Tirar da prateleira', 'Take off the shelf', 'Quitar del estante') : tr('Pôr na prateleira', 'Put on the shelf', 'Añadir al estante'),
+      run: function () { toggleShelf('chan:' + c.key, chOn ? 'remove' : 'add', 'chanShelf'); }});
     buttons.push({label: cancelText()});
     showDialog(c.title, [], buttons, 0);
   }
@@ -2425,7 +2773,7 @@
   /** What holding OK opens where the focus is (null: OK only acts when it is pressed). */
   function holdMenu() {
     if (Prefs.kids()) return null;
-    if (st.zone === Z.TOP && st.top < TABS) { var tab = st.top; return function () { openTabMenu(tab); }; }
+    if (st.zone === Z.TOP && st.top < TABS) { var tab = VIS[st.top]; return function () { openTabMenu(tab); }; }
     var p = st.zone === Z.CARDS ? cards[st.card] : null;
     if (p && st.tab === 0 && p.local === 'channel') return function () { openChannelMenu(p.chan); };
     if (p && st.tab === 1 && (p.local === 'channel' || p.local === 'app')) return function () { openRecentMenu(p); };
@@ -2439,6 +2787,11 @@
 
   function openAppMenu(app) {
     var buttons = [{label: tr('Abrir', 'Open', 'Abrir'), run: launcher(app.id, app.title)}];
+    var onShelf = shelf.some(function (x) { return x.id === app.id; });
+    buttons.push({label: onShelf ? tr('Tirar da prateleira', 'Take off the shelf', 'Quitar del estante') : tr('Pôr na prateleira', 'Put on the shelf', 'Añadir al estante'),
+      run: function () { toggleShelf(app.id, onShelf ? 'remove' : 'add'); }});
+    buttons.push({label: quickApps().indexOf(app.id) >= 0 ? tr('Tirar do painel rápido', 'Take off the quick panel', 'Quitar del panel rápido') : tr('Pôr no painel rápido', 'Put in the quick panel', 'Añadir al panel rápido'),
+      run: function () { toggleQuickApp(app); }});
     if (!PROTECTED.test(app.id)) buttons.push({label: tr('Desinstalar', 'Uninstall', 'Desinstalar'), run: function () { confirmRemove(app); }});
     buttons.push({label: tr('Ocultar daqui', 'Hide from here', 'Ocultar de aquí'), run: function () {
       Prefs.set('hiddenApps', Prefs.hiddenApps().concat([app.id]));
@@ -2540,11 +2893,15 @@
         }
         return;
       case Z.COMM:
-        if (commOpen < 0 && commList[st.comm]) { commOpen = st.comm; commAct = 0; renderCommunity(); }
+        if (commOpen < 0 && commList[st.comm] && commList[st.comm].ctl) commCtl(commList[st.comm], 1);
+        else if (commOpen < 0 && commList[st.comm]) { commOpen = st.comm; commAct = 0; renderCommunity(); }
         else if (commOpen >= 0 && commActs[commAct]) commActs[commAct]();
         return;
       case Z.SUGG:
         if (suggestNow[st.sug]) { var sr = suggestNow[st.sug]; sr.step(1); if (st.zone === Z.SUGG) renderSuggest(); }
+        return;
+      case Z.INFO:
+        infoActivate();
         return;
     }
   }
@@ -2565,18 +2922,18 @@
         else if (dy > 0) { if (Prefs.kids()) { kidsExit(); return; } openDrawer(); return; }
         else if (dy < 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = nearest(cardNodes, centerX(tiles[st.shelf])); }
-          else { st.zone = Z.TOP; st.top = st.tab; }
+          else { st.zone = Z.TOP; st.top = Math.max(0, VIS.indexOf(st.tab)); }
         }
         break;
       case Z.CARDS:
         if (dx) st.card = Math.max(0, Math.min(cards.length - 1, st.card + dx));
-        else if (dy < 0) { st.zone = Z.TOP; st.top = st.tab; }
+        else if (dy < 0) { st.zone = Z.TOP; st.top = Math.max(0, VIS.indexOf(st.tab)); }
         else if (shelf.length) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNodes[st.card])); }
         break;
       case Z.TOP:
         if (dx) {
           st.top = Math.max(0, Math.min(Prefs.kids() ? TABS - 1 : TABS + 2, st.top + dx));
-          if (st.top < TABS) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
+          if (st.top < TABS) selectTab(VIS[st.top]);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < TABS ? 0 : cards.length - 1); }
           else st.zone = Z.SHELF;
@@ -2607,10 +2964,14 @@
         break;
       case Z.COMM:
         if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
+        else if (commOpen < 0 && dx && commList[st.comm] && commList[st.comm].ctl > 1) { commCtl(commList[st.comm], dx); return; }
         else if (commOpen >= 0 && dy) commAct = Math.max(0, Math.min(commActs.length - 1, commAct + dy));
         break;
       case Z.DLG:
         if (dy) dlg.index = Math.max(0, Math.min(dlg.acts.length - 1, dlg.index + dy));
+        break;
+      case Z.INFO:
+        infoMove(dx, dy);
         break;
       case Z.SUGG:
         if (dy) st.sug = Math.max(0, Math.min(suggestNow.length - 1, st.sug + dy));
@@ -2623,6 +2984,7 @@
   function back() {
     if (grabbed >= 0) { drop(); return; }
     if (st.zone === Z.DLG) { closeDialog(); return; }
+    if (st.zone === Z.INFO) { if (info.back) info.back(); else closeSheets(); return; }
     if (st.zone === Z.EDIT) {
       setClass($('shelfedit'), 'open', false);
       openSettings();
@@ -2639,6 +3001,7 @@
         return;
       }
       setClass($('community'), 'open', false);
+      commMarkSeen();
       if (commFromShelf) { commFromShelf = false; st.zone = Z.SHELF; updateFocus(); return; }   // opened from its icon: back to the shelf
       openSettings();
       for (var c = 0; c < rowsNow.length; c++) if (rowsNow[c].label === commTitle()) st.row = c;
@@ -2666,12 +3029,12 @@
   function hover(node, zone, index) {
     node.onmouseover = function () {
       if (st.zone === Z.DLG) return;
-      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM || zone === Z.TILES))) return;
+      if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM || zone === Z.TILES || zone === Z.INFO))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
       if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
       if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
       st.zone = zone;
-      if (zone === Z.TOP) { st.top = index; if (index < TABS) selectTab(index); }
+      if (zone === Z.TOP) { st.top = index; if (index < TABS) selectTab(VIS[index]); }
       else if (zone === Z.CARDS) st.card = index;
       else if (zone === Z.SHELF) st.shelf = index;
       else if (zone === Z.DRAWER) st.drawer = index;
@@ -2681,6 +3044,7 @@
       else if (zone === Z.SUGG) st.sug = index;
       else if (zone === Z.COMM) st.comm = index;
       else if (zone === Z.TILES) st.tile = index;
+      else if (zone === Z.INFO) info.index = index;
       updateFocus();
     };
     // The Magic Remote's wheel, with the pointer on screen, clicks instead of sending OK: holding it on the shelf picks the app up,
@@ -2724,11 +3088,65 @@
 
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 2 * 60000;
 
+  // Photos from the web for the screensaver: {web, title, credit}. Fetched once a day (Immich: every hour), kept between starts.
+  function saverWeb(mode, done) {
+    var key = 'saver.' + mode, have = cache(key);
+    if (have && have.items && have.items.length && Date.now() - have.at < (mode === 'immich' ? 3600000 : 864e5)) { done(have.items); return; }
+    function keep(items) { if (items.length) cache(key, {at: Date.now(), items: items}); done(items); }
+    if (mode === 'potd') {
+      var out = [], left = 10;
+      for (var i = 0; i < 10; i++) (function (d) {
+        var day = d.getFullYear() + '/' + pad2(d.getMonth() + 1) + '/' + pad2(d.getDate());
+        Data.getJson('https://api.wikimedia.org/feed/v1/wikipedia/en/featured/' + day, function (err, f) {
+          var im = f && f.image;
+          if (!err && im && im.title) {
+            out.push({web: 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(im.title.replace(/^File:/, '')) + '?width=1920',
+              title: im.description && im.description.text ? im.description.text.replace(/<[^>]+>/g, '').slice(0, 90) : tr('Foto do dia', 'Picture of the day', 'Foto del día'),
+              credit: '© ' + (im.artist && im.artist.text ? im.artist.text.replace(/<[^>]+>/g, '').slice(0, 60) : 'Wikimedia') + (im.license && im.license.type ? ' · ' + im.license.type : '') + ' · Wikimedia Commons'});
+          }
+          if (--left === 0) keep(out);
+        });
+      })(new Date(Date.now() - i * 864e5));
+    } else if (mode === 'apod') {
+      Data.getJson('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&count=12&thumbs=true', function (err, list) {
+        keep(!err && list instanceof Array ? list.filter(function (x) { return x.media_type === 'image' && x.url; }).map(function (x) {
+          return {web: x.url, title: x.title, credit: '© ' + (x.copyright ? trim(x.copyright) : 'NASA') + ' · APOD'};
+        }) : []);
+      });
+    } else if (mode === 'immich') {
+      var m = /^(https:\/\/[^\/]+)\/share\/([\w-]+)/.exec(Prefs.opt('immichUrl', '') || '');
+      if (!m) { done([]); return; }
+      var api = m[1] + '/api/shared-links/me?key=' + m[2];
+      var got = function (text) {
+        var j = null;
+        try { j = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) {}
+        var assets = j && j.assets ? j.assets.filter(function (a) { return a.type === 'IMAGE'; }) : [];
+        keep(assets.slice(0, 200).map(function (a) {
+          return {web: m[1] + '/api/assets/' + a.id + '/thumbnail?size=preview&key=' + m[2], title: j.album && j.album.albumName ? j.album.albumName : 'Immich', credit: a.originalFileName || ''};
+        }));
+      };
+      Data.getJson(api, function (err, j) {
+        if (!err && j) { got(j); return; }
+        if (TV.name === 'webos') svcCall('feed', {url: api}, function (r) { got(r && r.returnValue ? r.text : null); });   // a server without CORS
+        else done([]);
+      });
+    } else done([]);
+  }
+
+  var screenOffTimer = 0, screenIsOff = false;
+
   function showSaver() {
-    var mode = Data.saver(), photos = mode === 'places' ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
-    if (mode !== 'picks' && typeof LANDSCAPES !== 'undefined') {
+    var mode = Data.saver(), photos = /^(places|potd|apod|immich|clock)$/.test(mode) ? [] : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
+    if (/^(potd|apod|immich)$/.test(mode)) {
+      saverWeb(mode, function (items) {
+        for (var w = items.length - 1; w > 0; w--) { var r = Math.floor(Math.random() * (w + 1)), x = items[w]; items[w] = items[r]; items[r] = x; }
+        items.forEach(function (it) { photos.push(it); });
+        if (!items.length) landscapes().forEach(function (p) { photos.push({place: p}); });   // nothing came: the landscapes
+      });
+    }
+    if ((mode === 'both' || mode === 'places') && typeof LANDSCAPES !== 'undefined') {
       // Photos of the places (Wikimedia Commons, free licences) go in a random order, one after every pick when both are on.
-      var places = LANDSCAPES.slice(), mixed = [], j, k, t;
+      var places = landscapes(), mixed = [], j, k, t;
       for (j = places.length - 1; j > 0; j--) { k = Math.floor(Math.random() * (j + 1)); t = places[j]; places[j] = places[k]; places[k] = t; }
       for (j = 0; j < Math.max(places.length, photos.length); j++) {
         if (j < places.length) mixed.push({place: places[j]});
@@ -2742,9 +3160,17 @@
     var a = el('div', 'photo', s), b = el('div', 'photo', s);
     el('div', 'shade', s);
     var clock = el('div', 'clock', s);
-    if (Prefs.opt('saverClock', true) === false) clock.style.visibility = 'hidden';
+    if (Prefs.opt('saverClock', true) === false && mode !== 'clock') clock.style.visibility = 'hidden';
+    setClass(s, 'bigclock', mode === 'clock');
+    setClass(s, 'dim', Prefs.opt('saverDim', true) !== false && Data.isNight(Date.now()));
     el('div', 'time', clock);
     el('div', 'date', clock);
+    var wx = Data.weather;
+    if (wx && Prefs.opt('saverWeather', true) !== false) {
+      var wl = el('div', 'wx', clock);
+      sym(Data.symbol(wx.code, wx.isDay), wl);
+      wl.appendChild(document.createTextNode(Data.degrees(wx.temp) + '  ' + Data.condition(wx.code, wx.isDay)));
+    }
     el('div', 'title', clock);
     var credit = el('div', 'credit', s);
     tickSaverClock(clock);   // the clock is there at once, even while the first photo is still coming
@@ -2753,7 +3179,7 @@
       if (!saverOn) return;
       var p = photos.length ? photos[saverIndex++ % photos.length] : null;
       var back = front === a ? b : a;
-      if (p && p.place) {
+      if (p && (p.place || p.web)) {
         // A photo from the web is fetched first and shown when it is ready (a slow one never leaves a black screen); one that
         // fails or takes too long is skipped.
         var im = new Image(), mine = ++saverSeq, settled = false;
@@ -2763,8 +3189,8 @@
           if (!ok) { saverTimer = setTimeout(next, 1000); return; }
           back.style.backgroundImage = 'url(' + im.src + ')';
           back.style.webkitTransform = back.style.transform = 'scale(1.0)';
-          clock.lastChild.textContent = p.place[1];
-          credit.textContent = '© ' + p.place[2] + ' · ' + p.place[3] + ' · Wikimedia Commons';   // as CC BY asks
+          clock.lastChild.textContent = p.web ? p.title : p.place[1];
+          credit.textContent = p.web ? p.credit : '© ' + p.place[2] + ' · ' + p.place[3] + ' · Wikimedia Commons';   // as CC BY asks
           setTimeout(function () {
             setClass(back, 'on', true);
             setClass(front, 'on', false);
@@ -2777,7 +3203,7 @@
         im.onload = function () { go(true); };
         im.onerror = function () { go(false); };
         setTimeout(function () { go(false); }, 40000);
-        im.src = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(p.place[0]) + '?width=1920';
+        im.src = p.web || 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(p.place[0]) + '?width=1920';
         return;
       } else if (p) {
         credit.textContent = '';
@@ -2797,10 +3223,21 @@
     setClass(s, 'on', true);
     TV.holdScreen(true);   // LG's own screensaver would go over ours
     next();
+    // An OLED rests better dark: after a while the screen goes off (the sound stays); any key turns it on again.
+    clearTimeout(screenOffTimer);
+    var offAfter = +Prefs.opt('screenOff', 0);
+    if (offAfter && TV.name === 'webos') screenOffTimer = setTimeout(function () {
+      if (!saverOn) return;
+      TV.screenOff(function (ok) { screenIsOff = ok; });
+    }, offAfter * 60000);
   }
 
   function tickSaverClock(clock) {
     var d = new Date();
+    if (hasClass($('saver'), 'bigclock')) {   // the big clock moves a little every minute, so nothing stays in one place on an OLED
+      var dx = Math.round(Math.random() * 240 - 120), dy = Math.round(Math.random() * 160 - 80);
+      clock.style.webkitTransform = clock.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+    }
     clock.firstChild.textContent = Data.time(d.getTime()).replace(/ (AM|PM)$/, '');
     try {
       clock.children[1].textContent = d.toLocaleDateString(I18N.locale(), {weekday: 'long', day: 'numeric', month: 'long'});
@@ -2812,6 +3249,8 @@
   function hideSaver() {
     saverOn = false;
     clearTimeout(saverTimer);
+    clearTimeout(screenOffTimer);
+    if (screenIsOff) { screenIsOff = false; TV.screenOn(); }
     if (document.hidden) TV.holdScreen(false);   // on screen, the watcher stays (watchLgSaver)
     setClass($('saver'), 'on', false);
   }
@@ -2855,6 +3294,1074 @@
     updateFocus();
   }
 
+  // MARK: - 2.1: info sheets. A wide glass box for the weather, the markets, my widgets, the time of use, the profiles…: something
+  // to look at on top, and rows below that work like Home Settings (OK or the arrows).
+
+  var info = {kind: '', arg: null, rows: [], index: 0, back: null};
+  var INFO = {};   // kind → function (arg): {title, icon, build(box), rows, hint, visible, back}
+
+  function openInfo(kind, arg) {
+    ['settings', 'tilesheet', 'community', 'dialog'].forEach(function (id) { setClass($(id), 'open', false); });
+    setClass(body, 'drawer-open', false);
+    info.kind = kind;
+    info.arg = arg;
+    info.index = 0;
+    st.zone = Z.INFO;
+    renderInfo();
+    setClass($('infosheet'), 'open', true);
+    updateFocus();
+  }
+
+  function renderInfo() {
+    if (!INFO[info.kind]) return;
+    var box = $('infosheet').firstChild, def = INFO[info.kind](info.arg);
+    box.innerHTML = '';
+    var title = el('div', 'title', box);
+    sym(def.icon || 'sparkles', title);
+    title.appendChild(document.createTextNode(def.title));
+    if (def.build) def.build(box);
+    info.rows = def.rows || [];
+    info.back = def.back || null;
+    if (info.rows.length) {
+      var vis = def.visible || 5, list = el('div', 'list', box), holder = el('div', 'rows', list);
+      holder.setAttribute('data-visible', vis);
+      list.style.height = Math.min(info.rows.length, vis) * 78 + 'px';
+      for (var i = 0; i < info.rows.length; i++) drawRow(info.rows[i], holder, Z.INFO, i);
+    }
+    el('div', 'hint', box, def.hint || (info.rows.length ? tr('OK ou as setas · Voltar fecha', 'OK or the arrows · Back closes', 'OK o las flechas · Atrás cierra')
+        : tr('Voltar fecha', 'Back closes', 'Atrás cierra')));
+    info.index = Math.max(0, Math.min(info.index, info.rows.length - 1));
+    updateFocus();
+  }
+
+  /** A row like Home Settings' ones: a switch, a value with ‹ ›, a › that opens something, or a plain value (plain: true). */
+  function drawRow(r, holder, zone, i) {
+    var row = el('div', 'row' + (r.dim ? ' dim' : '') + (r.icon ? ' hasico' : ''), holder, r.label);
+    if (r.icon) sym(r.icon, row).className += ' ico';
+    if (r.toggle !== undefined) setClass(el('div', 'toggle', row), 'on', r.toggle);
+    else if (r.value !== undefined) {
+      var v = el('span', 'value', row);
+      if (r.value === '›' || r.plain) v.textContent = r.value;
+      else { el('span', 'chev', v, '‹'); v.appendChild(document.createTextNode(r.value)); el('span', 'chev', v, '›'); }
+    }
+    if (r.spark && r.spark.sym) sparkIn(row, r.spark);
+    hover(row, zone, i);
+    return row;
+  }
+
+  /** A quote's last 24 hours as a small line, inside its row. */
+  function sparkIn(row, q) {
+    var c = el('canvas', 'spark', row), d = quoteData[q.kind + ':' + q.sym];
+    c.width = 200;
+    c.height = 48;
+    if (d) chart(c, d.spark, {line: 2.5, pad: 3, fill: false});
+    else fetchQuote(q.kind, q.sym, function (d2) { if (d2) chart(c, d2.spark, {line: 2.5, pad: 3, fill: false}); });
+  }
+
+  function infoMove(dx, dy) {
+    var r = info.rows[info.index];
+    if (dy) info.index = Math.max(0, Math.min(info.rows.length - 1, info.index + dy));
+    else if (dx && r && r.move) { r.move(dx); if (st.zone === Z.INFO) renderInfo(); }
+    else if (dx && r && r.step && r.value !== '›' && !r.plain && r.toggle === undefined) { r.step(dx); if (st.zone === Z.INFO) renderInfo(); }
+  }
+
+  function infoActivate() {
+    var r = info.rows[info.index];
+    if (!r) return;
+    if (r.run) r.run();
+    else if (r.step) r.step(1);
+    if (st.zone === Z.INFO) renderInfo();
+  }
+
+  /** A line of text typed with the TV's keyboard (a name, a symbol, an address…); done(text) when Enter or Save is pressed. */
+  function askText(title, text, value, done, placeholder) {
+    showDialog.icon = 'search';
+    var input = document.createElement('input');
+    showDialog(title, [{text: text}], [{label: tr('Guardar', 'Save', 'Guardar'), run: function () { done(input.value); }}, {label: cancelText()}], 0);
+    var box = $('dialog').firstChild;
+    input.type = 'text';
+    input.className = 'chaninput';
+    input.value = value || '';
+    if (placeholder) input.setAttribute('placeholder', placeholder);
+    input.onEnter = function (v) { closeDialog(); done(v); };
+    box.insertBefore(input, box.querySelector('.row'));
+    setTimeout(function () { try { input.focus(); } catch (e) {} }, 250);
+  }
+
+  function trim(s) { return String(s === undefined || s === null ? '' : s).replace(/^\s+|\s+$/g, ''); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function hhmm(d) { d = d || new Date(); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function parseTime(s) { var m = /^\s*(\d{1,2})[:.h ]?(\d{2})?\s*$/.exec(s || ''); if (!m || +m[1] > 23 || +(m[2] || 0) > 59) return ''; return pad2(+m[1]) + ':' + pad2(+(m[2] || 0)); }
+  function plural(n, one, many) { return n === 1 ? one : many; }
+  function dur(ms) {
+    var m = Math.round(ms / 60000), h = Math.floor(m / 60);
+    return h ? h + ' h ' + pad2(m % 60) + ' min' : m + ' min';
+  }
+  function weekday(d, long) {
+    try { return d.toLocaleDateString(I18N.locale(), {weekday: long ? 'long' : 'short'}); } catch (e) { return d.toDateString().slice(0, 3); }
+  }
+  function cache(key, value) {
+    if (value === undefined) { try { return JSON.parse(localStorage.getItem('fmtv.c.' + key)); } catch (e) { return null; } }
+    try { localStorage.setItem('fmtv.c.' + key, JSON.stringify(value)); } catch (e) {}
+    return value;
+  }
+
+  /** A small line chart in a canvas: values left to right, green when it ended up, red when down. */
+  function chart(canvas, values, opts) {
+    opts = opts || {};
+    var c = canvas.getContext('2d'), w = canvas.width, h = canvas.height, v = values.filter(function (x) { return typeof x === 'number' && !isNaN(x); });
+    c.clearRect(0, 0, w, h);
+    if (v.length < 2) return;
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), span = hi - lo || 1, up = v[v.length - 1] >= v[0], pad = opts.pad || 4;
+    var col = up ? '63, 214, 155' : '255, 107, 107';
+    c.beginPath();
+    for (var i = 0; i < v.length; i++) {
+      var x = pad + (w - 2 * pad) * i / (v.length - 1), y = pad + (h - 2 * pad) * (1 - (v[i] - lo) / span);
+      if (i) c.lineTo(x, y); else c.moveTo(x, y);
+    }
+    c.lineWidth = opts.line || 3;
+    c.lineJoin = 'round';
+    c.strokeStyle = 'rgb(' + col + ')';
+    c.stroke();
+    if (opts.fill !== false) {
+      c.lineTo(w - pad, h);
+      c.lineTo(pad, h);
+      c.closePath();
+      var g = c.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, 'rgba(' + col + ', 0.32)');
+      g.addColorStop(1, 'rgba(' + col + ', 0)');
+      c.fillStyle = g;
+      c.fill();
+    }
+  }
+
+  // MARK: - 2.1: the remote's number and colour keys
+
+  var KEY_ACTIONS = ['quick', 'search', 'weather', 'markets', 'widgets', 'saver', 'apps', 'settings', 'store', 'profile', 'tvset', 'live', 'none'];
+
+  function keyActionName(a) {
+    return {quick: tr('Painel rápido', 'Quick panel', 'Panel rápido'), search: tr('Procurar', 'Search', 'Buscar'), weather: tr('Clima', 'Weather', 'El tiempo'),
+      markets: tr('Mercados', 'Markets', 'Mercados'), widgets: tr('Meus widgets', 'My widgets', 'Mis widgets'), saver: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'),
+      apps: tr('Todos os Apps', 'All Apps', 'Todas las apps'), settings: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), store: tr('Loja', 'Store', 'Tienda'),
+      profile: tr('Trocar de perfil', 'Switch profile', 'Cambiar de perfil'), tvset: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'),
+      live: tr('TV em direto', 'Live TV', 'TV en directo'), none: tr('Nada', 'Nothing', 'Nada')}[a] || a;
+  }
+
+  var KEY_COLORS = {403: ['keyRed', 'quick'], 404: ['keyGreen', 'search'], 405: ['keyYellow', 'weather'], 406: ['keyBlue', 'widgets']};
+
+  function runAction(a) {
+    if (a === 'none') return;
+    if (a !== 'saver') closeSheets();
+    if (a === 'quick') openTiles('quick');
+    else if (a === 'search') openSearch();
+    else if (a === 'weather') openInfo('weather');
+    else if (a === 'markets') openInfo('markets');
+    else if (a === 'widgets') openInfo('widgets');
+    else if (a === 'saver') { closeSheets(); setTimeout(showSaver, 200); }
+    else if (a === 'apps') openApps();
+    else if (a === 'settings') openSettings();
+    else if (a === 'store') { if (TV.name === 'webos') openCommunity(true); else openModules(); }
+    else if (a === 'profile') nextProfile();
+    else if (a === 'tvset') tvSettings();
+    else if (a === 'live') { var live = liveTV(); if (live) launcher(live.id, tr('TV aberta', 'Live TV', 'TV en vivo'))(); }
+  }
+
+  /** A number or colour key on the home screen: 1-9 open the shelf's apps, 0 All Apps; each colour does what Home Settings says. */
+  function shortcutKey(k) {
+    if (Prefs.kids() || st.zone === Z.DLG || pin.on) return false;
+    if (k >= 48 && k <= 57 && Prefs.opt('numKeys', true) !== false && !sheetOpen()) {
+      if (k === 48) { openApps(); return true; }
+      var app = shelf[k - 49];
+      if (app) { st.zone = Z.SHELF; st.shelf = k - 49; updateFocus(); launcher(app.id, app.title)(); }
+      return true;
+    }
+    var c = KEY_COLORS[k];
+    if (!c) return false;
+    runAction(Prefs.opt(c[0], c[1]));
+    return true;
+  }
+
+  // MARK: - 2.1: the weather, in full
+
+  function uvText(uv) {
+    if (uv === null || uv === undefined || isNaN(uv)) return '—';
+    var n = Math.round(uv);
+    return n + ' · ' + (n <= 2 ? tr('baixo', 'low', 'bajo') : n <= 5 ? tr('moderado', 'moderate', 'moderado') : n <= 7 ? tr('alto', 'high', 'alto')
+        : n <= 10 ? tr('muito alto', 'very high', 'muy alto') : tr('extremo', 'extreme', 'extremo'));
+  }
+
+  function airText(a) {
+    if (!a || a.aqi === null || a.aqi === undefined) return '—';
+    var v = Math.round(a.aqi), t;
+    if (a.us) t = v <= 50 ? tr('boa', 'good', 'buena') : v <= 100 ? tr('aceitável', 'moderate', 'aceptable') : v <= 150 ? tr('ruim para sensíveis', 'unhealthy for some', 'mala para sensibles') : tr('ruim', 'unhealthy', 'mala');
+    else t = v <= 20 ? tr('boa', 'good', 'buena') : v <= 40 ? tr('razoável', 'fair', 'razonable') : v <= 60 ? tr('moderada', 'moderate', 'moderada') : v <= 80 ? tr('ruim', 'poor', 'mala') : tr('muito ruim', 'very poor', 'muy mala');
+    return v + ' · ' + t;
+  }
+
+  function rainText(w) {
+    if (w.rainSoon === undefined) return '—';
+    if (w.rainAt) {
+      var mins = Math.max(0, Math.round((w.rainAt - Date.now()) / 60000));
+      return mins < 5 ? tr('Chovendo agora', 'Raining now', 'Lloviendo ahora') : tr('Chuva em ' + mins + ' min', 'Rain in ' + mins + ' min', 'Lluvia en ' + mins + ' min');
+    }
+    return tr('Sem chuva na próxima hora', 'No rain in the next hour', 'Sin lluvia la próxima hora');
+  }
+
+  INFO.weather = function () {
+    var w = Data.weather;
+    return {title: Data.city || tr('Clima', 'Weather', 'El tiempo'), icon: w ? Data.symbol(w.code, w.isDay) : 'cloud', build: function (box) {
+      setClass(box, 'wide', true);
+      if (!w) { line(box, '', tr('Sem dados do clima agora.', 'No weather data right now.', 'No hay datos del clima ahora.')); return; }
+      var top = el('div', 'wxtop', box), now = el('div', 'wxnow', top);
+      sym(Data.symbol(w.code, w.isDay), now);
+      el('span', 'temp', now, Data.degrees(w.temp));
+      var side = el('div', 'wxside', top);
+      el('div', 'big', side, Data.condition(w.code, w.isDay));
+      el('div', '', side, tr('Sensação ', 'Feels like ', 'Sensación ') + Data.degrees(w.feels) + '   ·   ' + tr('Máx. ', 'H ', 'Máx. ') + Data.degrees(w.max) + '  ' + tr('Mín. ', 'L ', 'Mín. ') + Data.degrees(w.min));
+      el('div', 'rain', side, rainText(w));
+      var facts = el('div', 'wxfacts', box);
+      [[tr('Umidade', 'Humidity', 'Humedad'), w.humidity === undefined ? '—' : Math.round(w.humidity) + '%'],
+       [tr('Vento', 'Wind', 'Viento'), Data.wind(w.wind)],
+       [tr('Índice UV', 'UV index', 'Índice UV'), uvText(w.uv)],
+       [tr('Qualidade do ar', 'Air quality', 'Calidad del aire'), airText(Data.air)],
+       [tr('Nascer do sol', 'Sunrise', 'Amanecer'), w.sunrise ? Data.time(w.sunrise) : '—'],
+       [tr('Pôr do sol', 'Sunset', 'Atardecer'), w.sunset ? Data.time(w.sunset) : '—']].forEach(function (f) {
+        var x = el('div', 'fact', facts);
+        el('div', 'k', x, f[0]);
+        el('div', 'v', x, f[1]);
+      });
+      var hours = el('div', 'wxhours', box), list = (w.hourly || w.hours || []).slice(0, 12);
+      list.forEach(function (h) {
+        var x = el('div', 'h', hours);
+        el('div', 't', x, Data.hour(h.at));
+        sym(Data.symbol(h.code, h.day), x);
+        el('div', 'd', x, Data.degrees(h.temp));
+        el('div', 'p', x, h.pop ? h.pop + '%' : '');
+      });
+      var days = el('div', 'wxdays', box), ds = w.days || [];
+      if (!ds.length) return;
+      var lo = Math.min.apply(null, ds.map(function (d) { return d.min; })), hi = Math.max.apply(null, ds.map(function (d) { return d.max; })), span = hi - lo || 1;
+      ds.forEach(function (d, i) {
+        var x = el('div', 'day', days);
+        el('div', 'n', x, i === 0 ? tr('Hoje', 'Today', 'Hoy') : weekday(new Date(d.at)));
+        sym(Data.symbol(d.code === null ? 2 : d.code, true), x);
+        el('div', 'p', x, d.pop ? d.pop + '%' : '');
+        el('div', 'lo', x, Data.degrees(d.min));
+        var bar = el('div', 'bar', x), fill = el('div', 'fill', bar);
+        fill.style.left = ((d.min - lo) / span * 100) + '%';
+        fill.style.width = Math.max(4, (d.max - d.min) / span * 100) + '%';
+        el('div', 'hi', x, Data.degrees(d.max));
+      });
+    }};
+  };
+
+  // MARK: - 2.1: the markets: the quotes on top, the person's own (stocks, funds, indexes, currencies, coins) and a chart for each
+
+  // Ready to add: Yahoo Finance symbols (y) and Binance coins in dollars (b).
+  var TICKER_PRESETS = [
+    ['y', '^GSPC', 'S&P 500'], ['y', '^IXIC', 'Nasdaq'], ['y', '^IBEX', 'IBEX 35'], ['y', '^STOXX50E', 'Euro Stoxx 50'], ['y', 'GC=F', tr('Ouro', 'Gold', 'Oro')],
+    ['y', 'AAPL', 'Apple'], ['y', 'MSFT', 'Microsoft'], ['y', 'NVDA', 'Nvidia'], ['y', 'AMZN', 'Amazon'], ['y', 'TSLA', 'Tesla'], ['y', 'GOOGL', 'Alphabet'],
+    ['y', 'SAN.MC', 'Santander'], ['y', 'ITX.MC', 'Inditex'], ['y', 'IBE.MC', 'Iberdrola'],
+    ['y', 'EURUSD=X', 'EUR/USD'], ['y', 'EURGBP=X', 'EUR/GBP'], ['y', 'USDJPY=X', 'USD/JPY'], ['y', 'BRL=X', 'USD/BRL'],
+    ['b', 'ADA', 'Cardano'], ['b', 'DOGE', 'Dogecoin'], ['b', 'BNB', 'BNB'], ['b', 'DOT', 'Polkadot']
+  ];
+
+  var BUILTIN_SPARK = {0: ['b', 'BTC'], 1: ['b', 'ETH'], 2: ['b', 'SOL'], 4: ['b', 'XRP'], 5: ['y', 'CSPX.L'], 6: ['y', 'CNDX.L']};
+  var quoteData = {};   // 'y:AAPL' → {price, change, cur, spark: [...], at}
+  var RANGES = [['1d', '15m', tr('1 dia', '1 day', '1 día')], ['5d', '1h', tr('5 dias', '5 days', '5 días')], ['1mo', '1d', tr('1 mês', '1 month', '1 mes')], ['1y', '1wk', tr('1 ano', '1 year', '1 año')]];
+
+  function tickers() { var t = Prefs.opt('tickers', []); return t instanceof Array ? t : []; }
+
+  /** Price, change and a 24-hour line for one symbol; done(data). Cached five minutes. */
+  function fetchQuote(kind, symbol, done, range) {
+    var key = kind + ':' + symbol + (range ? ':' + range[0] : ''), have = quoteData[key];
+    if (have && Date.now() - have.at < 5 * 60000) { done(have); return; }
+    function keep(d) { d.at = Date.now(); quoteData[key] = d; done(d); }
+    if (kind === 'b') {
+      var lim = range ? {'1d': ['15m', 96], '5d': ['1h', 120], '1mo': ['4h', 180], '1y': ['1w', 52]}[range[0]] : ['1h', 24];
+      Data.getJson('https://api.binance.com/api/v3/klines?symbol=' + symbol + 'USDT&interval=' + lim[0] + '&limit=' + lim[1], function (err, k) {
+        if (err || !(k instanceof Array) || !k.length) { done(null); return; }
+        var closes = k.map(function (x) { return parseFloat(x[4]); }), first = parseFloat(k[0][1]), last = closes[closes.length - 1];
+        keep({price: last, change: first > 0 ? (last - first) / first * 100 : NaN, cur: 'USD', spark: closes});
+      });
+      return;
+    }
+    var r = range || ['1d', '15m'];
+    var hosts = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
+    (function next(h) {
+      if (h >= hosts.length) { done(null); return; }
+      Data.getJson(hosts[h] + '/v8/finance/chart/' + encodeURIComponent(symbol) + '?range=' + r[0] + '&interval=' + r[1], function (err, body) {
+        var res = body && body.chart && body.chart.result && body.chart.result[0];
+        if (err || !res || !res.meta || !(res.meta.regularMarketPrice > 0)) { next(h + 1); return; }
+        var m = res.meta, q = res.indicators && res.indicators.quote && res.indicators.quote[0], closes = q && q.close ? q.close : [];
+        var prev = r[0] === '1d' ? (m.chartPreviousClose || m.previousClose) : closes.filter(function (x) { return x !== null; })[0];
+        keep({price: m.regularMarketPrice, change: prev > 0 ? (m.regularMarketPrice - prev) / prev * 100 : NaN, cur: m.currency || '', spark: closes,
+          name: m.shortName || m.longName || ''});
+      });
+    })(0);
+  }
+
+  function money(v, cur) {
+    if (v === undefined || v === null || isNaN(v)) return '—';
+    var s = {USD: '$', EUR: '€', GBP: '£', JPY: '¥', BRL: 'R$ '}[cur] || '';
+    var digits = v >= 1000 ? 0 : v >= 10 ? 2 : 4;
+    try { return s + v.toLocaleString(I18N.locale(), {minimumFractionDigits: Math.min(digits, 2), maximumFractionDigits: digits}); } catch (e) { return s + v.toFixed(digits); }
+  }
+
+  /** Every quote the markets sheet shows: the top row's (bitcoin, funds…) then the person's own. */
+  function marketItems() {
+    var out = Data.activeCoins().map(function (i) {
+      var s = BUILTIN_SPARK[i];
+      return {name: Data.coinName(i), price: Data.money(Data.prices[i], i), change: Data.changes[i], kind: s ? s[0] : '', sym: s ? s[1] : '', builtin: true};
+    });
+    tickers().forEach(function (t) {
+      var d = quoteData[t.k + ':' + t.s];
+      out.push({name: t.n || t.s, price: d ? money(d.price, d.cur) : '—', change: d ? d.change : NaN, kind: t.k, sym: t.s, ticker: t});
+    });
+    return out;
+  }
+
+  /** Brings the person's quotes up to date, then redraws what shows them; checks the price alerts. */
+  function refreshTickers() {
+    var list = tickers();
+    list.forEach(function (t) {
+      fetchQuote(t.k, t.s, function (d) {
+        if (!d) return;
+        checkAlerts(t, d.price);
+        renderQuotes();
+        if (st.zone === Z.INFO && (info.kind === 'markets' || info.kind === 'widgets')) renderInfo();
+      });
+    });
+  }
+
+  INFO.markets = function () {
+    var items = marketItems(), rows = items.map(function (q) {
+      return {label: q.name, value: q.price + (isNaN(q.change) ? '' : '   ' + Data.change(q.change)), plain: true, spark: q,
+        run: function () { if (q.sym) openInfo('ticker', q); }};
+    });
+    rows.push({label: tr('Adicionar um valor…', 'Add a quote…', 'Añadir un valor…'), value: '›', icon: 'search', run: function () { openInfo('addTicker'); }});
+    rows.push({label: tr('Alertas de preço', 'Price alerts', 'Alertas de precio'), value: String(alerts().length), plain: true, icon: 'bell',
+      run: function () { toast(tr('Abra um valor para criar um alerta', 'Open a quote to set an alert', 'Abre un valor para crear una alerta')); }});
+    return {title: tr('Mercados', 'Markets', 'Mercados'), icon: 'bitcoin', visible: 7, rows: rows,
+      hint: tr('OK abre o gráfico · Voltar fecha · só informação, não é conselho de investimento', 'OK opens the chart · Back closes · information only, not investment advice',
+        'OK abre la gráfica · Atrás cierra · solo información, no es consejo de inversión'),
+      build: function (box) { setClass(box, 'wide', true); }};
+  };
+
+  INFO.addTicker = function () {
+    var have = tickers().map(function (t) { return t.k + ':' + t.s; });
+    var rows = [{label: tr('Escrever outro símbolo…', 'Type another symbol…', 'Escribir otro símbolo…'), value: '›', icon: 'search', run: function () {
+      askText(tr('Símbolo', 'Symbol', 'Símbolo'), tr('Como no Yahoo Finance: AAPL, SAN.MC, ^IBEX, EURUSD=X… Para uma criptomoeda: o seu nome curto (ADA, DOGE…).',
+        'As on Yahoo Finance: AAPL, SAN.MC, ^IBEX, EURUSD=X… For a coin: its short name (ADA, DOGE…).',
+        'Como en Yahoo Finance: AAPL, SAN.MC, ^IBEX, EURUSD=X… Para una criptomoneda: su nombre corto (ADA, DOGE…).'), '', function (v) {
+        var s = trim(v).toUpperCase();
+        if (!s) return;
+        var coin = /^[A-Z0-9]{2,6}$/.test(s) && !/[.^=]/.test(s);
+        toast(tr('Procurando ', 'Looking up ', 'Buscando ') + s + '…');
+        fetchQuote(coin ? 'b' : 'y', s, function (d) {
+          if (!d && coin) { fetchQuote('y', s, function (d2) { if (d2) addTicker('y', s, d2.name || s); else toast(tr('Não encontrei ', 'Not found: ', 'No encontré ') + s); }); return; }
+          if (!d) { toast(tr('Não encontrei ', 'Not found: ', 'No encontré ') + s); return; }
+          addTicker(coin ? 'b' : 'y', s, d.name || s);
+        });
+      });
+    }}];
+    TICKER_PRESETS.forEach(function (p) {
+      if (have.indexOf(p[0] + ':' + p[1]) >= 0) return;
+      rows.push({label: p[2], value: p[1], plain: true, run: function () { addTicker(p[0], p[1], p[2]); }});
+    });
+    return {title: tr('Adicionar um valor', 'Add a quote', 'Añadir un valor'), icon: 'bitcoin', visible: 7, rows: rows, back: function () { openInfo('markets'); }};
+  };
+
+  function addTicker(kind, symbol, name) {
+    var list = tickers().filter(function (t) { return !(t.k === kind && t.s === symbol); });
+    list.push({k: kind, s: symbol, n: name, top: false});
+    Prefs.set('tickers', list.slice(-20));
+    toast(name + ': ' + tr('adicionado', 'added', 'añadido'));
+    refreshTickers();
+    openInfo('markets');
+  }
+
+  INFO.ticker = function (q) {
+    var range = RANGES[+Prefs.opt('tickerRange', 1)] || RANGES[1], t = q.ticker, d = quoteData[q.kind + ':' + q.sym + ':' + range[0]];
+    var rows = [{label: tr('Período', 'Range', 'Periodo'), value: range[2], step: function (dx) {
+      Prefs.set('tickerRange', (+Prefs.opt('tickerRange', 1) + (dx || 1) + RANGES.length) % RANGES.length);
+    }}];
+    rows.push({label: tr('Avisar se passar de…', 'Tell me if it goes above…', 'Avisarme si sube de…'), value: '›', icon: 'bell', run: function () { askAlert(q, 'above'); }});
+    rows.push({label: tr('Avisar se cair abaixo de…', 'Tell me if it falls below…', 'Avisarme si baja de…'), value: '›', icon: 'bell', run: function () { askAlert(q, 'below'); }});
+    if (t) {
+      rows.push({label: tr('Na fila de cima', 'In the top row', 'En la fila de arriba'), toggle: !!t.top, step: function () {
+        Prefs.set('tickers', tickers().map(function (x) { if (x.k === t.k && x.s === t.s) x.top = !x.top; return x; }));
+        t.top = !t.top;
+        renderQuotes();
+      }});
+      rows.push({label: tr('Tirar dos meus valores', 'Remove from my quotes', 'Quitar de mis valores'), value: '›', run: function () {
+        Prefs.set('tickers', tickers().filter(function (x) { return !(x.k === t.k && x.s === t.s); }));
+        renderQuotes();
+        openInfo('markets');
+      }});
+    }
+    return {title: q.name, icon: 'bitcoin', rows: rows, back: function () { openInfo('markets'); }, build: function (box) {
+      setClass(box, 'wide', true);
+      var head = el('div', 'tkhead', box);
+      el('div', 'price', head, d ? money(d.price, d.cur) : q.price);
+      var ch = d ? d.change : q.change;
+      if (!isNaN(ch)) el('div', 'change ' + (ch >= 0 ? 'up' : 'down'), head, Data.change(ch) + ' · ' + range[2]);
+      el('div', 'sym', head, q.sym);
+      var canvas = el('canvas', 'tkchart', box);
+      canvas.width = 1440;
+      canvas.height = 300;
+      if (d) chart(canvas, d.spark, {line: 4, pad: 8});
+      else fetchQuote(q.kind, q.sym, function (d2) { if (d2 && st.zone === Z.INFO && info.kind === 'ticker') renderInfo(); }, range);
+    }};
+  };
+
+  // Price alerts: {k, s, n, above|below: price}. Checked when a quote arrives; a toast and a dialog, once.
+  function alerts() { var a = Prefs.opt('alerts', []); return a instanceof Array ? a : []; }
+
+  function askAlert(q, side) {
+    askText(side === 'above' ? tr('Avisar acima de', 'Alert above', 'Avisar por encima de') : tr('Avisar abaixo de', 'Alert below', 'Avisar por debajo de'),
+      q.name + ' · ' + tr('agora ', 'now ', 'ahora ') + q.price, '', function (v) {
+        var n = parseFloat(String(v).replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+        if (!(n > 0)) { toast(tr('Escreva um número', 'Type a number', 'Escribe un número')); return; }
+        var a = {k: q.kind, s: q.sym, n: q.name};
+        a[side] = n;
+        Prefs.set('alerts', alerts().concat([a]).slice(-20));
+        toast(tr('Alerta criado', 'Alert set', 'Alerta creada'));
+      }, '0');
+  }
+
+  function checkAlerts(t, price) {
+    if (!(price > 0)) return;
+    var left = [], fired = [];
+    alerts().forEach(function (a) {
+      if (a.k === t.k && a.s === t.s && ((a.above && price >= a.above) || (a.below && price <= a.below))) fired.push(a);
+      else left.push(a);
+    });
+    if (!fired.length) return;
+    Prefs.set('alerts', left);
+    fired.forEach(function (a) {
+      var text = a.n + ': ' + money(price, '') + (a.above ? tr(' passou de ', ' went above ', ' superó ') + a.above : tr(' caiu abaixo de ', ' fell below ', ' bajó de ') + a.below);
+      toast(text);
+      if (!saverOn && !sheetOpen()) showDialog(tr('Alerta de preço', 'Price alert', 'Alerta de precio'), [{text: text}], [{label: 'OK'}], 0);
+    });
+  }
+
+  // Alerts for the top row's coins too: they come with Data's prices.
+  function checkBuiltinAlerts() {
+    Data.activeCoins().forEach(function (i) {
+      var s = BUILTIN_SPARK[i];
+      if (s) checkAlerts({k: s[0], s: s[1]}, Data.prices[i]);
+    });
+  }
+
+  // MARK: - 2.1: my widgets: calendar, countdowns, notes, football, news, currencies
+
+  var WIDGETS = ['calendar', 'countdown', 'notes', 'football', 'news', 'fx'];
+  function widgetName(w) {
+    return {calendar: tr('Calendário', 'Calendar', 'Calendario'), countdown: tr('Contagem regressiva', 'Countdown', 'Cuenta atrás'), notes: tr('Notas', 'Notes', 'Notas'),
+      football: tr('Futebol', 'Football', 'Fútbol'), news: tr('Notícias', 'News', 'Noticias'), fx: tr('Moedas', 'Currencies', 'Divisas')}[w];
+  }
+  function widgetOn(w) { var off = Prefs.opt('widgetsOff', []); return !(off instanceof Array) || off.indexOf(w) < 0; }
+
+  // Public holidays (Nager.Date, by the TV's country), kept per year.
+  function holidays(year, done) {
+    var key = 'hol' + Data.country + year, have = cache(key);
+    if (have) { done(have); return; }
+    Data.getJson('https://date.nager.at/api/v3/PublicHolidays/' + year + '/' + Data.country, function (err, list) {
+      if (err || !(list instanceof Array)) { done([]); return; }
+      done(cache(key, list.map(function (h) { return {d: h.date, n: h.localName || h.name}; })));
+    });
+  }
+
+  function countdowns() {
+    var c = Prefs.opt('countdowns', null), y = new Date().getFullYear(), today = dayKey();
+    if (!(c instanceof Array) || !c.length) {
+      c = [{n: tr('Natal', 'Christmas', 'Navidad'), d: y + '-12-25'}, {n: tr('Ano Novo', 'New Year', 'Año Nuevo'), d: (y + 1) + '-01-01'}];
+    }
+    return c.map(function (x) {
+      var d = x.d;
+      if (/^\d{2}-\d{2}$/.test(d)) d = y + '-' + d;   // every year: the next one
+      if (d < today && /^\d{4}-\d{2}-\d{2}$/.test(d) && x.yearly) d = (y + 1) + d.slice(4);
+      var t = Date.parse(d + 'T00:00:00'), days = Math.ceil((t - Date.parse(today + 'T00:00:00')) / 864e5);
+      return {n: x.n, d: d, days: days, raw: x};
+    }).filter(function (x) { return x.days >= 0; }).sort(function (a, b) { return a.days - b.days; });
+  }
+
+  function notes() { var n = Prefs.opt('notes', []); return n instanceof Array ? n : []; }
+
+  var football = cache('football') || null, footballAt = 0;
+  function refreshFootball(done) {
+    var team = Prefs.opt('team', null);
+    if (!team || !team.id || Date.now() - footballAt < 30 * 60000) { if (done) done(); return; }
+    footballAt = Date.now();
+    var base = 'https://www.thesportsdb.com/api/v1/json/123/', out = {id: team.id};
+    Data.getJson(base + 'eventsnext.php?id=' + team.id, function (e1, a) {
+      out.next = a && a.events ? a.events.slice(0, 2) : [];
+      Data.getJson(base + 'eventslast.php?id=' + team.id, function (e2, b) {
+        out.last = b && b.results ? b.results.slice(0, 2) : [];
+        football = cache('football', out);
+        if (done) done();
+      });
+    });
+  }
+
+  function matchText(e, past) {
+    if (!e) return '';
+    var when = e.strTimestamp ? new Date(e.strTimestamp + (/Z$/.test(e.strTimestamp) ? '' : 'Z')) : null;
+    var score = past && e.intHomeScore !== null && e.intHomeScore !== undefined ? '  ' + e.intHomeScore + ' - ' + e.intAwayScore : '';
+    var date = when && !isNaN(when.getTime()) ? weekday(when) + ' ' + when.getDate() + '/' + (when.getMonth() + 1) + (past ? '' : ' ' + hhmm(when)) : (e.dateEvent || '');
+    return (e.strHomeTeam || '') + ' – ' + (e.strAwayTeam || '') + score + '   ·   ' + date + (e.strLeague ? '   ·   ' + e.strLeague : '');
+  }
+
+  // News: an RSS feed, read by the TV's store service (the screen cannot: no CORS). The first eight headlines, every 20 minutes.
+  var NEWS_PRESETS = [
+    ['Google News', function () { var c = Data.country, l = I18N.lang === 'pt' ? 'pt-BR' : I18N.lang; return 'https://news.google.com/rss?hl=' + l + '&gl=' + c + '&ceid=' + c + ':' + l.slice(0, 2); }],
+    ['El País', 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada'],
+    ['RTVE', 'https://api2.rtve.es/rss/temas_noticias.xml'],
+    ['BBC News', 'https://feeds.bbci.co.uk/news/rss.xml'],
+    ['G1', 'https://g1.globo.com/rss/g1/'],
+    ['Xataka', 'https://www.xataka.com/feedburner.xml']
+  ];
+  var news = cache('news') || null, newsAt = 0;
+
+  function newsUrl() {
+    var u = Prefs.opt('newsUrl', '');
+    if (u) return u;
+    return NEWS_PRESETS[0][1]();
+  }
+
+  function refreshNews(done) {
+    if (Date.now() - newsAt < 20 * 60000) { if (done) done(); return; }
+    newsAt = Date.now();
+    var url = newsUrl();
+    function parse(text) {
+      try {
+        var doc = new DOMParser().parseFromString(text, 'text/xml'), items = doc.getElementsByTagName('item'), out = [];
+        for (var i = 0; i < items.length && out.length < 8; i++) {
+          var t = items[i].getElementsByTagName('title')[0];
+          if (t && t.textContent) out.push(trim(t.textContent).replace(/\s+-\s+[^-]{2,40}$/, ''));
+        }
+        if (out.length) news = cache('news', {url: url, items: out, at: Date.now()});
+      } catch (e) {}
+      if (done) done();
+    }
+    if (TV.name === 'webos') {
+      svcCall('feed', {url: url}, function (r) { if (r && r.returnValue && r.text) parse(r.text); else if (done) done(); });
+    } else {
+      var x = new XMLHttpRequest();
+      x.open('GET', url, true);
+      x.onreadystatechange = function () { if (x.readyState === 4) { if (x.status === 200) parse(x.responseText); else if (done) done(); } };
+      x.send();
+    }
+  }
+
+  var FX = [['EURUSD=X', 'EUR → USD'], ['EURGBP=X', 'EUR → GBP'], ['USDJPY=X', 'USD → JPY'], ['EURBRL=X', 'EUR → BRL']];
+
+  function calendarCard(box) {
+    var card = el('div', 'wcard cal', box), now = new Date(), y = now.getFullYear(), m = now.getMonth();
+    var head = el('div', 'wh', card);
+    try { head.textContent = now.toLocaleDateString(I18N.locale(), {month: 'long', year: 'numeric'}); } catch (e) { head.textContent = (m + 1) + '/' + y; }
+    var grid = el('div', 'grid', card), first = new Date(y, m, 1), shift = (first.getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+    for (var w = 0; w < 7; w++) el('div', 'wd', grid, weekday(new Date(2024, 0, 1 + w)).slice(0, 2));
+    for (var s = 0; s < shift; s++) el('div', 'c', grid, '');
+    var cells = {};
+    for (var d = 1; d <= days; d++) cells[d] = el('div', 'c' + (d === now.getDate() ? ' today' : ''), grid, String(d));
+    var next = el('div', 'list', card);
+    holidays(y, function (list) {
+      var today = dayKey(), shown = 0;
+      list.forEach(function (h) {
+        var hd = +h.d.slice(8, 10);
+        if (+h.d.slice(5, 7) === m + 1 && cells[hd]) setClass(cells[hd], 'hol', true);
+        if (h.d >= today && shown < 3) { shown++; el('div', 'li', next, h.d.slice(8, 10) + '/' + h.d.slice(5, 7) + '  ' + h.n); }
+      });
+    });
+  }
+
+  INFO.widgets = function () {
+    var rows = [];
+    if (widgetOn('countdown')) rows.push({label: tr('Nova contagem regressiva…', 'New countdown…', 'Nueva cuenta atrás…'), value: '›', icon: 'timer', run: addCountdown});
+    if (widgetOn('notes')) rows.push({label: tr('Nova nota ou lembrete…', 'New note or reminder…', 'Nueva nota o recordatorio…'), value: '›', icon: 'bell', run: addNote});
+    if (widgetOn('notes') && notes().length) rows.push({label: tr('Apagar as notas', 'Clear the notes', 'Borrar las notas'), value: String(notes().length), plain: true, run: function () { Prefs.set('notes', []); }});
+    if (widgetOn('football')) rows.push({label: tr('Meu time', 'My team', 'Mi equipo'), value: (Prefs.opt('team', null) || {}).name || '›', run: askTeam});
+    if (widgetOn('news')) rows.push({label: tr('Notícias de', 'News from', 'Noticias de'), value: newsName(), step: function (d) { cycleNews(d); }});
+    rows.push({label: tr('Quais widgets mostrar', 'Which widgets to show', 'Qué widgets mostrar'), value: '›', icon: 'settings', run: function () { openSettings(); settingsCat = 'widgets'; renderSettings(); }});
+    return {title: tr('Meus widgets', 'My widgets', 'Mis widgets'), icon: 'partly_cloudy_day', rows: rows, visible: 3, build: function (box) {
+      setClass(box, 'wide', true);
+      var grid = el('div', 'wgrid', box);
+      if (widgetOn('calendar')) calendarCard(grid);
+      if (widgetOn('countdown')) {
+        var c = el('div', 'wcard', grid);
+        el('div', 'wh', c, widgetName('countdown'));
+        countdowns().slice(0, 4).forEach(function (x) {
+          var r = el('div', 'kv', c);
+          el('span', 'k', r, x.n);
+          el('span', 'v', r, x.days === 0 ? tr('hoje', 'today', 'hoy') : x.days + ' ' + plural(x.days, tr('dia', 'day', 'día'), tr('dias', 'days', 'días')));
+        });
+      }
+      if (widgetOn('notes')) {
+        var n = el('div', 'wcard', grid);
+        el('div', 'wh', n, widgetName('notes'));
+        var list = notes();
+        if (!list.length) el('div', 'li dim', n, tr('Nenhuma nota. Crie uma abaixo.', 'No notes. Make one below.', 'Ninguna nota. Crea una abajo.'));
+        list.slice(-5).forEach(function (x) { el('div', 'li', n, (x.at ? '⏰ ' + x.at + '  ' : '• ') + x.t); });
+      }
+      if (widgetOn('football')) {
+        var f = el('div', 'wcard', grid), team = Prefs.opt('team', null);
+        el('div', 'wh', f, team ? team.name : widgetName('football'));
+        if (!team) el('div', 'li dim', f, tr('Escolha seu time abaixo.', 'Pick your team below.', 'Elige tu equipo abajo.'));
+        else if (football && football.id === team.id) {
+          el('div', 'k', f, tr('Próximo', 'Next', 'Próximo'));
+          el('div', 'li', f, football.next && football.next[0] ? matchText(football.next[0]) : '—');
+          el('div', 'k', f, tr('Último', 'Last', 'Último'));
+          el('div', 'li', f, football.last && football.last[0] ? matchText(football.last[0], true) : '—');
+        } else { el('div', 'li dim', f, tr('Carregando…', 'Loading…', 'Cargando…')); refreshFootball(function () { if (st.zone === Z.INFO && info.kind === 'widgets') renderInfo(); }); }
+      }
+      if (widgetOn('fx')) {
+        var x = el('div', 'wcard', grid);
+        el('div', 'wh', x, widgetName('fx'));
+        FX.forEach(function (p) {
+          var d = quoteData['y:' + p[0]], r = el('div', 'kv', x);
+          el('span', 'k', r, p[1]);
+          el('span', 'v', r, d ? d.price.toFixed(p[0] === 'USDJPY=X' ? 2 : 4) : '…');
+          if (!d) fetchQuote('y', p[0], function (q) { if (q && st.zone === Z.INFO && info.kind === 'widgets') renderInfo(); });
+        });
+      }
+      if (widgetOn('news')) {
+        var w = el('div', 'wcard news', grid);
+        el('div', 'wh', w, widgetName('news') + ' · ' + newsName());
+        if (news && news.url === newsUrl()) news.items.slice(0, 6).forEach(function (t) { el('div', 'li', w, t); });
+        else el('div', 'li dim', w, tr('Carregando…', 'Loading…', 'Cargando…'));
+        refreshNews(function () { if (st.zone === Z.INFO && info.kind === 'widgets' && news && news.url === newsUrl()) renderInfo(); });
+      }
+    }};
+  };
+
+  function newsName() {
+    var u = Prefs.opt('newsUrl', '');
+    if (!u) return NEWS_PRESETS[0][0];
+    for (var i = 1; i < NEWS_PRESETS.length; i++) if (NEWS_PRESETS[i][1] === u) return NEWS_PRESETS[i][0];
+    return u.replace(/^https:\/\/(www\.)?/, '').split('/')[0];
+  }
+
+  function cycleNews(d) {
+    var names = NEWS_PRESETS.map(function (p) { return p[0]; }).concat([tr('Outro endereço…', 'Another address…', 'Otra dirección…')]), i = names.indexOf(newsName());
+    i = (i < 0 ? 0 : i + (d || 1) + names.length) % names.length;
+    newsAt = 0;
+    if (i === names.length - 1) {
+      askText(tr('Endereço RSS', 'RSS address', 'Dirección RSS'), tr('O endereço https do feed RSS.', 'The https address of the RSS feed.', 'La dirección https del canal RSS.'), Prefs.opt('newsUrl', ''), function (v) {
+        if (/^https:\/\//.test(trim(v))) { Prefs.set('newsUrl', trim(v)); newsAt = 0; openInfo('widgets'); } else toast(tr('Precisa começar com https://', 'It must start with https://', 'Tiene que empezar por https://'));
+      }, 'https://');
+      return;
+    }
+    Prefs.set('newsUrl', i === 0 ? '' : NEWS_PRESETS[i][1]);
+  }
+
+  function addCountdown() {
+    askText(tr('Contagem regressiva', 'Countdown', 'Cuenta atrás'), tr('O nome (Férias, Aniversário da Ana…).', 'Its name (Holidays, Ana\'s birthday…).', 'Su nombre (Vacaciones, Cumple de Ana…).'), '', function (name) {
+      name = trim(name);
+      if (!name) return;
+      askText(name, tr('A data: DD/MM ou DD/MM/AAAA (sem ano: todo ano).', 'The date: DD/MM or DD/MM/YYYY (no year: every year).', 'La fecha: DD/MM o DD/MM/AAAA (sin año: todos los años).'), '', function (v) {
+        var m = /^\s*(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/.exec(v || '');
+        if (!m || +m[1] > 31 || +m[2] > 12) { toast(tr('Data não entendida', 'Date not understood', 'No entendí la fecha')); return; }
+        var year = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : 0, md = pad2(+m[2]) + '-' + pad2(+m[1]);
+        var item = year ? {n: name, d: year + '-' + md} : {n: name, d: md, yearly: true};
+        var list = Prefs.opt('countdowns', null);
+        Prefs.set('countdowns', (list instanceof Array ? list : []).concat([item]).slice(-10));
+        openInfo('widgets');
+      }, 'DD/MM');
+    });
+  }
+
+  function addNote() {
+    askText(tr('Nota', 'Note', 'Nota'), tr('O que lembrar.', 'What to remember.', 'Qué recordar.'), '', function (text) {
+      text = trim(text);
+      if (!text) return;
+      askText(tr('Lembrete', 'Reminder', 'Recordatorio'), tr('A que horas avisar (HH:MM), ou vazio para só guardar a nota.', 'When to remind you (HH:MM), or empty to just keep the note.',
+        'A qué hora avisarte (HH:MM), o vacío para solo guardar la nota.'), '', function (t) {
+        Prefs.set('notes', notes().concat([{t: text, at: parseTime(t)}]).slice(-12));
+        openInfo('widgets');
+      }, 'HH:MM');
+    });
+  }
+
+  function askTeam() {
+    askText(tr('Seu time', 'Your team', 'Tu equipo'), tr('O nome do time (Real Betis, Flamengo, Arsenal…).', 'The team\'s name (Real Betis, Flamengo, Arsenal…).', 'El nombre del equipo (Real Betis, Flamengo, Arsenal…).'), '', function (q) {
+      q = trim(q);
+      if (!q) return;
+      Data.getJson('https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t=' + encodeURIComponent(q), function (err, d) {
+        var teams = d && d.teams ? d.teams.filter(function (t) { return t.strSport === 'Soccer' || !t.strSport; }).slice(0, 5) : [];
+        if (!teams.length) { toast(tr('Não encontrei ', 'Not found: ', 'No encontré ') + q); return; }
+        showDialog(tr('Qual?', 'Which one?', '¿Cuál?'), [], teams.map(function (t) {
+          return {label: t.strTeam + (t.strCountry ? ' · ' + t.strCountry : ''), run: function () {
+            Prefs.set('team', {id: t.idTeam, name: t.strTeam});
+            footballAt = 0;
+            refreshFootball(function () { openInfo('widgets'); });
+          }};
+        }).concat([{label: cancelText()}]), 0);
+      });
+    });
+  }
+
+  // Reminders: a note with a time shows once that day, at that time.
+  function checkReminders() {
+    var now = hhmm(), today = dayKey(), shown = Prefs.opt('remShown', {}) || {};
+    notes().forEach(function (n) {
+      if (!n.at || n.at !== now || shown[n.t + n.at] === today) return;
+      shown[n.t + n.at] = today;
+      Prefs.set('remShown', shown);
+      if (saverOn) hideSaver();
+      showDialog.icon = 'bell';
+      showDialog(tr('Lembrete', 'Reminder', 'Recordatorio'), [{text: n.t}], [{label: 'OK'}], 0);
+    });
+  }
+
+  // MARK: - 2.1: profiles. Family, Kids and Guest each keep their own shelf, tabs and look; a PIN can guard one.
+
+  var PROFILES = ['family', 'kids', 'guest'];
+  var PROFILE_KEYS = ['shelf', 'tabOrder', 'tabHidden', 'tabNames', 'accent', 'theme', 'wallpaper', 'wallUrl', 'glass', 'glassLevel', 'calm', 'iconSize', 'textSize',
+    'corners', 'titleMode', 'name', 'quickHidden', 'quickApps', 'motion', 'topClock', 'topDate', 'iconNames', 'cardSize', 'startTab', 'look', 'placesRegion', 'saver'];
+
+  function profileName(p) { return {family: tr('Família', 'Family', 'Familia'), kids: tr('Crianças', 'Kids', 'Niños'), guest: tr('Convidado', 'Guest', 'Invitado')}[p] || p; }
+  function profileNow() { var p = Prefs.opt('profile', 'family'); return PROFILES.indexOf(p) >= 0 ? p : 'family'; }
+  function profiles() { var p = Prefs.opt('profiles', {}); return p && typeof p === 'object' ? p : {}; }
+
+  function switchProfile(to, sure) {
+    var from = profileNow(), all = profiles();
+    if (to === from) return;
+    var pinNeeded = all[to] && all[to].pin;
+    if (pinNeeded && !sure) {
+      askPin(profileName(to), tr('Digite o PIN deste perfil.', 'Type this profile\'s PIN.', 'Escribe el PIN de este perfil.'), function (d) {
+        if (d === all[to].pin) switchProfile(to, true); else toast(tr('PIN incorreto', 'Wrong PIN', 'PIN incorrecto'));
+      });
+      return;
+    }
+    var mine = {};
+    PROFILE_KEYS.forEach(function (k) { var v = Prefs.opt(k, undefined); if (v !== undefined) mine[k] = v; });
+    all[from] = all[from] || {};
+    all[from].data = mine;
+    var theirs = (all[to] && all[to].data) || null;
+    PROFILE_KEYS.forEach(function (k) { if (theirs) Prefs.set(k, theirs[k]); });
+    Prefs.set('profiles', all);
+    Prefs.set('profile', to);
+    closeSheets();
+    applyLook();
+    pickShelf();
+    cards = [];
+    renderAll();
+    toast(tr('Perfil: ', 'Profile: ', 'Perfil: ') + profileName(to));
+  }
+
+  function nextProfile() { switchProfile(PROFILES[(PROFILES.indexOf(profileNow()) + 1) % PROFILES.length]); }
+
+  INFO.profiles = function () {
+    var all = profiles(), now = profileNow(), rows = PROFILES.map(function (p) {
+      return {label: profileName(p), value: p === now ? '✓ ' + tr('agora', 'now', 'ahora') : (all[p] && all[p].pin ? '🔒' : '›'), plain: p === now, run: function () { switchProfile(p); }};
+    });
+    PROFILES.forEach(function (p) {
+      rows.push({label: tr('PIN para ', 'PIN for ', 'PIN para ') + profileName(p), toggle: !!(all[p] && all[p].pin), step: function () {
+        var a = profiles();
+        if (a[p] && a[p].pin) {
+          askPin(profileName(p), tr('Digite o PIN atual para tirá-lo.', 'Type the current PIN to remove it.', 'Escribe el PIN actual para quitarlo.'), function (d) {
+            if (d !== a[p].pin) { toast(tr('PIN incorreto', 'Wrong PIN', 'PIN incorrecto')); return; }
+            delete a[p].pin; Prefs.set('profiles', a); openInfo('profiles');
+          });
+          return;
+        }
+        askPin(profileName(p), tr('Escolha 4 números para este perfil.', 'Choose 4 digits for this profile.', 'Elige 4 cifras para este perfil.'), function (d) {
+          a[p] = a[p] || {}; a[p].pin = d; Prefs.set('profiles', a); openInfo('profiles');
+        });
+      }});
+    });
+    return {title: tr('Perfis', 'Profiles', 'Perfiles'), icon: 'home', rows: rows, visible: 6,
+      hint: tr('Cada perfil guarda sua prateleira, abas e aparência · OK troca', 'Each profile keeps its shelf, tabs and look · OK switches', 'Cada perfil guarda su estante, pestañas y aspecto · OK cambia')};
+  };
+
+  // MARK: - 2.1: tabs: show, hide, reorder, rename
+
+  function tabOrder() {
+    var o = Prefs.opt('tabOrder', null), out = [];
+    if (o instanceof Array) o.forEach(function (i) { if (i >= 0 && i <= 4 && out.indexOf(i) < 0) out.push(i); });
+    for (var i = 0; i < 5; i++) if (out.indexOf(i) < 0) out.push(i);
+    return out;
+  }
+
+  INFO.tabs = function () {
+    var order = tabOrder(), hidden = Prefs.opt('tabHidden', []) || [], names = tabNames(), rows = [];
+    order.forEach(function (t, pos) {
+      rows.push({label: names[t], value: (hidden.indexOf(t) >= 0 ? tr('Oculta', 'Hidden', 'Oculta') : tr('Visível', 'Shown', 'Visible')) + ' · ' + (pos + 1) + 'º',
+        step: function (d) {
+          if (d === 1) {   // OK: show or hide
+            var h = (Prefs.opt('tabHidden', []) || []).slice(), at = h.indexOf(t);
+            if (at >= 0) h.splice(at, 1);
+            else if (order.length - h.length > 1) h.push(t);
+            else { toast(tr('Uma aba fica sempre', 'One tab always stays', 'Siempre queda una pestaña')); return; }
+            Prefs.set('tabHidden', h);
+          }
+          applyLook();
+        },
+        move: function (d) {
+          var o = tabOrder(), i = o.indexOf(t), j = i + d;
+          if (j < 0 || j >= o.length) return;
+          o[i] = o[j];
+          o[j] = t;
+          Prefs.set('tabOrder', o);
+          info.index = j;
+          applyLook();
+        }});
+    });
+    rows.push({label: tr('Renomear uma aba…', 'Rename a tab…', 'Renombrar una pestaña…'), value: '›', run: function () {
+      showDialog(tr('Qual aba?', 'Which tab?', '¿Qué pestaña?'), [], tabOrder().map(function (t) {
+        return {label: tabNames()[t], run: function () { renameTab(t); }};
+      }).concat([{label: cancelText()}]), 0);
+    }});
+    rows.push({label: tr('Nomes originais', 'Original names', 'Nombres originales'), value: '›', run: function () { Prefs.set('tabNames', {}); applyLook(); renderTop(); }});
+    return {title: tr('Abas', 'Tabs', 'Pestañas'), icon: 'apps', rows: rows, visible: 7,
+      hint: tr('OK mostra ou oculta · ◀ ▶ mudam de lugar · Voltar fecha', 'OK shows or hides · ◀ ▶ move it · Back closes', 'OK la muestra u oculta · ◀ ▶ la mueven · Atrás cierra')};
+  };
+
+  function renameTab(t) {
+    askText(tr('Novo nome', 'New name', 'Nuevo nombre'), tabNames()[t], tabNames()[t], function (v) {
+      var n = Prefs.opt('tabNames', {}) || {};
+      n[t] = trim(v).slice(0, 24);
+      if (!n[t]) delete n[t];
+      Prefs.set('tabNames', n);
+      renderTop();
+      if (st.zone !== Z.INFO) openInfo('tabs');
+    });
+  }
+
+  // MARK: - 2.1: routines: at a time of day, do something (calm mode, the sleep timer, a theme, a profile…)
+
+  var ROUTINE_ACTIONS = ['calm-on', 'calm-off', 'sleep-30', 'sleep-60', 'theme-dark', 'theme-light', 'theme-auto', 'saver', 'profile-family', 'profile-kids', 'profile-guest'];
+
+  function routineName(a) {
+    return {'calm-on': tr('Ligar o modo calmo', 'Calm mode on', 'Activar modo calma'), 'calm-off': tr('Desligar o modo calmo', 'Calm mode off', 'Quitar modo calma'),
+      'sleep-30': tr('Desligar em 30 min', 'Sleep in 30 min', 'Apagar en 30 min'), 'sleep-60': tr('Desligar em 60 min', 'Sleep in 60 min', 'Apagar en 60 min'),
+      'theme-dark': tr('Tema escuro', 'Dark theme', 'Tema oscuro'), 'theme-light': tr('Tema claro', 'Light theme', 'Tema claro'), 'theme-auto': tr('Tema automático', 'Automatic theme', 'Tema automático'),
+      saver: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), 'profile-family': tr('Perfil Família', 'Family profile', 'Perfil Familia'),
+      'profile-kids': tr('Perfil Crianças', 'Kids profile', 'Perfil Niños'), 'profile-guest': tr('Perfil Convidado', 'Guest profile', 'Perfil Invitado')}[a] || a;
+  }
+
+  function routines() { var r = Prefs.opt('routines', []); return r instanceof Array ? r : []; }
+
+  function runRoutine(a) {
+    if (a === 'calm-on' || a === 'calm-off') { Prefs.set('calm', a === 'calm-on'); applyLook(); }
+    else if (a === 'sleep-30' || a === 'sleep-60') { if (TV.name === 'webos') sleepSet(a === 'sleep-30' ? 30 : 60); }
+    else if (a.indexOf('theme-') === 0) { Prefs.set('theme', a.slice(6)); checkNight(); }
+    else if (a === 'saver') { if (!saverOn && !document.hidden) showSaver(); }
+    else if (a.indexOf('profile-') === 0) switchProfile(a.slice(8), true);
+  }
+
+  function checkRoutines() {
+    var now = hhmm(), today = dayKey(), done = Prefs.opt('routineDone', {}) || {};
+    routines().forEach(function (r, i) {
+      if (r.t !== now || done[i + r.t + r.a] === today) return;
+      done[i + r.t + r.a] = today;
+      Prefs.set('routineDone', done);
+      runRoutine(r.a);
+      toast(tr('Rotina: ', 'Routine: ', 'Rutina: ') + routineName(r.a));
+    });
+  }
+
+  INFO.routines = function () {
+    var list = routines(), rows = list.map(function (r, i) {
+      return {label: r.t + '  ·  ' + routineName(r.a), value: routineName(r.a), step: function (d) {
+        var l = routines();
+        if (d === 1) {
+          showDialog(r.t + ' · ' + routineName(r.a), [], [
+            {label: tr('Mudar a hora', 'Change the time', 'Cambiar la hora'), run: function () { askRoutineTime(i); }},
+            {label: tr('Apagar a rotina', 'Delete the routine', 'Borrar la rutina'), run: function () { var x = routines(); x.splice(i, 1); Prefs.set('routines', x); openInfo('routines'); }},
+            {label: cancelText()}], 0);
+          return;
+        }
+        l[i].a = ROUTINE_ACTIONS[(ROUTINE_ACTIONS.indexOf(l[i].a) + d + ROUTINE_ACTIONS.length) % ROUTINE_ACTIONS.length];
+        Prefs.set('routines', l);
+      }, move: function (d) {
+        var l = routines();
+        l[i].a = ROUTINE_ACTIONS[(ROUTINE_ACTIONS.indexOf(l[i].a) + d + ROUTINE_ACTIONS.length) % ROUTINE_ACTIONS.length];
+        Prefs.set('routines', l);
+      }};
+    });
+    if (list.length < 8) rows.push({label: tr('Nova rotina…', 'New routine…', 'Nueva rutina…'), value: '›', icon: 'timer', run: function () { askRoutineTime(-1); }});
+    return {title: tr('Rotinas', 'Routines', 'Rutinas'), icon: 'timer', rows: rows, visible: 7,
+      hint: tr('◀ ▶ mudam o que faz · OK hora ou apagar · Voltar fecha', '◀ ▶ change what it does · OK time or delete · Back closes', '◀ ▶ cambian lo que hace · OK hora o borrar · Atrás cierra')};
+  };
+
+  function askRoutineTime(i) {
+    askText(tr('Hora', 'Time', 'Hora'), tr('A que horas, todos os dias (HH:MM).', 'At what time, every day (HH:MM).', 'A qué hora, todos los días (HH:MM).'), i >= 0 ? routines()[i].t : '', function (v) {
+      var t = parseTime(v);
+      if (!t) { toast(tr('Hora não entendida', 'Time not understood', 'No entendí la hora')); return; }
+      var l = routines();
+      if (i >= 0) l[i].t = t; else l.push({t: t, a: 'calm-on'});
+      Prefs.set('routines', l);
+      openInfo('routines');
+    }, 'HH:MM');
+  }
+
+  // MARK: - 2.1: kids mode with a time limit
+
+  var kidsOver = false;
+
+  function checkKidsLimit() {
+    var limit = +Prefs.opt('kidsLimit', 0) * 60000;
+    if (!Prefs.kids() || !limit) { kidsOver = false; return; }
+    var since = +Prefs.opt('kidsSince', 0) || Date.now();
+    if (!Prefs.opt('kidsSince', 0)) Prefs.set('kidsSince', since);
+    if (Date.now() - since < limit || kidsOver) return;
+    kidsOver = true;
+    if (saverOn) hideSaver();
+    showDialog.icon = 'kids';
+    showDialog(tr('Acabou o tempo', 'Time is up', 'Se acabó el tiempo'), [{text: tr('O tempo de TV de hoje terminou. Um adulto pode continuar com o PIN.',
+      'Today\'s TV time is over. A grown-up can carry on with the PIN.', 'El tiempo de tele de hoy ha terminado. Un adulto puede seguir con el PIN.')}],
+      [{label: tr('Continuar (PIN)', 'Carry on (PIN)', 'Seguir (PIN)'), run: function () {
+        askPin(tr('Mais tempo', 'More time', 'Más tiempo'), tr('Digite o PIN.', 'Type the PIN.', 'Escribe el PIN.'), function (d) {
+          if (d !== Prefs.kidsPin()) { toast(tr('PIN incorreto', 'Wrong PIN', 'PIN incorrecto')); return; }
+          Prefs.set('kidsSince', Date.now());
+          kidsOver = false;
+          toast(tr('Mais tempo concedido', 'More time given', 'Más tiempo concedido'));
+        });
+      }}], 0);
+  }
+
+  // MARK: - 2.1: time of use, per app, kept only on this TV (the last 30 days)
+
+  var usageOpen = null;
+
+  function usage() { try { return JSON.parse(localStorage.getItem('fmtv.usage')) || {}; } catch (e) { return {}; } }
+
+  /** An app opened from FreeTV: its time runs until FreeTV is on screen again. */
+  function usageStart(id) { usageOpen = {id: id, at: Date.now()}; }
+
+  function usageStop() {
+    if (!usageOpen) return;
+    var open = usageOpen, ms = Math.min(6 * 3600000, Date.now() - open.at), u = usage(), d = dayKey(new Date(open.at));
+    usageOpen = null;
+    if (ms < 5000) return;
+    u[d] = u[d] || {};
+    u[d][open.id] = (u[d][open.id] || 0) + ms;
+    var days = Object.keys(u).sort();
+    while (days.length > 30) delete u[days.shift()];
+    try { localStorage.setItem('fmtv.usage', JSON.stringify(u)); } catch (e) {}
+  }
+
+  INFO.usage = function () {
+    var u = usage(), today = u[dayKey()] || {}, week = {}, rows = [];
+    for (var i = 0; i < 7; i++) {
+      var d = u[dayKey(new Date(Date.now() - i * 864e5))] || {};
+      for (var id in d) if (d.hasOwnProperty(id)) week[id] = (week[id] || 0) + d[id];
+    }
+    function name(id) { var a = findApp(id); return a ? a.title : id; }
+    var t = Object.keys(today).sort(function (a, b) { return today[b] - today[a]; });
+    var w = Object.keys(week).sort(function (a, b) { return week[b] - week[a]; });
+    if (!w.length) rows.push({label: tr('Ainda nada medido', 'Nothing measured yet', 'Todavía nada medido'), value: '', plain: true});
+    t.slice(0, 5).forEach(function (id) { rows.push({label: tr('Hoje · ', 'Today · ', 'Hoy · ') + name(id), value: dur(today[id]), plain: true}); });
+    w.slice(0, 8).forEach(function (id) { rows.push({label: tr('7 dias · ', '7 days · ', '7 días · ') + name(id), value: dur(week[id]), plain: true}); });
+    rows.push({label: tr('Apagar o histórico', 'Clear the history', 'Borrar el historial'), value: '›', run: function () { try { localStorage.removeItem('fmtv.usage'); } catch (e) {} openInfo('usage'); }});
+    return {title: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), icon: 'timer', rows: rows, visible: 7,
+      hint: tr('Contado só nesta TV, desde que uma app é aberta pelo FreeTV até voltar · nada sai da TV', 'Counted only on this TV, from opening an app in FreeTV until coming back · nothing leaves the TV',
+        'Contado solo en esta tele, desde que abres una app en FreeTV hasta que vuelves · nada sale de la tele')};
+  };
+
+  // MARK: - 2.1: HDMI inputs with a name and on the shelf; shelf and quick panel from any app; recent apps in the drawer
+
+  var INPUT_KINDS = [['', 'HDMI', 'hdmi', ''], ['ps', 'PlayStation', 'gamepad', '#0070D1'], ['xbox', 'Xbox', 'gamepad', '#107C10'], ['switch', 'Nintendo Switch', 'gamepad', '#E60012'],
+    ['chromecast', 'Chromecast', 'tv', '#4285F4'], ['appletv', 'Apple TV', 'tv', '#1C1C1E'], ['pc', 'PC', 'tv', '#5B5F6B'], ['tdt', tr('Decodificador', 'Set-top box', 'Decodificador'), 'live_tv', '#7A4DFF'],
+    ['bar', tr('Barra de som', 'Soundbar', 'Barra de sonido'), 'speaker', '#3A3D45']];
+
+  function inputKind(id) {
+    var k = (Prefs.opt('inputNames', {}) || {})[id] || '';
+    for (var i = 0; i < INPUT_KINDS.length; i++) if (INPUT_KINDS[i][0] === k) return INPUT_KINDS[i];
+    return INPUT_KINDS[0];
+  }
+
+  function inputLabel(x) { var k = inputKind(x.id); return k[0] ? k[1] : (x.label || tr('TV aberta', 'Live TV', 'TV en vivo')); }
+
+  /** The inputs and channels the person put on the shelf, as apps. */
+  function extraApps() {
+    var out = [], on = Prefs.opt('inputShelf', []) || [];
+    inputs.forEach(function (x) {
+      if (on.indexOf(x.id) < 0) return;
+      var k = inputKind(x.id);
+      out.push({id: x.id, title: inputLabel(x), icon: '', color: k[3] || '#3A3F4B', symbol: k[2] || x.symbol || 'hdmi', input: true});
+    });
+    var chans = Prefs.opt('chanShelf', []) || [];
+    allChannels().forEach(function (c) {
+      if (chans.indexOf(c.key) >= 0) out.push({id: 'chan:' + c.key, title: c.title, icon: c.thumb || '', color: '#FF0033', chan: c});
+    });
+    return out;
+  }
+
+  INFO.inputs = function () {
+    var rows = [], on = Prefs.opt('inputShelf', []) || [];
+    inputs.forEach(function (x) {
+      if (x.key === 'live') return;
+      rows.push({label: (x.label || x.id) + ' →', value: inputKind(x.id)[1], step: function (d) {
+        var names = Prefs.opt('inputNames', {}) || {}, i = 0;
+        for (var j = 0; j < INPUT_KINDS.length; j++) if (INPUT_KINDS[j][0] === (names[x.id] || '')) i = j;
+        names[x.id] = INPUT_KINDS[(i + (d || 1) + INPUT_KINDS.length) % INPUT_KINDS.length][0];
+        Prefs.set('inputNames', names);
+        reloadExtras();
+      }});
+      rows.push({label: tr('   na prateleira', '   on the shelf', '   en el estante'), toggle: on.indexOf(x.id) >= 0, step: function () {
+        toggleShelf(x.id, on.indexOf(x.id) < 0 ? 'add' : 'remove', 'inputShelf');
+      }});
+    });
+    if (!rows.length) rows.push({label: tr('Nenhuma entrada', 'No inputs', 'Ninguna entrada'), value: '', plain: true});
+    return {title: tr('Entradas HDMI', 'HDMI inputs', 'Entradas HDMI'), icon: 'hdmi', rows: rows, visible: 7,
+      hint: tr('◀ ▶ o que está ligado · OK na prateleira · Voltar fecha', '◀ ▶ what is plugged in · OK on the shelf · Back closes', '◀ ▶ lo que hay conectado · OK en el estante · Atrás cierra')};
+  };
+
+  function reloadExtras() {
+    apps = apps.filter(function (a) { return !a.input && !a.chan; }).concat(extraApps());
+    Data.setApps(apps);
+    pickShelf();
+    renderShelf();
+    renderDrawer();
+  }
+
+  /** Put an app (or an input, or a channel) on the shelf or take it off. list: the extra list it also belongs to. */
+  function toggleShelf(id, how, list) {
+    if (list) {
+      var l = (Prefs.opt(list, []) || []).filter(function (x) { return x !== id && 'chan:' + x !== id; });
+      if (how === 'add') l.push(list === 'chanShelf' ? id.replace(/^chan:/, '') : id);
+      Prefs.set(list, l);
+      reloadExtras();
+    }
+    var ids = shelf.map(function (a) { return a.id; }), key = list === 'chanShelf' ? id : id;
+    if (how === 'add' && ids.indexOf(key) < 0) {
+      if (ids.length >= MAX_SHELF) { toast(tr('A prateleira está cheia (12)', 'The shelf is full (12)', 'El estante está lleno (12)')); return; }
+      ids.push(key);
+    } else if (how === 'remove') ids = ids.filter(function (x) { return x !== key; });
+    Prefs.set('shelf', ids);
+    pickShelf();
+    renderShelf();
+    updateFocus();
+    toast(how === 'add' ? tr('Na prateleira', 'On the shelf', 'En el estante') : tr('Fora da prateleira', 'Off the shelf', 'Fuera del estante'));
+  }
+
+  function quickApps() { var q = Prefs.opt('quickApps', []); return q instanceof Array ? q : []; }
+
+  function toggleQuickApp(app) {
+    var q = quickApps().filter(function (x) { return x !== app.id; });
+    var adding = q.length === quickApps().length;
+    if (adding) q.push(app.id);
+    Prefs.set('quickApps', q.slice(-6));
+    toast(adding ? tr('No painel rápido', 'In the quick panel', 'En el panel rápido') : tr('Fora do painel rápido', 'Off the quick panel', 'Fuera del panel rápido'));
+  }
+
+  // MARK: - 2.1: backups of the settings: on the TV's store service, and to a file through the computer
+
+  function restoreBackup() {
+    svcCall('prefsLoad', {}, function (r) {
+      var data = r && r.returnValue && r.data;
+      if (!data || !data['fmtv.prefs']) { toast(tr('Não há cópia guardada', 'There is no saved copy', 'No hay copia guardada')); return; }
+      for (var k in data) if (data.hasOwnProperty(k) && /^fmtv\./.test(k)) { try { localStorage.setItem(k, data[k]); } catch (e) {} }
+      toast(tr('Cópia restaurada', 'Copy restored', 'Copia restaurada'));
+      setTimeout(function () { location.reload(); }, 800);
+    });
+  }
+
   // MARK: - Keys
 
   document.addEventListener('keydown', function (e) {
@@ -2874,6 +4381,7 @@
       else if (k === TV.keys.back || k === 27 || k === TV.keys.up || k === TV.keys.down) { e.preventDefault(); field.blur(); }
       return;
     }
+    if (shortcutKey(k)) { e.preventDefault(); return; }
     if (k === TV.keys.ok && (st.zone === Z.SHELF || holdMenu())) {
       // Here OK acts when it is released, so that holding it can pick the app up (shelf) or open the menu (Custom, Continue watching, All Apps).
       e.preventDefault();
@@ -2936,6 +4444,9 @@
       pickShelf();
       TV.inputs(function (list2) {
         inputs = list2;
+        apps = list.concat(extraApps());   // inputs and channels the person put on the shelf
+        Data.setApps(apps);
+        pickShelf();
         if (done) done();
       });
     });
@@ -2952,6 +4463,7 @@
   }
 
   Data.onChange(function () {
+    checkBuiltinAlerts();
     renderQuotes();
     renderCards();
     renderPanels();
@@ -2980,6 +4492,7 @@
       return;
     }
     watchLgSaver();
+    usageStop();
     if (saverOn && Date.now() - hiddenAt < 5 * 60000) return;   // back from LG's clock: ours goes on
     idleAt = Date.now();
     loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); Data.refresh(); });
@@ -3017,7 +4530,7 @@
   });
   // The settings are kept in two places: this page's storage, which a reinstall of FreeTV empties, and the store service's folder, which a
   // reinstall keeps. A copy goes there a few seconds after a change; an empty page asks for it back once.
-  var SAVED_KEYS = ['fmtv.prefs', 'fmtv.devApps', 'fmtv.ssapKey', 'fmtv.ssapPowerKey2', 'fmtv.ssapRefused', 'fmtv.ssapPowerRefused'], savedLast = '', saveTimer = 0;
+  var SAVED_KEYS = ['fmtv.prefs', 'fmtv.devApps', 'fmtv.ssapKey', 'fmtv.ssapPowerKey2', 'fmtv.ssapRefused', 'fmtv.ssapPowerRefused', 'fmtv.usage'], savedLast = '', saveTimer = 0;
 
   function snapshot() {
     var out = {}, any = false;
@@ -3079,7 +4592,13 @@
     checkNight();
     Data.refresh();
     if (saverOn) tickSaverClock($('saver').querySelector('.clock'));
+    checkRoutines();
+    checkReminders();
+    checkKidsLimit();
+    if (++ticks % 10 === 0) refreshTickers();
   }, 30000);
+  var ticks = 0;
+  setTimeout(refreshTickers, 8000);
   setInterval(function () {   // looked at often, so it starts at 2 minutes and not up to 30 seconds late
     var after = +Prefs.opt('saverAfter', 2) * 60000;   // 0: never
     if (after && !saverOn && !sheetOpen() && Date.now() - idleAt > after) showSaver();

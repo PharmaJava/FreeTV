@@ -12,6 +12,13 @@ var TV = (function () {
   var samsung = !webos && typeof window.tizen !== 'undefined' && !!window.tizen.application;
   var calls = [];   // a bridge is collected if nothing holds it before its reply arrives
 
+  // Samsung sends the colour and number keys to an app only when it asks for them.
+  if (samsung && window.tizen && tizen.tvinputdevice) {
+    ['ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].forEach(function (k) {
+      try { tizen.tvinputdevice.registerKey(k); } catch (e) {}
+    });
+  }
+
   /** One Luna call; done(result) with null on failure. */
   function luna(uri, params, done) {
     if (!webos) {
@@ -96,6 +103,28 @@ var TV = (function () {
 
   function powerKey() {
     try { return localStorage.getItem(POWER_KEY); } catch (e) { return null; }
+  }
+
+  /** One request with the power permission (the key powerPair got): the screen off or on; done(ok). */
+  function powerCall(uri, done) {
+    var key = powerKey(), ws = null, finished = false;
+    done = done || function () {};
+    if (!webos || !key) { done(false); return; }
+    var timer = setTimeout(function () { finish(false); }, 8000);
+    function finish(ok) { if (finished) return; finished = true; clearTimeout(timer); try { ws.close(); } catch (e) {} done(ok); }
+    try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { finish(false); return; }
+    ws.onopen = function () {
+      ws.send(JSON.stringify({type: 'register', id: 'register', payload: {forcePairing: false, pairingType: 'PROMPT', manifest: POWER_MANIFEST, 'client-key': key}}));
+    };
+    ws.onmessage = function (event) {
+      var m = null;
+      try { m = JSON.parse(event.data); } catch (e) {}
+      if (!m) return;
+      if (m.type === 'registered') ws.send(JSON.stringify({type: 'request', id: 'call', uri: 'ssap://' + uri}));
+      else if (m.id === 'call') finish(m.type !== 'error' && !(m.payload && m.payload.returnValue === false));
+      else if (m.type === 'error') finish(false);
+    };
+    ws.onerror = function () { finish(false); };
   }
 
   /** Asks the TV for the power permission when FreeTV has none yet; done(ok). The TV shows its prompt (up to 90 seconds to answer). */
@@ -463,6 +492,10 @@ var TV = (function () {
 
     /** Asks once, while someone is looking, for what holdScreen needs; done(ok). */
     pairScreen: powerPair,
+
+    /** The screen off (the sound and the TV stay on; any key turns it on again) or on; done(ok). LG, with the power permission. */
+    screenOff: function (done) { powerCall('com.webos.service.tvpower/power/turnOffScreen', done); },
+    screenOn: function (done) { powerCall('com.webos.service.tvpower/power/turnOnScreen', done); },
 
     /** Whether holdScreen can keep LG's screensaver away (the TV has allowed it). */
     canHoldScreen: function () { return webos && !!powerKey(); },
