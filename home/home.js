@@ -1359,7 +1359,7 @@
     });
   }
 
-  INFO.repos = function () {
+  function infoRepos() {
     var list = Prefs.opt('repos', []) || [], rows = list.map(function (u) {
       return {label: u.replace(/^https:\/\//, ''), value: '›', run: function () {
         showDialog(tr('Tirar este repositório?', 'Remove this repository?', '¿Quitar este repositorio?'), [{text: u}], [{label: cancelText()}, {label: tr('Sim, tirar', 'Yes, remove', 'Sí, quitar'), run: function () {
@@ -1386,7 +1386,7 @@
     return {title: tr('Repositórios extra', 'Extra repositories', 'Repositorios extra'), icon: 'apps', rows: rows,
       hint: tr('Só repositórios em que você confia: as apps passam pelas mesmas verificações (sem root, https, SHA-256)', 'Only repositories you trust: their apps go through the same checks (no root, https, SHA-256)',
         'Solo repositorios de confianza: sus apps pasan las mismas comprobaciones (sin root, https, SHA-256)')};
-  };
+  }
 
   /** Is the computer there? (Its answer redraws the screen.) */
   function storeCheck() {
@@ -3299,6 +3299,7 @@
 
   var info = {kind: '', arg: null, rows: [], index: 0, back: null};
   var INFO = {};   // kind → function (arg): {title, icon, build(box), rows, hint, visible, back}
+  INFO.repos = infoRepos;
 
   function openInfo(kind, arg) {
     ['settings', 'tilesheet', 'community', 'dialog'].forEach(function (id) { setClass($(id), 'open', false); });
