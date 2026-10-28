@@ -462,9 +462,9 @@ var TV = (function () {
     apps: function (done) {
       this.appsOnly(function (list) {
         if (webos) {
-          list.push({id: 'com.webos.app.livetv', title: tr('TV em direto', 'Live TV', 'TV en directo'), icon: '', color: '#1C7BFF', symbol: 'live_tv'});
+          list.push({id: 'com.webos.app.livetv', title: tr('TV em direto', 'Live TV', 'TV en directo'), icon: '', color: '#1C7BFF', symbol: 'live_tv', tile: 'tiles/livetv.png'});
           // FreeTV's own store (Community apps): an icon like any other, which opens that screen instead of an app.
-          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps'});
+          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps', tile: 'tiles/store.png'});
         }
         if (samsung && window.TizenBrew) {
           // With TizenBrew on the TV: YouTube AdFree and Twitch AdFree (its modules) are apps like any other, and FreeTV's Store
@@ -474,7 +474,7 @@ var TV = (function () {
               if (m.shelf) list.push({id: 'tizenbrew:' + m.full, title: m.title, icon: m.icon, color: ''});
             });
           }
-          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps'});
+          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps', tile: 'tiles/store.png'});
         }
         done(list);
       });

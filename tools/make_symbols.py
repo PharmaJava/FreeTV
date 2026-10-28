@@ -99,7 +99,14 @@ def timer():
     done(im, 'timer')
 
 
+def tiles():
+    im, d = canvas()
+    for x, y in ((20, 20), (78, 20), (20, 78), (78, 78)):
+        d.rounded_rectangle([x * K, y * K, (x + 46) * K, (y + 46) * K], radius=12 * K, fill=255)
+    done(im, 'tiles')
+
+
 if __name__ == '__main__':
-    for fn in (search, kids, health, calm, lock, timer):
+    for fn in (search, kids, health, calm, lock, timer, tiles):
         fn()
     print('symbols written to', os.path.normpath(OUT))

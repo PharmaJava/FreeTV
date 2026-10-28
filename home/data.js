@@ -34,6 +34,9 @@ var Place = (function () {
   };
 })();
 
+/** The accent colours, in the order Home Settings offers them. */
+var ACCENTS = ['mint', 'blue', 'violet', 'rose', 'orange', 'amber', 'sky'];
+
 var Prefs = (function () {
   'use strict';
   var KEY = 'fmtv.prefs';
@@ -57,9 +60,11 @@ var Prefs = (function () {
     glass: function () { return pick('glass', 'auto'); },
     /** Calm mode: no quotes, no clock, only the Custom and Continue watching tabs. */
     calm: function () { return pick('calm', false) === true; },
-    accent: function () { var a = pick('accent', 'mint'); return a === 'blue' || a === 'rose' || a === 'amber' ? a : 'mint'; },
+    accent: function () { var a = pick('accent', 'mint'); return ACCENTS.indexOf(a) >= 0 ? a : 'mint'; },
     /** What is behind the home: the focused card's picture ('cards') or the landscapes of the screensaver ('places'). */
-    wallpaper: function () { return pick('wallpaper', 'cards') === 'places' ? 'places' : 'cards'; },
+    wallpaper: function () { var w = pick('wallpaper', 'cards'); return w === 'places' || w === 'plain' ? w : 'cards'; },
+    /** Any other choice, with its default: iconSize, motion, titleMode, name, topClock, topDate, clock24, saverAfter, saverClock, quickHidden. */
+    opt: function (name, fallback) { return pick(name, fallback); },
     /** Kids mode: only the Custom tab and the apps chosen for them; the PIN (4 digits) leaves it. */
     kids: function () { return pick('kids', false) === true && /^\d{4}$/.test(pick('kidsPin', '')); },
     kidsPin: function () { return String(pick('kidsPin', '')); },
@@ -697,8 +702,8 @@ var Data = (function () {
       return (I18N.lang === 'es' || I18N.lang === 'ru') ? (h < 10 ? '0' : '') + h + ':00' : h + 'h';
     },
     time: function (at) {
-      var d = new Date(at), h = d.getHours(), m = d.getMinutes();
-      if (I18N.lang === 'en') return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
+      var d = new Date(at), h = d.getHours(), m = d.getMinutes(), f = Prefs.opt('clock24', 'auto');
+      if (f === '12' || (f !== '24' && I18N.lang === 'en')) return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
       return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
     },
     /** "12 min ago" when the data is old (no internet), or empty. */

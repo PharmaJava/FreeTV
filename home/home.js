@@ -109,6 +109,7 @@
     var bottom = k ? k[3][1] : app.color ? darken(app.color, 0.62) : '#161618';
     box.style.background = '-webkit-linear-gradient(top, ' + top + ', ' + bottom + ')';
     box.style.background = 'linear-gradient(' + top + ', ' + bottom + ')';
+    if (app.tile) { el('img', 'ico', box).src = app.tile; return; }   // FreeTV's own full icons (tools/make_tiles.py)
     if (app.symbol) { el('span', 'sym bigsym', box).style.webkitMaskImage = 'url(symbols/' + app.symbol + '.png)'; box.lastChild.style.maskImage = 'url(symbols/' + app.symbol + '.png)'; return; }
     var word = el('div', 'word', box, app.title);
     if (wordSize) word.style.fontSize = wordSize + 'px';
@@ -207,7 +208,7 @@
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
     focusRows($('community'), commOpen < 0 ? st.comm : commAct, st.zone === Z.COMM);
     focusRows($('dialog'), dlg.index, st.zone === Z.DLG);
-    list = document.querySelectorAll('#tilesheet .tile');
+    list = document.querySelectorAll('#tilesheet .qtile');
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TILES && st.tile === i);
     setClass(body, 'drawer-open', st.zone === Z.DRAWER);
   }
@@ -217,8 +218,9 @@
     for (var i = 0; i < rows.length; i++) setClass(rows[i], 'focus', on && i === index);
     var holder = sheet.querySelector('.rows');
     if (!holder) return;
-    var visible = 7, first = Math.max(0, Math.min(rows.length - visible, index - 3));
-    holder.style.webkitTransform = holder.style.transform = 'translateY(' + (-first * 78) + 'px)';
+    var pitch = +holder.getAttribute('data-pitch') || 78, visible = +holder.getAttribute('data-visible') || 7;
+    var first = Math.max(0, Math.min(rows.length - visible, index - Math.floor(visible / 2)));
+    holder.style.webkitTransform = holder.style.transform = 'translateY(' + (-first * pitch) + 'px)';
   }
 
   function nearest(nodes, x) {
@@ -259,7 +261,10 @@
     setClass(body, 'frost', frostWanted());
     setClass(body, 'calm', Prefs.calm());
     setClass(body, 'kids', Prefs.kids());
-    ['mint', 'blue', 'rose', 'amber'].forEach(function (a) { setClass(body, 'acc-' + a, Prefs.accent() === a); });
+    ACCENTS.forEach(function (a) { setClass(body, 'acc-' + a, Prefs.accent() === a); });
+    setClass(body, 'lessmotion', Prefs.opt('motion', 'normal') === 'less');
+    setClass(body, 'notopclock', Prefs.opt('topClock', true) === false);
+    renderTitle();
     var n = tabCount();
     if (n !== TABS) {
       TABS = n;
@@ -271,6 +276,7 @@
 
   /** What is behind the home: the focused card's picture, or one of the landscapes (a new one every half hour). */
   function bgFor(url) {
+    if (Prefs.wallpaper() === 'plain') return '';
     if (Prefs.wallpaper() !== 'places' || typeof LANDSCAPES === 'undefined' || !LANDSCAPES.length) return url;
     return 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(LANDSCAPES[Math.floor(Date.now() / 1800000) % LANDSCAPES.length][0]) + '?width=480';
   }
@@ -295,8 +301,42 @@
     ], 0);
   }
 
+  /** The big title: "For You", or a greeting for the time of day, with the person's name if they gave one. */
+  function renderTitle() {
+    var mode = Prefs.opt('titleMode', 'tab'), name = String(Prefs.opt('name', '') || '');
+    if (mode !== 'greet') { $('title').textContent = tr('Para você', 'For You', 'Para ti'); return; }
+    var h = new Date().getHours();
+    var g = h >= 6 && h < 13 ? tr('Bom dia', 'Good morning', 'Buenos días') : h >= 13 && h < 20 ? tr('Boa tarde', 'Good afternoon', 'Buenas tardes')
+        : tr('Boa noite', 'Good evening', 'Buenas noches');
+    $('title').textContent = name ? g + ', ' + name : g;
+  }
+
+  /** The name the greeting uses, typed with the TV's keyboard. */
+  function askName() {
+    showDialog.icon = 'home';
+    showDialog(tr('Seu nome', 'Your name', 'Tu nombre'), [
+      {text: tr('Para a saudação do título. Escreva com o teclado da TV e aperte Enter.', 'For the greeting in the title. Type with the TV keyboard and press Enter.',
+        'Para el saludo del título. Escríbelo con el teclado de la tele y pulsa Intro.')}
+    ], [{label: tr('Guardar', 'Save', 'Guardar'), run: function () { saveName(input.value); }},
+        {label: tr('Sem nome', 'No name', 'Sin nombre'), run: function () { saveName(''); }}, {label: cancelText()}], 0);
+    var box = $('dialog').firstChild, input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'chaninput';
+    input.maxLength = 24;
+    input.value = Prefs.opt('name', '');
+    input.onEnter = function (v) { saveName(v); closeSheets(); };
+    box.insertBefore(input, box.querySelector('.row'));
+    setTimeout(function () { try { input.focus(); } catch (e) {} }, 250);
+  }
+
+  function saveName(v) {
+    Prefs.set('name', String(v || '').replace(/^\s+|\s+$/g, '').slice(0, 24));
+    if (Prefs.opt('name', '') && Prefs.opt('titleMode', 'tab') !== 'greet') Prefs.set('titleMode', 'greet');
+    renderTitle();
+  }
+
   function renderTop() {
-    $('title').textContent = tr('Para você', 'For You', 'Para ti');
+    renderTitle();
     var tabs = $('tabs');
     tabs.innerHTML = '';
     var names = tabNames();
@@ -497,7 +537,14 @@
   var topClockTimer = 0;
   function tickTopClock() {
     clearTimeout(topClockTimer);
-    $('topclock').textContent = Data.time(Date.now());
+    var now = new Date(), c = $('topclock'), date = '';
+    if (Prefs.opt('topDate', false)) {
+      try { date = now.toLocaleDateString(I18N.locale(), {weekday: 'short', day: 'numeric', month: 'short'}); } catch (e) { date = now.toDateString().slice(0, 10); }
+    }
+    c.innerHTML = '';
+    if (date) el('span', 'tdate', c, date);
+    c.appendChild(document.createTextNode(Data.time(now.getTime())));
+    if (Prefs.opt('titleMode', 'tab') === 'greet') renderTitle();
     topClockTimer = setTimeout(tickTopClock, 60000 - Date.now() % 60000 + 50);
   }
 
@@ -520,7 +567,7 @@
   function renderShelf() {
     var n = shelf.length, gap = n > 9 ? 30 : 44, pad = 40;
     // Square app icons, as on the TV's own home: never bigger than 140, and the glass keeps its bottom edge.
-    var tw = Math.min(140, (1760 - Math.max(0, n - 1) * gap) / Math.max(1, n)), th = tw;
+    var tw = Math.min(Prefs.opt('iconSize', 'normal') === 'small' ? 112 : 140, (1760 - Math.max(0, n - 1) * gap) / Math.max(1, n)), th = tw;
     var width = n * tw + Math.max(0, n - 1) * gap, left = (1920 - width) / 2;
     var platter = $('platter');
     platter.style.display = n ? '' : 'none';
@@ -713,11 +760,17 @@
       {id: 'home', icon: 'home', label: tr('Início', 'Home', 'Inicio')},
       {id: 'look', icon: 'sparkles', label: tr('Aparência', 'Look', 'Aspecto')},
       {id: 'widgets', icon: 'partly_cloudy_day', label: tr('Widgets', 'Widgets', 'Widgets')},
-      {id: 'apps', icon: 'apps', label: tr('Apps', 'Apps', 'Apps')}
+      {id: 'apps', icon: 'apps', label: tr('Apps', 'Apps', 'Apps')},
+      {id: 'quick', icon: 'tiles', label: tr('Painel rápido', 'Quick panel', 'Panel rápido')}
     ];
     cats.push({id: 'privacy', icon: 'lock', label: tr('Privacidade e crianças', 'Privacy and kids', 'Privacidad y niños')});
     cats.push({id: 'care', icon: 'settings', label: tr('Manutenção', 'Maintenance', 'Mantenimiento')});
     return cats;
+  }
+
+  function accentNames() {
+    return {mint: tr('Menta', 'Mint', 'Menta'), blue: tr('Azul', 'Blue', 'Azul'), violet: tr('Violeta', 'Violet', 'Violeta'), rose: tr('Rosa', 'Rose', 'Rosa'),
+      orange: tr('Laranja', 'Orange', 'Naranja'), amber: tr('Âmbar', 'Amber', 'Ámbar'), sky: tr('Céu', 'Sky', 'Cielo')};
   }
 
   function settingsTitle() {
@@ -750,18 +803,38 @@
         picks: tr('Sugestões', 'Picks', 'Sugerencias')};
       rows.push({label: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), value: names[Data.saver()],
         step: function (d) { Data.setSaver(modes[(modes.indexOf(Data.saver()) + (d || 1) + modes.length * 2) % modes.length]); }});
+      var after = Prefs.opt('saverAfter', 2);
+      rows.push({label: tr('Protetor de tela depois de', 'Screensaver after', 'Salvapantallas tras'),
+        value: after ? tr(after + ' min', after + ' min', after + ' min') : tr('Nunca', 'Never', 'Nunca'),
+        step: function (d) { cycle('saverAfter', [1, 2, 5, 10, 15, 30, 0], after, d); }});
+      rows.push({label: tr('Relógio no protetor de tela', 'Clock on the screensaver', 'Reloj en el salvapantallas'), toggle: Prefs.opt('saverClock', true) !== false,
+        step: function () { Prefs.set('saverClock', Prefs.opt('saverClock', true) === false); }});
     } else if (settingsCat === 'look') {
       rows.push({label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
         step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }});
       rows.push({label: tr('Vidro fosco', 'Frosted glass', 'Cristal esmerilado'), value: Prefs.glass() === 'on' ? on : Prefs.glass() === 'off' ? off : auto,
         step: function (d) { cycle('glass', ['auto', 'on', 'off'], Prefs.glass(), d); applyLook(); }});
-      var accents = {mint: tr('Menta', 'Mint', 'Menta'), blue: tr('Azul', 'Blue', 'Azul'), rose: tr('Rosa', 'Rose', 'Rosa'), amber: tr('Âmbar', 'Amber', 'Ámbar')};
-      rows.push({label: tr('Cor de destaque', 'Accent colour', 'Color de acento'), value: accents[Prefs.accent()],
-        step: function (d) { cycle('accent', ['mint', 'blue', 'rose', 'amber'], Prefs.accent(), d); applyLook(); }});
-      rows.push({label: tr('Fundo', 'Background', 'Fondo'), value: Prefs.wallpaper() === 'places' ? tr('Paisagens', 'Landscapes', 'Paisajes') : tr('A capa em foco', 'The focused cover', 'La portada en foco'),
-        step: function () { Prefs.set('wallpaper', Prefs.wallpaper() === 'places' ? 'cards' : 'places'); refreshBackdrop(); }});
+      rows.push({label: tr('Cor de destaque', 'Accent colour', 'Color de acento'), value: accentNames()[Prefs.accent()],
+        step: function (d) { cycle('accent', ACCENTS, Prefs.accent(), d); applyLook(); }});
+      var walls = {cards: tr('A capa em foco', 'The focused cover', 'La portada en foco'), places: tr('Paisagens', 'Landscapes', 'Paisajes'), plain: tr('Liso', 'Plain', 'Liso')};
+      rows.push({label: tr('Fundo', 'Background', 'Fondo'), value: walls[Prefs.wallpaper()],
+        step: function (d) { cycle('wallpaper', ['cards', 'places', 'plain'], Prefs.wallpaper(), d); refreshBackdrop(); }});
+      rows.push({label: tr('Título', 'Title', 'Título'), value: Prefs.opt('titleMode', 'tab') === 'greet' ? tr('Saudação', 'Greeting', 'Saludo') : tr('Para você', 'For You', 'Para ti'),
+        step: function (d) { cycle('titleMode', ['tab', 'greet'], Prefs.opt('titleMode', 'tab'), d); renderTitle(); }});
+      rows.push({label: tr('Seu nome', 'Your name', 'Tu nombre'), value: Prefs.opt('name', '') || '›', step: function (d) { if (d >= 0) askName(); }});
+      rows.push({label: tr('Tamanho dos ícones', 'Icon size', 'Tamaño de los iconos'), value: Prefs.opt('iconSize', 'normal') === 'small' ? tr('Compacto', 'Compact', 'Compacto') : tr('Normal', 'Normal', 'Normal'),
+        step: function (d) { cycle('iconSize', ['normal', 'small'], Prefs.opt('iconSize', 'normal'), d); renderShelf(); updateFocus(); }});
+      rows.push({label: tr('Animações', 'Animations', 'Animaciones'), value: Prefs.opt('motion', 'normal') === 'less' ? tr('Reduzidas', 'Reduced', 'Reducidas') : tr('Normais', 'Normal', 'Normales'),
+        step: function (d) { cycle('motion', ['normal', 'less'], Prefs.opt('motion', 'normal'), d); applyLook(); }});
       rows.push({label: tr('Modo calmo', 'Calm mode', 'Modo calma'), toggle: Prefs.calm(), step: function () { Prefs.set('calm', !Prefs.calm()); applyLook(); }});
     } else if (settingsCat === 'widgets') {
+      rows.push({label: tr('Relógio em cima', 'Clock at the top', 'Reloj arriba'), toggle: Prefs.opt('topClock', true) !== false,
+        step: function () { Prefs.set('topClock', Prefs.opt('topClock', true) === false); applyLook(); }});
+      var c24 = Prefs.opt('clock24', 'auto');
+      rows.push({label: tr('Formato da hora', 'Time format', 'Formato de hora'), value: c24 === '24' ? '24 h' : c24 === '12' ? '12 h' : auto,
+        step: function (d) { cycle('clock24', ['auto', '24', '12'], c24, d); renderClock(); }});
+      rows.push({label: tr('Data ao lado do relógio', 'Date beside the clock', 'Fecha junto al reloj'), toggle: Prefs.opt('topDate', false) === true,
+        step: function () { Prefs.set('topDate', Prefs.opt('topDate', false) !== true); renderClock(); }});
       rows.push({label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
         step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }});
       rows.push({label: tr('Temperatura', 'Temperature', 'Temperatura'), value: unit === 'C' ? '°C' : unit === 'F' ? '°F' : auto,
@@ -796,6 +869,10 @@
         }});
         rows.push({label: tr('Apps ocultas', 'Hidden apps', 'Apps ocultas'), value: String(Prefs.hiddenApps().length), step: function (d) { if (d >= 0) openHiddenApps(); }});
       }
+    } else if (settingsCat === 'quick') {
+      quickAll().forEach(function (t) {
+        rows.push({label: t.name, toggle: quickShown(t.id), step: function () { quickShow(t.id, !quickShown(t.id)); }});
+      });
     } else if (settingsCat === 'privacy') {
       if (TV.name === 'webos') rows.push({label: tr('Privacidade da LG', 'LG privacy', 'Privacidad de LG'), value: privacyText(), step: function (d) { if (d >= 0) openPrivacy(); }});
       else rows.push({label: tr('Privacidade da TV', 'TV privacy', 'Privacidad de la tele'), value: '›', step: function (d) { if (d >= 0) openTvPrivacy(); }});
@@ -838,7 +915,7 @@
       }
       hover(row, Z.SETTINGS, i);
     }
-    el('div', 'hint', box, settingsCat ? tr('OK ou as setas mudam o valor · Voltar sobe', 'OK or the arrows change the value · Back goes up', 'OK o las flechas cambian el valor · Atrás sube') : tr('OK abre uma seção', 'OK opens a section', 'OK abre una sección'));
+    el('div', 'hint', box, settingsCat ? tr('OK ou as setas mudam o valor · Voltar sobe', 'OK or the arrows change the value · Back goes up', 'OK o las flechas cambian el valor · Atrás sube') : tr('OK abre uma seção', 'OK opens a section', 'OK abre una sección') + ((window.CONFIG && CONFIG.version) ? '  ·  FreeTV v' + CONFIG.version : ''));
     updateFocus();
   }
 
@@ -1336,15 +1413,16 @@
     var title = el('div', 'title', box), health = tileSheet.kind === 'health';
     sym(health ? 'health' : 'sparkles', title);
     title.appendChild(document.createTextNode(health ? tr('Saúde da TV', 'TV health', 'Salud de la tele') : tr('Painel rápido', 'Quick panel', 'Panel rápido')));
-    var n = tileSheet.defs.length, cols = n <= 4 ? 2 : 3, rows = Math.ceil(n / cols), tw = cols === 2 ? 440 : 372, gap = 42, th = 250;
+    var n = tileSheet.defs.length, cols = tileCols(n), rows = Math.ceil(n / cols), tw = cols === 2 ? 440 : cols === 3 ? 372 : 340, gap = cols === 4 ? 32 : 42, th = rows > 2 ? 214 : 250;
     box.style.width = (cols * tw + (cols - 1) * gap + 60) + 'px';
     box.style.left = Math.round((1920 - (cols * tw + (cols - 1) * gap + 60)) / 2) + 'px';
     box.style.top = Math.round((1080 - (rows * th + (rows - 1) * gap + 190)) / 2) + 'px';
     var wrap = el('div', 'tiles2', box);
     wrap.style.height = (rows * th + (rows - 1) * gap) + 'px';
     tileSheet.defs.forEach(function (t, i) {
-      var tile = el('div', 'tile' + (t.on ? ' on' : ''), wrap);
+      var tile = el('div', 'qtile' + (t.on ? ' on' : '') + (rows > 2 ? ' short' : ''), wrap);
       tile.style.width = tw + 'px';
+      tile.style.height = th + 'px';
       tile.style.left = (i % cols) * (tw + gap) + 'px';
       tile.style.top = Math.floor(i / cols) * (th + gap) + 'px';
       sym(t.sym, tile);
@@ -1357,19 +1435,52 @@
     updateFocus();
   }
 
-  function quickTiles() {
-    return quickAll().filter(function (t) { return TV.name === 'webos' || (t.sym !== 'timer' && t.sym !== 'health'); });
+  /** Columns for a tile sheet: two for up to four tiles, three for six, four for more. */
+  function tileCols(n) { return n <= 4 ? 2 : n <= 6 ? 3 : 4; }
+
+  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload'];   // tiles that start hidden (Home Settings → Quick panel)
+  function quickShown(id) { return (Prefs.opt('quickHidden', QUICK_OFF) || []).indexOf(id) < 0; }
+  function quickShow(id, on) {
+    var hidden = (Prefs.opt('quickHidden', QUICK_OFF) || []).filter(function (x) { return x !== id; });
+    if (!on) hidden.push(id);
+    Prefs.set('quickHidden', hidden);
   }
 
+  /** The quick panel's tiles: the ones the person keeps, at most twelve. */
+  function quickTiles() {
+    return quickAll().filter(function (t) { return quickShown(t.id); }).slice(0, 12);
+  }
+
+  /** Every tile the quick panel can have, for this TV. */
   function quickAll() {
+    return quickDefs().filter(function (t) { return TV.name === 'webos' || !t.lg; });
+  }
+
+  function quickDefs() {
     var on = tr('Ligado', 'On', 'Activado'), off = tr('Desligado', 'Off', 'Desactivado'), left = sleep.end ? Math.max(1, Math.ceil((sleep.end - Date.now()) / 60000)) : 0;
+    var theme = Prefs.theme(), themes = {auto: tr('Automático', 'Automatic', 'Automático'), light: tr('Claro', 'Light', 'Claro'), dark: tr('Escuro', 'Dark', 'Oscuro')};
+    function again() { tileSheet.defs = quickTiles(); renderTiles(); }
     return [
-      {sym: 'search', name: tr('Procurar', 'Search', 'Buscar'), sub: tr('Apps, canais, YouTube', 'Apps, channels, YouTube', 'Apps, canales, YouTube'), run: function () { closeSheets(); openSearch(); }},
-      {sym: 'calm', name: tr('Modo calmo', 'Calm mode', 'Modo calma'), sub: Prefs.calm() ? on : off, on: Prefs.calm(), run: function () { Prefs.set('calm', !Prefs.calm()); applyLook(); }},
-      {sym: 'timer', name: tr('Desligar em…', 'Sleep timer', 'Apagar en…'), sub: left ? tr('Faltam ' + left + ' min', left + ' min left', 'Quedan ' + left + ' min') : off, on: !!left, run: sleepNext},
-      {sym: 'kids', name: tr('Modo crianças', 'Kids mode', 'Modo niños'), sub: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Só os canais deles', 'Only their channels', 'Solo sus canales'), on: Prefs.kids(), run: function () { closeSheets(); kidsStart(); }},
-      {sym: 'health', name: tr('Saúde da TV', 'TV health', 'Salud de la tele'), sub: healthSummary(), run: function () { openTiles('health'); }},
-      {sym: 'settings', name: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), sub: tr('Aparência, apps, privacidade…', 'Look, apps, privacy…', 'Aspecto, apps, privacidad…'), run: function () { closeSheets(); openSettings(); }}
+      {id: 'search', sym: 'search', name: tr('Procurar', 'Search', 'Buscar'), sub: tr('Apps, canais, YouTube', 'Apps, channels, YouTube', 'Apps, canales, YouTube'), run: function () { closeSheets(); openSearch(); }},
+      {id: 'calm', sym: 'calm', name: tr('Modo calmo', 'Calm mode', 'Modo calma'), sub: Prefs.calm() ? on : off, on: Prefs.calm(), run: function () { Prefs.set('calm', !Prefs.calm()); applyLook(); again(); }},
+      {id: 'timer', lg: true, sym: 'timer', name: tr('Desligar em…', 'Sleep timer', 'Apagar en…'), sub: left ? tr('Faltam ' + left + ' min', left + ' min left', 'Quedan ' + left + ' min') : off, on: !!left, run: sleepNext},
+      {id: 'kids', sym: 'kids', name: tr('Modo crianças', 'Kids mode', 'Modo niños'), sub: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Só os canais deles', 'Only their channels', 'Solo sus canales'), on: Prefs.kids(), run: function () { closeSheets(); kidsStart(); }},
+      {id: 'health', lg: true, sym: 'health', name: tr('Saúde da TV', 'TV health', 'Salud de la tele'), sub: healthSummary(), run: function () { openTiles('health'); }},
+      {id: 'theme', sym: 'clear_night', name: tr('Tema', 'Theme', 'Tema'), sub: themes[theme], on: theme !== 'auto',
+        run: function () { cycle('theme', ['auto', 'light', 'dark'], theme, 1); checkNight(); again(); }},
+      {id: 'saver', sym: 'bedtime', name: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), sub: tr('Agora', 'Now', 'Ahora'),
+        run: function () { closeSheets(); setTimeout(showSaver, 300); }},
+      {id: 'accent', sym: 'sparkles', name: tr('Cor de destaque', 'Accent colour', 'Color de acento'), sub: accentNames()[Prefs.accent()],
+        run: function () { cycle('accent', ACCENTS, Prefs.accent(), 1); applyLook(); again(); }},
+      {id: 'apps', sym: 'apps', name: tr('Todos os Apps', 'All Apps', 'Todas las apps'), sub: tr('Tudo o que está na TV', 'Everything on the TV', 'Todo lo que hay en la tele'),
+        run: function () { closeSheets(); openApps(); }},
+      {id: 'store', lg: true, sym: 'gamepad', name: tr('Loja', 'Store', 'Tienda'), sub: tr('Apps da comunidade', 'Community apps', 'Apps de la comunidad'),
+        run: function () { closeSheets(); openCommunity(true); }},
+      {id: 'tvset', sym: 'tv_settings', name: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), sub: tr('Imagem, som, rede…', 'Picture, sound, network…', 'Imagen, sonido, red…'),
+        run: function () { closeSheets(); tvSettings(); }},
+      {id: 'reload', sym: 'sync', name: tr('Recarregar o FreeTV', 'Reload FreeTV', 'Recargar FreeTV'), sub: tr('Se algo ficou estranho', 'If something looks wrong', 'Si algo se ve raro'),
+        run: function () { location.reload(); }},
+      {id: 'settings', sym: 'settings', name: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), sub: tr('Aparência, apps, privacidade…', 'Look, apps, privacy…', 'Aspecto, apps, privacidad…'), run: function () { closeSheets(); openSettings(); }}
     ];
   }
 
@@ -1675,13 +1786,27 @@
     });
   }
 
+  /** The app's icon from the catalogue (an image on the web); a soft square with its first letter when it has none or it fails. */
+  function commIcon(p, parent, cls) {
+    var holder = el('div', cls, parent), url = p.iconUri || (p.manifest && p.manifest.iconUri) || '';
+    var letter = el('span', 'cletter', holder, (p.title || '?').charAt(0).toUpperCase());
+    if (!/^https:\/\//.test(url)) return holder;
+    var img = el('img', '', holder);
+    img.onload = function () { letter.style.visibility = 'hidden'; };
+    img.onerror = function () { img.parentNode.removeChild(img); };
+    img.src = url;
+    return holder;
+  }
+
   function renderDetail(box) {
     var a = commList[commOpen], m = a.manifest, req = a.requirements || {}, mine = store.id === a.id ? store.flow : 'idle';
     commActs = [];
     if (a.special) { renderUpdateAll(box); return; }
     var upd = store.svc === 'ok' ? store.updates[a.id] : null;
     var warn = upd && COMM_FLAG[a.id] === 'official-removed' ? null : COMM_CAUTION[a.id], cmd = 'python3 tools/community.py serve <IP>';
-    line(box, '', '').appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
+    var head = line(box, 'dhead', '');
+    commIcon(a, head, 'dico');
+    head.appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));
     if (mine === 'asking') {
       if (store.svc === 'ok') line(box, '', tr('A própria TV baixa o pacote, confere o hash SHA-256 e instala. Não precisa do computador. Leva alguns minutos.',
           'The TV itself downloads the package, checks its SHA-256 hash and installs it. No computer needed. It takes a few minutes.',
@@ -1768,9 +1893,17 @@
             'Del catálogo webOS Homebrew. Para instalar desde aquí, conecta el ordenador (mira cualquier ficha).')).style.marginBottom = '14px';
     if (store.freeMb) box.lastChild.textContent += '  ·  ' + tr('Espaço livre: ', 'Free space: ', 'Espacio libre: ') + store.freeMb + ' MB';
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
-    list.style.height = Math.min(commList.length, 7) * 78 + 'px';
+    holder.setAttribute('data-pitch', 112);
+    holder.setAttribute('data-visible', 6);
+    list.style.height = Math.min(commList.length, 6) * 112 + 'px';
     for (var i = 0; i < commList.length; i++) {
-      var p = commList[i], row = el('div', 'row', holder, p.title), v = el('span', 'value', row);
+      var p = commList[i], row = el('div', 'row crow', holder);
+      if (p.special) sym('apps', el('div', 'cico csym', row));
+      else commIcon(p, row, 'cico');
+      el('div', 'ctitle', row, p.title);
+      el('div', 'cdesc', row, p.special ? tr('Atualiza de uma vez as apps que você já tem', 'Brings the apps you have up to date in one go', 'Pone al día de una vez las apps que ya tienes')
+          : p.shortDescription || p.manifest.appDescription || '');
+      var v = el('span', 'value', row);
       var root = !!p.manifest.rootRequired;
       if (p.special) el('span', 'tag upd', v, tr('novas versões', 'new versions', 'nuevas versiones'));
       else {
@@ -2445,7 +2578,7 @@
         break;
       case Z.TILES:
         if (dx) st.tile = Math.max(0, Math.min(tileSheet.defs.length - 1, st.tile + dx));
-        else if (dy) { var tc = tileSheet.defs.length <= 4 ? 2 : 3; if (st.tile + dy * tc >= 0 && st.tile + dy * tc < tileSheet.defs.length) st.tile += dy * tc; }
+        else if (dy) { var tc = tileCols(tileSheet.defs.length); if (st.tile + dy * tc >= 0 && st.tile + dy * tc < tileSheet.defs.length) st.tile += dy * tc; }
         break;
       case Z.COMM:
         if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
@@ -2584,6 +2717,7 @@
     var a = el('div', 'photo', s), b = el('div', 'photo', s);
     el('div', 'shade', s);
     var clock = el('div', 'clock', s);
+    if (Prefs.opt('saverClock', true) === false) clock.style.visibility = 'hidden';
     el('div', 'time', clock);
     el('div', 'date', clock);
     el('div', 'title', clock);
@@ -2901,7 +3035,8 @@
     if (saverOn) tickSaverClock($('saver').querySelector('.clock'));
   }, 30000);
   setInterval(function () {   // looked at often, so it starts at 2 minutes and not up to 30 seconds late
-    if (!saverOn && !sheetOpen() && Date.now() - idleAt > SAVER_AFTER) showSaver();
+    var after = +Prefs.opt('saverAfter', 2) * 60000;   // 0: never
+    if (after && !saverOn && !sheetOpen() && Date.now() - idleAt > after) showSaver();
   }, 5000);
 
   // For the browser preview and tests.

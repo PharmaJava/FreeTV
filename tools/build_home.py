@@ -77,7 +77,7 @@ def files(config, tizen=False):
             continue
         with open(os.path.join(home, name), 'rb') as f:
             out[name] = f.read()
-    for folder in ('symbols', 'fonts') + (('samsung-icons',) if tizen else ()):
+    for folder in ('symbols', 'fonts', 'tiles') + (('samsung-icons',) if tizen else ()):
         base = os.path.join(ROOT, 'assets', folder)
         for name in sorted(os.listdir(base)):
             with open(os.path.join(base, name), 'rb') as f:

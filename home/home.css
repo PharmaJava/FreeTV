@@ -593,16 +593,16 @@ body.acc-blue .box .row.focus { box-shadow: inset 0 0 0 2px rgba(76, 157, 255, 0
 body.acc-rose .box .row.focus { box-shadow: inset 0 0 0 2px rgba(255, 107, 138, 0.7); }
 body.acc-amber .box .row.focus { box-shadow: inset 0 0 0 2px rgba(255, 184, 64, 0.7); }
 body.acc-mint .box .row.focus { box-shadow: inset 0 0 0 2px rgba(63, 214, 155, 0.55); }
-body.acc-blue .tile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(76, 157, 255, 0.85); }
-body.acc-rose .tile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(255, 107, 138, 0.85); }
-body.acc-amber .tile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(255, 184, 64, 0.85); }
+body.acc-blue .qtile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(76, 157, 255, 0.85); }
+body.acc-rose .qtile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(255, 107, 138, 0.85); }
+body.acc-amber .qtile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(255, 184, 64, 0.85); }
 
 /* MARK: - Tile sheets: the quick panel and the health card (big glass tiles) */
 
 #tilesheet .box { padding-bottom: 30px; }
 body.kids #buttons { display: none; }
 .tiles2 { position: relative; margin: 4px 0 0 0; }
-.tile {
+.qtile {
   position: absolute;
   width: 372px;
   height: 250px;
@@ -614,14 +614,14 @@ body.kids #buttons { display: none; }
   -webkit-transition: -webkit-transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.2), background-color 0.2s;
   transition: transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.2), background-color 0.2s;
 }
-.tile .sym { position: absolute; left: 30px; top: 28px; width: 56px; height: 56px; color: rgba(255, 255, 255, 0.92); }
-.tile .name { position: absolute; left: 30px; right: 30px; bottom: 92px; font-size: 32px; font-weight: 650; line-height: 38px; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile .sub { position: absolute; left: 30px; right: 30px; bottom: 26px; height: 56px; font-size: 24px; font-weight: 500; line-height: 28px; color: rgba(255, 255, 255, 0.62); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.tile .dot { position: absolute; right: 28px; top: 30px; width: 16px; height: 16px; border-radius: 8px; background: #3FD69B; }
-.tile .dot.warn { background: #FFB840; }
-.tile .dot.bad { background: #FF5A52; }
-.tile.on { background: rgba(255, 255, 255, 0.22); }
-.tile.focus { background: rgba(255, 255, 255, 0.26); -webkit-transform: scale(1.04); transform: scale(1.04); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 3px rgba(255, 255, 255, 0.6); }
+.qtile .sym { position: absolute; left: 30px; top: 28px; width: 56px; height: 56px; color: rgba(255, 255, 255, 0.92); }
+.qtile .name { position: absolute; left: 30px; right: 30px; bottom: 92px; font-size: 32px; font-weight: 650; line-height: 38px; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qtile .sub { position: absolute; left: 30px; right: 30px; bottom: 26px; height: 56px; font-size: 24px; font-weight: 500; line-height: 28px; color: rgba(255, 255, 255, 0.62); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.qtile .dot { position: absolute; right: 28px; top: 30px; width: 16px; height: 16px; border-radius: 8px; background: #3FD69B; }
+.qtile .dot.warn { background: #FFB840; }
+.qtile .dot.bad { background: #FF5A52; }
+.qtile.on { background: rgba(255, 255, 255, 0.22); }
+.qtile.focus { background: rgba(255, 255, 255, 0.26); -webkit-transform: scale(1.04); transform: scale(1.04); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 3px rgba(255, 255, 255, 0.6); }
 
 /* MARK: - Polish: icons on category rows, the PIN's dots */
 
@@ -649,3 +649,35 @@ body.kids #buttons { display: none; }
 .night #topclock { color: #F5F5F7; }
 body.kids #topclock { right: 80px; }
 .no-picks #topclock { display: none; }   /* the big clock is on screen then */
+
+/* MARK: - The Store's list: each app with its icon and a line about it */
+
+#community .row.crow { height: 104px; line-height: normal; padding-left: 116px; }
+#community .crow .value { top: 18px; line-height: 38px; font-size: 24px; }
+#community .crow .ctitle { padding-top: 16px; margin-right: 300px; font-size: 30px; line-height: 38px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#community .crow .cdesc { margin-top: 4px; font-size: 22px; line-height: 30px; font-weight: 500; color: rgba(255, 255, 255, 0.58); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#community .cico, #community .dico { position: absolute; left: 20px; top: 16px; width: 72px; height: 72px; border-radius: 18px; overflow: hidden; background: rgba(255, 255, 255, 0.1); }
+#community .cico img, #community .dico img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; -o-object-fit: cover; object-fit: cover; }
+#community .cletter { position: absolute; left: 0; right: 0; top: 0; line-height: 72px; text-align: center; font-size: 34px; font-weight: 700; color: rgba(255, 255, 255, 0.7); }
+#community .csym .sym { position: absolute; left: 18px; top: 18px; width: 36px; height: 36px; color: #FFD27A; }
+#community .dtext.dhead { position: relative; min-height: 72px; padding-left: 92px; line-height: 72px; margin-bottom: 18px; font-size: 30px; }
+#community .dtext.dhead .dico { left: 0; top: 0; }
+
+/* MARK: - 2.0: more accents, the date by the clock, reduced motion, shorter panel tiles */
+
+body.acc-violet .toggle.on { background: #A78BFA; }
+body.acc-orange .toggle.on { background: #FF8A3D; }
+body.acc-sky .toggle.on { background: #4FD1E8; }
+body.acc-violet .box .row.focus { box-shadow: inset 0 0 0 2px rgba(167, 139, 250, 0.75); }
+body.acc-orange .box .row.focus { box-shadow: inset 0 0 0 2px rgba(255, 138, 61, 0.75); }
+body.acc-sky .box .row.focus { box-shadow: inset 0 0 0 2px rgba(79, 209, 232, 0.7); }
+body.acc-violet .qtile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(167, 139, 250, 0.9); }
+body.acc-orange .qtile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(255, 138, 61, 0.9); }
+body.acc-sky .qtile.focus { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 3px rgba(79, 209, 232, 0.85); }
+#topclock .tdate { margin-right: 18px; font-size: 30px; font-weight: 500; letter-spacing: 0; color: #6E6E73; vertical-align: 4px; }
+.night #topclock .tdate { color: rgba(245, 245, 247, 0.62); }
+body.notopclock #topclock { display: none; }
+body.lessmotion *, body.lessmotion *::before, body.lessmotion *::after { -webkit-transition-duration: 0.01s !important; transition-duration: 0.01s !important; -webkit-animation: none !important; animation: none !important; }
+.qtile.short .sym { top: 24px; width: 50px; height: 50px; }
+.qtile.short .name { bottom: 82px; font-size: 30px; }
+.qtile.short .sub { bottom: 22px; }
