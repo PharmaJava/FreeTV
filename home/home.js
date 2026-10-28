@@ -3796,7 +3796,7 @@
   var football = cache('football') || null, footballAt = 0;
   function refreshFootball(done) {
     var team = Prefs.opt('team', null);
-    if (!team || !team.id || Date.now() - footballAt < 30 * 60000) { if (done) done(); return; }
+    if (!team || !team.id || Date.now() - footballAt < 30 * 60000) return;   // done() only when something new came (it redraws)
     footballAt = Date.now();
     var base = 'https://www.thesportsdb.com/api/v1/json/123/', out = {id: team.id};
     Data.getJson(base + 'eventsnext.php?id=' + team.id, function (e1, a) {
@@ -3835,7 +3835,7 @@
   }
 
   function refreshNews(done) {
-    if (Date.now() - newsAt < 20 * 60000) { if (done) done(); return; }
+    if (Date.now() - newsAt < 20 * 60000) return;   // done() only when something new came (it redraws)
     newsAt = Date.now();
     var url = newsUrl();
     function parse(text) {
@@ -3845,16 +3845,15 @@
           var t = items[i].getElementsByTagName('title')[0];
           if (t && t.textContent) out.push(trim(t.textContent).replace(/\s+-\s+[^-]{2,40}$/, ''));
         }
-        if (out.length) news = cache('news', {url: url, items: out, at: Date.now()});
+        if (out.length) { news = cache('news', {url: url, items: out, at: Date.now()}); if (done) done(); }
       } catch (e) {}
-      if (done) done();
     }
     if (TV.name === 'webos') {
-      svcCall('feed', {url: url}, function (r) { if (r && r.returnValue && r.text) parse(r.text); else if (done) done(); });
+      svcCall('feed', {url: url}, function (r) { if (r && r.returnValue && r.text) parse(r.text); });
     } else {
       var x = new XMLHttpRequest();
       x.open('GET', url, true);
-      x.onreadystatechange = function () { if (x.readyState === 4) { if (x.status === 200) parse(x.responseText); else if (done) done(); } };
+      x.onreadystatechange = function () { if (x.readyState === 4 && x.status === 200) parse(x.responseText); };
       x.send();
     }
   }
