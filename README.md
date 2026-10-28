@@ -103,7 +103,10 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   works, and whether there is a newer FreeTV. Green is fine; amber deserves a look; OK opens the section.
 - **First start guide (LG).** A fresh install asks which tab to open on and explains the privacy note, once.
 - **A notice when FreeTV has a new version** (from its GitHub releases). It does not install by itself.
-- **Emergency exit:** hold **Home** for 2 seconds and you are back on LG's home; FreeTV stops intercepting the button.
+- **Emergency exit:** hold **Home** for 2 seconds and you are back on LG's home; FreeTV stops intercepting the button. **Only for a while:**
+  the Home button and FreeTV at start-up come back by themselves the next time you turn the TV on, or as soon as you open FreeTV
+  (*Home Settings → Home → Turn it back on when FreeTV opens*, on by default). *Home button and start-up in FreeTV* there says whether it
+  is on, and OK turns it back on. (Before, an accidental long press left them off for good.)
 
 ## What you need
 
@@ -364,7 +367,10 @@ de LG, y **todo se puede deshacer**.
   tienda funciona y si hay una versión nueva de FreeTV. Verde, bien; ámbar, mira esto; OK abre la sección.
 - **Guía del primer arranque (LG).** Una instalación nueva te pregunta con qué pestaña abrir y te explica el aviso de privacidad, una sola vez.
 - **Aviso cuando hay una versión nueva de FreeTV** (en sus releases de GitHub). No se instala sola.
-- **Salida de emergencia:** mantén **Home** 2 segundos y vuelves al inicio de LG; FreeTV deja de interceptar el botón.
+- **Salida de emergencia:** mantén **Home** 2 segundos y vuelves al inicio de LG; FreeTV deja de interceptar el botón. **Solo un rato:**
+  el botón Home y el arranque con FreeTV vuelven solos la próxima vez que enciendas la tele, o en cuanto abras FreeTV (*Ajustes de inicio →
+  Inicio → Reactivarlo solo al abrir FreeTV*, activado por defecto). Ahí mismo, *Botón Home y arranque con FreeTV* dice si está activado,
+  y OK lo vuelve a activar. (Antes, una pulsación larga sin querer los dejaba apagados para siempre.)
 
 ## Qué necesitas
 

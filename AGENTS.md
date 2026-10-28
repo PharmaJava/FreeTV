@@ -67,3 +67,7 @@ Menus are frosted glass (`frostWanted()`, class `frost` on `body`; a sheet must 
 ## Start screen and LG's screensaver
 
 `home/appinfo.json` is titled FreeTV and its `splashBackground` is `home/splash.png`: after changing the version, run `python3 tools/make_splash.py` (tests/run.js fails otherwise). LG's clock screensaver is sent away by `TV.holdScreen` through the remote control API, which needs the TV's yes once: `TV.pairScreen` asks it a few seconds after FreeTV is on screen, never when the screensaver starts (nobody answers then, and old versions kept that as a no for ever). `registerScreenSaverRequest` subscribes from a Developer Mode app, but in 9 idle minutes on webOS 6.5 LG sent it no request, so it is not used.
+
+## The Home button's stop
+
+Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehome`; LG's automatic launch at power-on used to respect it for ever. `tools/patch_helper.py` (patch 4) makes a marker from before the TV started, or older than ten minutes, count as old. In FreeTV, Home Settings → Home shows the state (`HomeExtras.homeRows`, fed by `helper-control.js`) and `Prefs.homeAuto` (on by default) resumes the helper when FreeTV opens. The helper's log is `state/controller.log` (worker `EXIT 22` is a long Home press).
