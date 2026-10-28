@@ -211,7 +211,8 @@ var Data = (function () {
 
   function refreshWeather() {
     var now = Date.now();
-    if (fetchingWeather || (now - weatherAt < 30 * 60000 && now >= weatherAt)) return;
+    // (a forecast saved by FreeTV 2.0 has no feels-like, wind, UV or days: fetched again at once)
+    if (fetchingWeather || (now - weatherAt < 30 * 60000 && now >= weatherAt && weather && weather.feels !== undefined)) return;
     fetchingWeather = true;
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + Place.lat + '&longitude=' + Place.lon
         + '&current=temperature_2m,weather_code,is_day,apparent_temperature,relative_humidity_2m,wind_speed_10m'

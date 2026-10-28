@@ -3355,8 +3355,9 @@
     var c = el('canvas', 'spark', row), d = quoteData[q.kind + ':' + q.sym];
     c.width = 200;
     c.height = 48;
-    if (d) chart(c, d.spark, {line: 2.5, pad: 3, fill: false});
-    else fetchQuote(q.kind, q.sym, function (d2) { if (d2) chart(c, d2.spark, {line: 2.5, pad: 3, fill: false}); });
+    var up = isNaN(q.change) ? undefined : q.change >= 0;
+    if (d) chart(c, d.spark, {line: 2.5, pad: 3, fill: false, up: up});
+    else fetchQuote(q.kind, q.sym, function (d2) { if (d2) chart(c, d2.spark, {line: 2.5, pad: 3, fill: false, up: up}); });
   }
 
   function infoMove(dx, dy) {
@@ -3414,7 +3415,8 @@
     var c = canvas.getContext('2d'), w = canvas.width, h = canvas.height, v = values.filter(function (x) { return typeof x === 'number' && !isNaN(x); });
     c.clearRect(0, 0, w, h);
     if (v.length < 2) return;
-    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), span = hi - lo || 1, up = v[v.length - 1] >= v[0], pad = opts.pad || 4;
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), span = hi - lo || 1, pad = opts.pad || 4;
+    var up = opts.up !== undefined ? opts.up : v[v.length - 1] >= v[0];   // the colour follows the change shown beside it
     var col = up ? '63, 214, 155' : '255, 107, 107';
     c.beginPath();
     for (var i = 0; i < v.length; i++) {
