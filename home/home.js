@@ -2812,7 +2812,7 @@
   function hideSaver() {
     saverOn = false;
     clearTimeout(saverTimer);
-    TV.holdScreen(false);
+    if (document.hidden) TV.holdScreen(false);   // on screen, the watcher stays (watchLgSaver)
     setClass($('saver'), 'on', false);
   }
 
@@ -2969,8 +2969,18 @@
   window.addEventListener('resize', fit);
   document.addEventListener('webOSRelaunch', reopened);   // LG: opened again while running
   window.addEventListener('appcontrol', reopened);        // Samsung: the same
+  var hiddenAt = 0, hiddenTimer = 0;
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { hideSaver(); return; }
+    clearTimeout(hiddenTimer);
+    if (document.hidden) {
+      // LG's clock can hide FreeTV for a moment while ours is on: keep ours (and the watcher that sends LG's away) for a while.
+      hiddenAt = Date.now();
+      if (saverOn) hiddenTimer = setTimeout(function () { if (document.hidden) hideSaver(); }, 5 * 60000);
+      else hideSaver();
+      return;
+    }
+    watchLgSaver();
+    if (saverOn && Date.now() - hiddenAt < 5 * 60000) return;   // back from LG's clock: ours goes on
     idleAt = Date.now();
     loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); Data.refresh(); });
     askScreen();
@@ -2978,11 +2988,22 @@
 
   // Keeping LG's screensaver (the clock) away from ours needs the TV's yes once. It is asked here, a few seconds after FreeTV is
   // on screen and someone is using it, never when the screensaver starts (nobody would answer).
+  /** LG's clock may start before ours (both after about two minutes): then ours comes up instead. "Never" leaves LG's alone. */
+  function watchLgSaver() {
+    if (TV.name !== 'webos' || !TV.canHoldScreen()) return;
+    TV.watchScreen(function () {
+      if (!saverOn && (document.hidden || !+Prefs.opt('saverAfter', 2))) return false;
+      if (!saverOn) showSaver();
+      return true;
+    });
+  }
+
   function askScreen() {
     if (TV.name !== 'webos' || TV.canHoldScreen()) return;
-    setTimeout(function () { if (!document.hidden && !saverOn) TV.pairScreen(); }, 6000);
+    setTimeout(function () { if (!document.hidden && !saverOn) TV.pairScreen(function (ok) { if (ok) watchLgSaver(); }); }, 6000);
   }
   askScreen();
+  watchLgSaver();
 
   I18N.set(Prefs.language());
   fit();

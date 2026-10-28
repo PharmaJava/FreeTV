@@ -91,7 +91,7 @@ var TV = (function () {
   // the TV once to allow it (power state and screen: turnOnScreen needs more than CONTROL_POWER); the key it gives back is kept.
   // It is asked when FreeTV opens (powerPair), while someone is looking: asked when the screensaver starts, nobody answered it.
   var POWER_KEY = 'fmtv.ssapPowerKey2', POWER_REFUSED = 'fmtv.ssapPowerRefused';
-  var power = {on: false, ws: null, timer: 0, retry: 0, pairing: false};
+  var power = {on: false, ws: null, timer: 0, retry: 0, pairing: false, woke: 0, hook: null};
   var POWER_MANIFEST = {manifestVersion: 1, appVersion: '1.0', permissions: ['READ_POWER_STATE', 'CONTROL_POWER', 'CONTROL_TV_SCREEN', 'CONTROL_DISPLAY']};
 
   function powerKey() {
@@ -150,13 +150,13 @@ var TV = (function () {
     function ask() {
       if (!power.on || power.ws !== ws) return;
       send('state', 'com.webos.service.tvpower/power/getPowerState');
-      power.timer = setTimeout(ask, 1500);
+      power.timer = setTimeout(ask, 700);
     }
     function again() {
       if (!power.on || power.ws !== ws) return;
       clearTimeout(power.timer);
       power.ws = null;
-      power.retry = setTimeout(function () { if (power.on) { power.on = false; powerStart(); } }, 20000);
+      power.retry = setTimeout(function () { if (power.on) { power.on = false; powerStart(); } }, 3000);   // a long gap lets LG's clock in
     }
     try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { power.on = false; return; }
     power.ws = ws;
@@ -173,8 +173,14 @@ var TV = (function () {
       } else if (m.id === 'register' && m.type === 'error') {
         try { localStorage.removeItem(POWER_KEY); } catch (e) {}   // the TV forgot this key: powerPair asks again next time FreeTV opens
         powerStop();
-      } else if (m.id === 'state' && m.payload && m.payload.state && m.payload.state !== 'Active') {
-        send('wake', 'com.webos.service.tvpower/power/turnOnScreen');   // LG's screensaver took over: send it away
+      } else if (m.id === 'state' && m.payload) {
+        // LG announces its screensaver ("Request Screen Saver", then "Screen Saver Ready", then the state "Screen Saver"): answering the
+        // first with turnOnScreen sends it away before the clock shows. Only the screensaver: never the TV going off or to standby.
+        var p = m.payload, coming = p.processing === 'Request Screen Saver' || p.processing === 'Screen Saver Ready';
+        if ((p.state === 'Screen Saver' || (coming && Date.now() - power.woke > 1000)) && (!power.hook || power.hook())) {
+          power.woke = Date.now();
+          send('wake', 'com.webos.service.tvpower/power/turnOnScreen');
+        }
       }
     };
     ws.onerror = ws.onclose = again;
@@ -450,6 +456,10 @@ var TV = (function () {
 
     /** While FreeTV's screensaver is on (true), LG's own is kept away; false when it ends. */
     holdScreen: function (on) { if (on) powerStart(); else powerStop(); },
+
+    /** Watch for LG's screensaver while FreeTV is on screen: when it comes, fn() says whether FreeTV takes over (it shows its own
+        and returns true, and LG's is sent away) or leaves it (false). */
+    watchScreen: function (fn) { power.hook = fn; powerStart(); },
 
     /** Asks once, while someone is looking, for what holdScreen needs; done(ok). */
     pairScreen: powerPair,
