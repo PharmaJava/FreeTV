@@ -724,10 +724,11 @@ body.lessmotion *, body.lessmotion *::before, body.lessmotion *::after { -webkit
 .tkchart { display: block; width: 1440px; height: 300px; margin: 18px 0 14px; }
 
 .wgrid { margin: 0 6px 12px; white-space: normal; }
-.wcard { display: inline-block; vertical-align: top; width: 452px; height: 300px; margin: 0 12px 16px 0; padding: 20px 24px; box-sizing: border-box; border-radius: 28px;
+.wcard { display: inline-block; vertical-align: top; width: 340px; height: 286px; margin: 0 12px 14px 0; padding: 20px 24px; box-sizing: border-box; border-radius: 28px;
   background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); overflow: hidden; }
-.wcard.news { width: 928px; }
-.wcard .wh { font-size: 26px; font-weight: 700; margin-bottom: 10px; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wcard.news { width: 692px; }
+.wcard .wh { font-size: 26px; font-weight: 700; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wcard .wh::first-letter { text-transform: uppercase; }
 .wcard .k { font-size: 19px; color: rgba(255, 255, 255, 0.5); margin-top: 8px; }
 .wcard .li { font-size: 22px; line-height: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wcard .li.dim { color: rgba(255, 255, 255, 0.5); white-space: normal; }
@@ -735,7 +736,8 @@ body.lessmotion *, body.lessmotion *::before, body.lessmotion *::after { -webkit
 .wcard .kv .k { position: absolute; left: 0; right: 120px; margin: 0; font-size: 23px; color: rgba(255, 255, 255, 0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wcard .kv .v { position: absolute; right: 0; font-weight: 600; }
 .wcard.cal .grid { white-space: normal; }
-.wcard.cal .wd, .wcard.cal .c { display: inline-block; width: 14.28%; height: 26px; line-height: 26px; text-align: center; font-size: 18px; }
+.wcard.cal .wd, .wcard.cal .c { display: inline-block; width: 14.28%; height: 25px; line-height: 25px; text-align: center; font-size: 18px; }
+.wcard.cal .wh { margin-bottom: 4px; }
 .wcard.cal .wd { color: rgba(255, 255, 255, 0.45); text-transform: uppercase; font-size: 15px; }
 .wcard.cal .c.today { border-radius: 13px; background: #FFF; color: #111; font-weight: 700; }
 .wcard.cal .c.hol { color: #FF8A8A; font-weight: 700; }

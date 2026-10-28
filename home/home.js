@@ -3875,7 +3875,7 @@
       list.forEach(function (h) {
         var hd = +h.d.slice(8, 10);
         if (+h.d.slice(5, 7) === m + 1 && cells[hd]) setClass(cells[hd], 'hol', true);
-        if (h.d >= today && shown < 3) { shown++; el('div', 'li', next, h.d.slice(8, 10) + '/' + h.d.slice(5, 7) + '  ' + h.n); }
+        if (h.d >= today && shown < 2) { shown++; el('div', 'li', next, h.d.slice(8, 10) + '/' + h.d.slice(5, 7) + '  ' + h.n); }
       });
     });
   }
@@ -3888,7 +3888,7 @@
     if (widgetOn('football')) rows.push({label: tr('Meu time', 'My team', 'Mi equipo'), value: (Prefs.opt('team', null) || {}).name || '›', run: askTeam});
     if (widgetOn('news')) rows.push({label: tr('Notícias de', 'News from', 'Noticias de'), value: newsName(), step: function (d) { cycleNews(d); }});
     rows.push({label: tr('Quais widgets mostrar', 'Which widgets to show', 'Qué widgets mostrar'), value: '›', icon: 'settings', run: function () { openSettings(); settingsCat = 'widgets'; renderSettings(); }});
-    return {title: tr('Meus widgets', 'My widgets', 'Mis widgets'), icon: 'partly_cloudy_day', rows: rows, visible: 3, build: function (box) {
+    return {title: tr('Meus widgets', 'My widgets', 'Mis widgets'), icon: 'partly_cloudy_day', rows: rows, visible: 2, build: function (box) {
       setClass(box, 'wide', true);
       var grid = el('div', 'wgrid', box);
       if (widgetOn('calendar')) calendarCard(grid);
