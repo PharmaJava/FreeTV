@@ -575,7 +575,7 @@
     platter.style.width = (width + 2 * pad) + 'px';
     platter.style.top = (814 + SHELF_DROP + 126 - th) + 'px';
     platter.style.height = (th + 2 * pad) + 'px';
-    $('quotes').style.right = (1920 - left - width) + 'px';
+    $('quotes').style.right = Math.min(1920 - left - width, 154) + 'px';   // in line with the shelf, never closer to the tabs than with normal icons
     var tiles = $('tiles');
     tiles.innerHTML = '';
     for (var i = 0; i < n; i++) {
