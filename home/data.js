@@ -77,6 +77,8 @@ var Prefs = (function () {
     updCheckedAt: function () { return pick('updCheckedAt', 0) || 0; },
     /** Extend the Developer Mode session by itself when less than 14 days are left (on unless the person turns it off). */
     devAuto: function () { return pick('devAuto', true) !== false; },
+    /** LG: turn the Home button (and FreeTV at start-up) back on by itself when FreeTV opens after it was stopped. On by default. */
+    homeAuto: function () { return pick('homeAuto', true) !== false; },
     /** The Custom tab: the keys of its shortcuts in the order the person chose, and the ones they took away. */
     chanOrder: function () { var r = pick('chanOrder', []); return r instanceof Array ? r : []; },
     /** Channels added from the TV itself (searched on YouTube by the store service): [{key, title, kind, id, thumb, latest, added}]. */

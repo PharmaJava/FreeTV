@@ -13,6 +13,11 @@
    together; the store becomes a third folder in that package), and its `state` folder gets the owner and mode that
    Developer Mode shares with its services (tools/fix_store_package.py).
 
+4. A stop lasts until the TV is turned on again. Holding Home (2 s) stops the helper and leaves a `blocked` marker; the
+   helper's start-up respected it for ever, so after an accidental long press the TV never opened FreeTV again on its own.
+   Now, when the TV turns on (LG launches the helper "automatically"), a marker from before the TV started or older than
+   ten minutes is removed and the helper starts as usual. A long press stays an emergency stop for the moment you use it.
+
 The script stops with a clear message if the helper's code is not what it expects (a different version).
 """
 import os
@@ -63,6 +68,35 @@ def patch_native(helper):
     print('native.js: wait, return and retry after Back added')
 
 
+BLOCK_PATH = '/media/developer/apps/usr/palm/applications/com.local.nativehome/state/blocked'
+SERVICE_OLD = ("function blocked(){try{fs.statSync('%s');return true;}catch(e){return e.code!=='ENOENT';}}" % BLOCK_PATH)
+# FreeTV: a stop marker from before this start of the TV (/proc/stat's btime), or older than STOP_KEEP ms, is old: remove it
+# and start as usual. LG launches the helper "automatically" when the TV is turned on, also from standby (where btime stays).
+STOP_KEEP = 10 * 60 * 1000
+STALE = ("function staleBlock(p){try{var t=fs.statSync(p).mtime.getTime(),b=/^btime (\\d+)$/m.exec(fs.readFileSync('/proc/stat','utf8'));"
+         "if((b&&t<+b[1]*1000)||Date.now()-t>%d){try{fs.unlinkSync(p);}catch(e){}return true;}}catch(e){}return false;}" % STOP_KEEP)
+SERVICE_NEW = (STALE + "function blocked(){var p='%s';if(staleBlock(p))return false;"
+               "try{fs.statSync(p);return true;}catch(e){return e.code!=='ENOENT';}}" % BLOCK_PATH)
+NATIVE_BLOCK_OLD = "if(automatic&&fs.existsSync(data+'/blocked'))process.exit(0);"
+NATIVE_BLOCK_NEW = STALE + "if(automatic&&!staleBlock(data+'/blocked')&&fs.existsSync(data+'/blocked'))process.exit(0);"
+
+
+def patch_stop(helper):
+    for rel, old, new in ((('native', 'service', 'service.js'), SERVICE_OLD, SERVICE_NEW),
+                          (('native', 'app', 'native.js'), NATIVE_BLOCK_OLD, NATIVE_BLOCK_NEW)):
+        path = os.path.join(helper, *rel)
+        with open(path, encoding='utf-8') as f:
+            text = f.read().replace('\r\n', '\n')
+        if 'staleBlock' in text:
+            continue
+        if old not in text:
+            sys.exit('patch_helper.py: this helper version is not the one FreeTV was made for (%s differs). '
+                     'Use the commit pinned in install.sh.' % '/'.join(rel))
+        with open(path, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(text.replace(old, new, 1))
+    print("the Home button's stop lasts until the TV is turned on again")
+
+
 def patch_store(helper):
     source = os.path.join(ROOT, 'store-service')
     if not os.path.isdir(os.path.join(source, 'node_modules', 'ssh2')):
@@ -94,6 +128,7 @@ def main(helper):
     shutil.copytree(os.path.join(ROOT, 'third_party', 'ws'), ws)
     print('ws 7.5.10 in place')
     patch_native(helper)
+    patch_stop(helper)
     patch_store(helper)
 
 

@@ -739,6 +739,7 @@
     if (settingsCat === 'home') {
       rows.push({label: tr('Idioma', 'Language', 'Idioma'), value: lang === 'ru' ? 'Русский' : lang === 'de' ? 'Deutsch' : lang === 'pt' ? 'Português' : lang === 'en' ? 'English' : lang === 'es' ? 'Español' : auto,
         step: function (d) { cycle('language', ['auto', 'de', 'en', 'es', 'pt', 'ru'], lang, d); I18N.set(Prefs.language()); renderAll(); }});
+      if (window.HomeExtras && window.HomeExtras.homeRows) rows = rows.concat(window.HomeExtras.homeRows());   // LG: the Home button
       rows.push({label: tr('Aba inicial', 'Start tab', 'Pestaña de inicio'), value: Prefs.startTab() === 'last' ? tr('A última usada', 'The last used', 'La última usada') : tabNames()[Prefs.startTab()],
         step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }});
       rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
@@ -2905,5 +2906,5 @@
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
-    grab: grab, drop: drop, shelf: function () { return shelf; }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, apps: function () { return others; }};
+    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, apps: function () { return others; }};
 })();
