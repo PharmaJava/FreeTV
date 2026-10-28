@@ -48,7 +48,7 @@ Community screen install through the computer (the TV app itself cannot install 
 ids, and every install is confirmed on the TV. The TV side of it (launch params from `ares-launch -p`) is untested on real hardware. **Never install anything on the person's TV without their yes for that app.** Store/LG apps cannot be removed from the computer (`FAILED_REMOVE`); installing an app whose id belongs to a store app (YouTube AdFree) while the original is present half-breaks the original's launcher entry: the person must delete the original on the TV first |
 | `home/tizenbrew.js` | Samsung only: TizenBrew's modules (YouTube AdFree = TizenTube, Twitch AdFree = Twizen, the Store's search on npm). Opens a module with an app control to TizenBrew, lists/adds/removes them over TizenBrew's service (`ws://127.0.0.1:8081`, only up once TizenBrew was opened). Always ask before adding a module |
 | `tests/run.js` | `node tests/run.js`: the store service's logic with a mocked TV shell (versions, updates, Developer Mode renewal) and a parse check of `home/`. CI (`.github/workflows/ci.yml`) runs it, `tools/check_secrets.py --all` and a keyless build on every push. Run it before pushing |
-| `tools/make_symbols.py` | Draws FreeTV's own symbols (search, kids, health, calm, lock, timer) into `assets/symbols/`, same weight as the Material ones |
+| `tools/make_symbols.py` | Draws FreeTV's own symbols (search, kids, health, calm, lock, timer, tiles) into `assets/symbols/`, same weight as the Material ones |
 | `tizen/` | Samsung: `build.py` (unsigned/signed .wgt), `install.py` (SDB over Wi-Fi). Experimental, untested by us on a Samsung |
 | `android/` | Free My TV's Android app, unchanged (`build.sh`, `app/`). Not built or tested by us. Never commit its `config.properties`, `*.keystore` or `*.apk` |
 
@@ -71,3 +71,12 @@ Menus are frosted glass (`frostWanted()`, class `frost` on `body`; a sheet must 
 ## The Home button's stop
 
 Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehome`; LG's automatic launch at power-on used to respect it for ever. `tools/patch_helper.py` (patch 4) makes a marker from before the TV started, or older than ten minutes, count as old. In FreeTV, Home Settings → Home shows the state (`HomeExtras.homeRows`, fed by `helper-control.js`) and `Prefs.homeAuto` (on by default) resumes the helper when FreeTV opens. The helper's log is `state/controller.log` (worker `EXIT 22` is a long Home press).
+
+## 2.0: options, the quick panel, the Store's rows
+
+- New choices are read with `Prefs.opt(name, default)` (`iconSize`, `motion`, `titleMode`, `name`, `topClock`, `topDate`, `clock24`, `saverAfter`, `saverClock`, `quickHidden`); accents live in `ACCENTS` (data.js) with their CSS under `body.acc-<name>`.
+- The quick panel's tiles come from `quickDefs()` (each with an `id`; `lg: true` for webOS only); `QUICK_OFF` are hidden until the person turns them on. Its tiles use the class `qtile`: the shelf's are `tile`, keep them apart.
+- Store rows: `commIcon()` (catalogue `iconUri`, a letter when it fails) and `commDesc()` (`COMM_DESC` in three languages, else the catalogue's `shortDescription`). Lists with taller rows set `data-pitch` and `data-visible` on `.rows`.
+- Shelf icons FreeTV draws itself: `tools/make_tiles.py` → `assets/tiles/`, used through an app's `tile` field.
+- Changing the version: `home/appinfo.json`, `tizen/config.xml`, `python3 tools/make_splash.py`, and a section in `CHANGELOG.md`.
+

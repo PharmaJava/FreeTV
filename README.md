@@ -11,6 +11,12 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.0: make it yours
+
+Many more settings, new widgets, a Store that tells you what each app is, a quick panel you fill yourself, and proper icons for Live TV and the Store. The TV shows **FreeTV v2.0.0** while it starts. Nothing from before was removed. All changes: [CHANGELOG.md](CHANGELOG.md).
+
+<table><tr><td width="50%"><img src="docs/screens/tienda-comunidad.jpg" alt="The Store: each app with its icon and one line about it"><br><sub>The Store: each app with its icon and one line about it</sub></td><td width="50%"><img src="docs/screens/saludo.jpg" alt="A greeting with your name, the date by the clock, compact icons"><br><sub>A greeting with your name, the date by the clock, compact icons</sub></td></tr><tr><td width="50%"><img src="docs/screens/aspecto.jpg" alt="Look: 7 accent colours, background, title, your name, icon size, animations"><br><sub>Look: 7 accent colours, background, title, your name, icon size, animations</sub></td><td width="50%"><img src="docs/screens/widgets.jpg" alt="Widgets: clock on or off, 24 h or 12 h, the date beside it"><br><sub>Widgets: clock on or off, 24 h or 12 h, the date beside it</sub></td></tr></table>
+
 ### New: frosted glass and menus by section
 
 Menus are now frosted glass over your home screen, with settings in sections and a **quick panel** (open it from the drawer).
@@ -47,9 +53,13 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   ("Series · Netflix", "Movie · Prime Video"). The first, wider one adds genre and length.
 - **Markets in dollars:** Bitcoin, Ethereum, Solana and **XRP (Ripple)** (Binance), and iShares **S&P 500** and **NASDAQ 100**
   (CSPX and CNDX, in dollars). Each one can be switched off. Information only, not investment advice.
-- **A clock** at the top right, left of the round buttons (14:34), always on time to the minute.
+- **A clock** at the top right, left of the round buttons (14:34), always on time to the minute. *Home Settings → Widgets*: on or off,
+  24 h, 12 h or automatic, and the date beside it. *Home Settings → Home*: when the screensaver starts (1 to 30 minutes, or never) and
+  whether it shows its clock.
+- **Proper icons for Live TV and the Store** on the shelf, drawn by `tools/make_tiles.py` like the rest of the apps' icons.
 - **Weather** for your city, with sunrise and sunset; the screen goes dark at night.
-- **An app store, on the TV itself.** The **Store** icon on the shelf (and *Home Settings → Community apps*) opens the
+- **An app store, on the TV itself.** Every app in the list has **its icon and one line about it** (in your language for the ones
+  people look for most), so you can tell whether you want it before opening it. The **Store** icon on the shelf (and *Home Settings → Community apps*) opens the
   [webOS Homebrew](https://repo.webosbrew.org) catalogue: ad-free YouTube, Kodi, Jellyfin, Moonlight, native Plex, RetroArch…
   Press OK on an app for its page and, if it **needs no root**, an **Install on this TV** button: the TV downloads the package,
   checks its SHA-256 hash and installs it, no computer (if you turn that on while installing FreeTV). Anything that needs root
@@ -91,12 +101,15 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   without root)**; see [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) for what we measured and what to turn off.
 - **Frosted glass, minimal.** Every menu, dialog and panel is frosted glass over your home screen (blur and saturation, the way a
   phone does it), with one accent colour for focus. *Home Settings → Look*: theme, frosted glass (automatic uses it only where the TV's
-  browser can do it; older TVs get a plain dark panel), **accent colour** (mint, blue, rose, amber), **background** (the focused cover, or
-  landscapes) and **calm mode** (hides the market quotes and the clock).
-- **Settings in sections.** Home, Look, Widgets, Apps, Privacy and kids, Maintenance, each with its icon, instead of one long list.
+  browser can do it; older TVs get a plain dark panel), **accent colour** (mint, blue, violet, rose, orange, amber, sky), **background** (the
+  focused cover, landscapes or plain), **title** ("For You", or a greeting for the time of day with **your name**), **icon size** (normal or
+  compact), **animations** (normal or reduced) and **calm mode** (hides the market quotes and the clock).
+- **Settings in sections.** Home, Look, Widgets, Apps, Quick panel, Privacy and kids, Maintenance, each with its icon, instead of one long
+  list. The version (FreeTV v2.0.0) is at the bottom.
 - **Quick panel.** From the drawer: **search** (apps, your channels, the Store and YouTube, with the TV's keyboard), **calm mode**,
-  **sleep timer** (off, 15, 30, 60, 90 minutes; it warns you 30 seconds before and any key cancels it), **kids mode**, **TV health**
-  and settings.
+  **sleep timer** (off, 15, 30, 60, 90 minutes; it warns you 30 seconds before and any key cancels it), **kids mode**, **TV health**,
+  **theme**, **screensaver now** and settings; and, if you want them, **accent colour**, **All Apps**, the **Store**, **TV Settings** and
+  **Reload FreeTV**. *Home Settings → Quick panel* switches each tile on or off (up to 12, in four columns).
 - **Kids mode.** One switch and FreeTV shows only the kids' channels, hides the settings and the drawer and ignores the long presses.
   You pick a 4-digit PIN with the remote; the PIN gets you out. Back and Home cannot.
 - **TV health.** One card: Developer Mode days left, updates waiting, free space, whether LG's ACR is listening, whether the store
@@ -273,6 +286,12 @@ affiliated with LG.
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
 
+### FreeTV 2.0: a tu gusto
+
+Muchos más ajustes, widgets nuevos, una Tienda que te dice qué es cada app, un panel rápido que llenas tú, e iconos de verdad para TV en directo y la Tienda. La tele enseña **FreeTV v2.0.0** mientras arranca. No se ha quitado nada de lo de antes. Todos los cambios: [CHANGELOG.md](CHANGELOG.md).
+
+<table><tr><td width="50%"><img src="docs/screens/tienda-comunidad.jpg" alt="La Tienda: cada app con su icono y una línea sobre ella"><br><sub>La Tienda: cada app con su icono y una línea sobre ella</sub></td><td width="50%"><img src="docs/screens/saludo.jpg" alt="Un saludo con tu nombre, la fecha junto al reloj, iconos compactos"><br><sub>Un saludo con tu nombre, la fecha junto al reloj, iconos compactos</sub></td></tr><tr><td width="50%"><img src="docs/screens/aspecto.jpg" alt="Aspecto: 7 colores de acento, fondo, título, tu nombre, tamaño de iconos, animaciones"><br><sub>Aspecto: 7 colores de acento, fondo, título, tu nombre, tamaño de iconos, animaciones</sub></td><td width="50%"><img src="docs/screens/widgets.jpg" alt="Widgets: reloj sí o no, 24 h o 12 h, la fecha al lado"><br><sub>Widgets: reloj sí o no, 24 h o 12 h, la fecha al lado</sub></td></tr></table>
+
 ### Nuevo: cristal esmerilado y menús por secciones
 
 Los menús ahora son cristal esmerilado sobre tu pantalla de inicio, con los ajustes por secciones y un **panel rápido** (se abre desde el cajón).
@@ -310,9 +329,13 @@ de LG, y **todo se puede deshacer**.
   dónde verla** («Serie · Netflix», «Película · Prime Video»). La primera, más grande, trae género y duración.
 - **Mercados en dólares:** Bitcoin, Ethereum, Solana y **XRP (Ripple)** (Binance), y el **S&P 500** y el **NASDAQ 100** de
   iShares (CSPX y CNDX, en dólares). Cada uno se puede apagar en Ajustes. Son datos informativos, no un consejo de inversión.
-- **Un reloj** arriba a la derecha, a la izquierda de los botones redondos (14:34), siempre en hora al minuto.
+- **Un reloj** arriba a la derecha, a la izquierda de los botones redondos (14:34), siempre en hora al minuto. *Ajustes de inicio →
+  Widgets*: sí o no, 24 h, 12 h o automático, y la fecha al lado. *Ajustes de inicio → Inicio*: cuándo empieza el salvapantallas (de 1 a 30
+  minutos, o nunca) y si enseña su reloj.
+- **Iconos de verdad para TV en directo y la Tienda** en el estante, dibujados por `tools/make_tiles.py` como los de las demás apps.
 - **El tiempo** de tu ciudad, con amanecer y atardecer; la pantalla se oscurece de noche.
-- **Una tienda de apps, en la propia tele.** El icono **Tienda** del estante (y *Ajustes de inicio → Apps de la comunidad*) abre el
+- **Una tienda de apps, en la propia tele.** Cada app de la lista lleva **su icono y una línea sobre ella** (en tu idioma para las más
+  buscadas), para saber si la quieres antes de abrirla. El icono **Tienda** del estante (y *Ajustes de inicio → Apps de la comunidad*) abre el
   catálogo de [webOS Homebrew](https://repo.webosbrew.org): YouTube sin anuncios, Kodi, Jellyfin, Moonlight, Plex nativo, RetroArch… Con
   OK en una app ves su ficha y, si **no pide root**, el botón **Instalar en esta tele**: la tele descarga el paquete, comprueba su
   hash SHA-256 y lo instala, sin ordenador (si lo activas al instalar FreeTV). Lo que pide root **no se instala**. Ver
@@ -356,11 +379,15 @@ de LG, y **todo se puede deshacer**.
 - **Cristal esmerilado y minimalismo.** Todos los menús, diálogos y paneles son cristal esmerilado sobre tu pantalla de inicio (desenfoque y
   saturación, como en un móvil), con un solo color de acento para el foco. *Ajustes de inicio → Aspecto*: tema, cristal esmerilado
   (en automático solo se usa donde el navegador de la tele puede; las teles antiguas llevan un panel oscuro liso), **color de acento** (menta,
-  azul, rosa, ámbar), **fondo** (la portada en foco, o paisajes) y **modo calma** (oculta las cotizaciones y el reloj).
-- **Ajustes por secciones.** Inicio, Aspecto, Widgets, Apps, Privacidad y niños, Mantenimiento, cada una con su icono, en vez de una lista larga.
+  azul, violeta, rosa, naranja, ámbar, cielo), **fondo** (la portada en foco, paisajes o liso), **título** («Para ti», o un saludo según la
+  hora con **tu nombre**), **tamaño de los iconos** (normal o compacto), **animaciones** (normales o reducidas) y **modo calma** (oculta las
+  cotizaciones y el reloj).
+- **Ajustes por secciones.** Inicio, Aspecto, Widgets, Apps, Panel rápido, Privacidad y niños, Mantenimiento, cada una con su icono, en vez
+  de una lista larga. Abajo sale la versión (FreeTV v2.0.0).
 - **Panel rápido.** Desde el cajón: **buscar** (apps, tus canales, la Tienda y YouTube, con el teclado de la tele), **modo calma**,
-  **apagar en** (no, 15, 30, 60, 90 minutos; avisa 30 segundos antes y cualquier tecla lo cancela), **modo niños**, **salud de la tele**
-  y ajustes.
+  **apagar en** (no, 15, 30, 60, 90 minutos; avisa 30 segundos antes y cualquier tecla lo cancela), **modo niños**, **salud de la tele**,
+  **tema**, **salvapantallas ahora** y ajustes; y, si los quieres, **color de acento**, **Todas las apps**, la **Tienda**, **Ajustes del TV** y
+  **Recargar FreeTV**. *Ajustes de inicio → Panel rápido* enciende o apaga cada uno (hasta 12, en cuatro columnas).
 - **Modo niños.** Un interruptor y FreeTV solo enseña los canales de los peques, esconde los ajustes y el cajón e ignora las pulsaciones largas.
   Eliges un PIN de 4 cifras con el mando; con el PIN sales. Atrás y Home no.
 - **Salud de la tele.** Una tarjeta: días de Modo Desarrollador, actualizaciones pendientes, espacio libre, si el ACR de LG escucha, si la
