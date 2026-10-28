@@ -4606,5 +4606,5 @@
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
-    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, apps: function () { return others; }};
+    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, openInfo: openInfo, runAction: runAction, apps: function () { return others; }};
 })();
