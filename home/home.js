@@ -1466,7 +1466,7 @@
       {id: 'timer', lg: true, sym: 'timer', name: tr('Desligar em…', 'Sleep timer', 'Apagar en…'), sub: left ? tr('Faltam ' + left + ' min', left + ' min left', 'Quedan ' + left + ' min') : off, on: !!left, run: sleepNext},
       {id: 'kids', sym: 'kids', name: tr('Modo crianças', 'Kids mode', 'Modo niños'), sub: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Só os canais deles', 'Only their channels', 'Solo sus canales'), on: Prefs.kids(), run: function () { closeSheets(); kidsStart(); }},
       {id: 'health', lg: true, sym: 'health', name: tr('Saúde da TV', 'TV health', 'Salud de la tele'), sub: healthSummary(), run: function () { openTiles('health'); }},
-      {id: 'theme', sym: 'clear_night', name: tr('Tema', 'Theme', 'Tema'), sub: themes[theme], on: theme !== 'auto',
+      {id: 'theme', sym: 'sunny', name: tr('Tema', 'Theme', 'Tema'), sub: themes[theme], on: theme !== 'auto',
         run: function () { cycle('theme', ['auto', 'light', 'dark'], theme, 1); checkNight(); again(); }},
       {id: 'saver', sym: 'bedtime', name: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), sub: tr('Agora', 'Now', 'Ahora'),
         run: function () { closeSheets(); setTimeout(showSaver, 300); }},
@@ -1786,6 +1786,31 @@
     });
   }
 
+  // One line about the apps people look for most, in their language (the catalogue's are in English, and some have none).
+  var COMM_DESC = {
+    'youtube.leanback.v4': ['YouTube sem anúncios, com SponsorBlock', 'YouTube without ads, with SponsorBlock', 'YouTube sin anuncios, con SponsorBlock'],
+    'twitch.adamffdev.v1': ['Twitch sem anúncios', 'Twitch without ads', 'Twitch sin anuncios'],
+    'org.jellyfin.webos': ['Seus filmes e séries do seu servidor Jellyfin', 'Your films and shows from your Jellyfin server', 'Tus pelis y series desde tu servidor Jellyfin'],
+    'org.xbmc.kodi': ['Centro multimídia livre: vídeos, música, extensões', 'Free media centre: videos, music, add-ons', 'Centro multimedia libre: vídeos, música, complementos'],
+    'com.limelight.webos': ['Jogue os jogos do seu PC na TV (GameStream/Sunshine)', 'Play your PC games on the TV (GameStream/Sunshine)', 'Juega a los juegos de tu PC en la tele (GameStream/Sunshine)'],
+    'com.beb.plxnative': ['Cliente Plex nativo, não oficial', 'Native Plex client, unofficial', 'Cliente de Plex nativo, no oficial'],
+    'com.retroarch.webos': ['Emuladores de consolas clássicas', 'Classic console emulators', 'Emuladores de consolas clásicas'],
+    'org.webosbrew.hbchannel': ['A loja original do webOS Homebrew', 'The original webOS Homebrew store', 'La tienda original de webOS Homebrew'],
+    'org.webosbrew.safeupdate': ['Atualiza o Homebrew Channel com segurança', 'Updates the Homebrew Channel safely', 'Actualiza el Homebrew Channel de forma segura'],
+    'com.pirate.refresh': ['Renova o Modo Desenvolvedor sozinho (o FreeTV já faz isso)', 'Renews Developer Mode by itself (FreeTV already does)', 'Renueva el Modo Desarrollador solo (FreeTV ya lo hace)'],
+    'com.github.cfernande1470.wireguard': ['VPN WireGuard na TV', 'WireGuard VPN on the TV', 'VPN WireGuard en la tele'],
+    'com.willinux.tvh.app': ['Cliente para o seu servidor TVHeadend', 'Client for your TVHeadend server', 'Cliente para tu servidor TVHeadend'],
+    'me.mariotaku.gallery3d': ['Galeria de fotos em 3D', '3D photo gallery', 'Galería de fotos en 3D'],
+    'org.rchalaaa.webos.custom-screensaver': ['Protetor de tela com vídeos aéreos', 'Screensaver with aerial videos', 'Salvapantallas con vídeos aéreos'],
+    'ooo.lew.lifesgoodwithoutspying': ['Desliga a espionagem da LG (precisa de root)', 'Turns off the spying on LG TVs (needs root)', 'Apaga el espionaje de LG (necesita root)'],
+    'com.immich.webos': ['Suas fotos e vídeos do Immich', 'Your photos and videos from Immich', 'Tus fotos y vídeos de Immich']
+  };
+
+  function commDesc(p) {
+    var d = COMM_DESC[p.id];
+    return d ? tr(d[0], d[1], d[2]) : p.shortDescription || (p.manifest && p.manifest.appDescription) || '';
+  }
+
   /** The app's icon from the catalogue (an image on the web); a soft square with its first letter when it has none or it fails. */
   function commIcon(p, parent, cls) {
     var holder = el('div', cls, parent), url = p.iconUri || (p.manifest && p.manifest.iconUri) || '';
@@ -1837,7 +1862,7 @@
         storeCheck();
       });
     } else {
-      line(box, '', a.shortDescription || m.appDescription || '');
+      line(box, '', commDesc(a));
       if (upd) line(box, 'good', tr('Atualização disponível (v' + upd.from + ' → v' + upd.to + '). As apps e seus ajustes são mantidos.',
           'Update available (v' + upd.from + ' → v' + upd.to + '). The app and its settings are kept.',
           'Actualización disponible (v' + upd.from + ' → v' + upd.to + '). La app y sus ajustes se conservan.'));
@@ -1894,15 +1919,15 @@
     if (store.freeMb) box.lastChild.textContent += '  ·  ' + tr('Espaço livre: ', 'Free space: ', 'Espacio libre: ') + store.freeMb + ' MB';
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
     holder.setAttribute('data-pitch', 112);
-    holder.setAttribute('data-visible', 6);
-    list.style.height = Math.min(commList.length, 6) * 112 + 'px';
+    holder.setAttribute('data-visible', 5);
+    list.style.height = Math.min(commList.length, 5) * 112 + 'px';
     for (var i = 0; i < commList.length; i++) {
       var p = commList[i], row = el('div', 'row crow', holder);
       if (p.special) sym('apps', el('div', 'cico csym', row));
       else commIcon(p, row, 'cico');
       el('div', 'ctitle', row, p.title);
       el('div', 'cdesc', row, p.special ? tr('Atualiza de uma vez as apps que você já tem', 'Brings the apps you have up to date in one go', 'Pone al día de una vez las apps que ya tienes')
-          : p.shortDescription || p.manifest.appDescription || '');
+          : commDesc(p));
       var v = el('span', 'value', row);
       var root = !!p.manifest.rootRequired;
       if (p.special) el('span', 'tag upd', v, tr('novas versões', 'new versions', 'nuevas versiones'));
