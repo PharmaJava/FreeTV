@@ -75,8 +75,8 @@ about. No rooting: it installs like any app through LG's **Developer Mode**, and
   itself" when installing FreeTV.
 - **Its own screensaver.** After two idle minutes, full-screen photos with the clock: landscapes of Seville, Andalusia, Spain
   and Lithuania (Wikimedia Commons, free licences only, author and licence on screen), the picks' photos, or both. Chosen in
-  *Home Settings → Screensaver*. No root needed. **It stays above LG's own screensaver** (the clock one): while FreeTV's is on, if
-  the TV switches to its screensaver, FreeTV sends it away within a second or two. For that the TV asks **once** for permission
+  *Home Settings → Screensaver*. No root needed. **It stays above LG's own screensaver** (the clock one): as soon as LG announces
+  its screensaver, FreeTV says no before the clock shows and puts its own up (also when LG's would have started first). For that the TV asks **once** for permission
   (power state and screen), a few seconds after FreeTV opens: **accept it**, or LG's clock will cover FreeTV's photos. A prompt nobody
   answered is asked again ten minutes later; a "no" is asked again after three days.
 - **FreeTV on the start screen.** While FreeTV starts (when you turn the TV on, for example), the TV shows FreeTV's name, logo and
@@ -352,7 +352,8 @@ de LG, y **todo se puede deshacer**.
 - **Salvapantallas propio.** Tras dos minutos sin tocar el mando, fotos a pantalla completa con el reloj: paisajes de Sevilla,
   Andalucía, España y Lituania (Wikimedia Commons, solo licencias libres, con autor y licencia en pantalla), las fotos de las
   sugerencias, o ambas. Se elige en *Ajustes de inicio → Salvapantallas*. No necesita root. **Va por encima del salvapantallas de
-  LG** (el del reloj): mientras está el de FreeTV, si la tele pasa a su salvapantallas, FreeTV lo aparta en uno o dos segundos. Para
+  LG** (el del reloj): en cuanto LG anuncia su
+  salvapantallas, FreeTV lo para antes de que salga el reloj y pone el suyo (también si el de LG iba a empezar antes). Para
   eso la tele pide permiso **una vez** (estado de energía y pantalla), unos segundos después de abrirse FreeTV: **acéptalo**, o el reloj de
   LG tapará las fotos de FreeTV. Si nadie contesta, lo vuelve a preguntar a los diez minutos; si dices que no, a los tres días.
 - **FreeTV en la pantalla de arranque.** Mientras FreeTV se abre (al encender la tele, por ejemplo), la tele enseña el nombre, el logo y

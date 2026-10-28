@@ -23,6 +23,9 @@ bottom of *Home Settings*. Every change is also in the git history of `main`.
 - **Version 2.0.0** on the start screen and in *Home Settings*.
 
 ### Fixed
+- **LG's clock screensaver no longer covers ours.** FreeTV now answers LG's first notice ("Request Screen Saver") before the
+  clock shows, watches whenever it is on screen (if LG's would start first, ours comes up instead), reconnects in 3 s, and a
+  moment hidden no longer ends ours. On the TV: in 10 idle minutes LG tried 4 times and its clock never appeared.
 - The quick panel's styles (class `tile`) also applied to the shelf: Live TV's and the Store's symbols sat in a corner and the
   focused app grew 4% instead of 20%. The panel's tiles are now `qtile`.
 
