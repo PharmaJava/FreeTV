@@ -80,3 +80,19 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
 - Shelf icons FreeTV draws itself: `tools/make_tiles.py` → `assets/tiles/`, used through an app's `tile` field.
 - Changing the version: `home/appinfo.json`, `tizen/config.xml`, `python3 tools/make_splash.py`, and a section in `CHANGELOG.md`.
 
+## 2.1: info sheets and the rest
+
+- `openInfo(kind, arg)` shows a wide glass sheet: `INFO[kind](arg)` returns `{title, icon, build(box), rows, visible, hint, back}`; rows work
+  like Home Settings' (`toggle`, `value` with ‹ ›, `'›'`, `plain`, `run`, `step`, `move` for ◀ ▶). Kinds: weather, markets, addTicker, ticker,
+  widgets, profiles, tabs, routines, usage, inputs, repos. A sheet's data callbacks must only redraw when something new arrived (a cached answer
+  that redraws loops).
+- `runAction(name)` is what the colour keys and routines run; `shortcutKey(k)` handles 0-9 and 403-406.
+- Tabs: `VIS` maps the top row's places to the real tabs (0 Custom, 1 Continue watching, 2-4 picks); always go through it.
+- Profiles copy `PROFILE_KEYS` of the prefs in and out (`switchProfile`).
+- The Store keeps the whole catalogue in `commAll`; `commRebuild()` makes `commList` (search, filter and order rows, "Update all", the apps).
+- Names that depend on the language are computed when shown (`rangeName`, `inputKind`), never in a top-level `var`: `tr()` runs before the
+  language is set.
+- Network sources: Open-Meteo (forecast and air), Yahoo Finance and Binance, Nager.Date, TheSportsDB (test key 123), Wikimedia featured feed,
+  NASA APOD (DEMO_KEY), GitHub releases, an Immich shared link, RSS through the store service's `feed`.
+- German and Russian are not kept up to date for the 2.0/2.1 texts (the person asked for Spanish, English and Portuguese only).
+

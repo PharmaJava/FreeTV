@@ -11,6 +11,42 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.1: everything your way
+
+The weather in full, markets with charts and price alerts, a page of widgets, the remote's buttons as shortcuts, a Store you can
+search and filter, profiles, your own tabs, routines and much more. Nothing from before was removed.
+
+<table><tr><td width="33%"><img src="docs/screens/tiempo.jpg" alt="The weather: hours, six days, UV, air, rain in the next hour"><br><sub>The weather: hours, six days, UV, air, rain in the next hour</sub></td><td width="33%"><img src="docs/screens/mercados.jpg" alt="Markets: your quotes with their last 24 hours; OK opens the chart"><br><sub>Markets: your quotes with their last 24 hours; OK opens the chart</sub></td><td width="33%"><img src="docs/screens/mis-widgets.jpg" alt="My widgets: calendar with holidays, countdowns, notes, football, currencies, news"><br><sub>My widgets: calendar with holidays, countdowns, notes, football, currencies, news</sub></td></tr><tr><td width="33%"><img src="docs/screens/tienda-filtros.jpg" alt="The Store: search, filters, order, new apps, my list"><br><sub>The Store: search, filters, order, new apps, my list</sub></td><td width="33%"><img src="docs/screens/perfiles.jpg" alt="Profiles: Family, Kids, Guest, each with its own look and an optional PIN"><br><sub>Profiles: Family, Kids, Guest, each with its own look and an optional PIN</sub></td><td width="33%"><img src="docs/screens/pestanas.jpg" alt="Tabs: show, hide, reorder and rename"><br><sub>Tabs: show, hide, reorder and rename</sub></td></tr></table>
+
+- **The remote:** with FreeTV on screen, **1-9** open the shelf's apps and **0** All Apps; the **red, green, yellow and blue** buttons do what
+  you choose (quick panel, search, weather, markets, my widgets, screensaver, Store, switch profile, TV Settings…). *Home Settings → Remote*.
+- **Weather in full** (yellow button, the quick panel or *Widgets → Full forecast*): the next 12 hours with the chance of rain, six days with
+  their range, feels-like, humidity, wind, UV index, **air quality** and **rain in the next hour** (Open-Meteo, no key).
+- **Markets:** add your own quotes (stocks, indexes, funds, gold, currencies, coins: AAPL, SAN.MC, ^IBEX, EURUSD=X, ADA…), each with its
+  **24-hour line**; OK opens a **chart** (1 day, 5 days, 1 month, 1 year) and **price alerts** ("tell me if it goes above / falls below").
+  Any of them can go on the top row too. Information only, not investment advice.
+- **My widgets:** a **calendar** with your country's public holidays, **countdowns** (Christmas, holidays, birthdays), **notes and reminders**
+  at a time of day, your **football team's** next and last match (TheSportsDB), **currencies**, and **news** headlines from an RSS feed you
+  choose (Google News, El País, RTVE, BBC… or any address; on LG the TV's own store service reads it).
+- **Store:** **search**, **filters** (featured, new, games, media, tools, no root, installed, my list), **order**, a **New** mark on apps that
+  arrived since your last visit, **my list** to keep apps for later, the app's **size and whether it fits**, **what changed** in its last version,
+  **Uninstall** from its page, and **extra repositories** you add yourself (*Home Settings → Apps*). *TV health* tells you when there are new apps.
+- **Look:** ready-made styles (**pure black OLED**, clear glass, warm night, minimal), **dark by schedule** (from-until), **text size**, **glass
+  strength**, **corners**, **app names** under the shelf's icons, **smaller cards** (more per row), **your own background picture**, and the
+  region of the landscapes (Andalucía, Spain, Lithuania).
+- **Tabs:** show, hide, reorder and rename them (*Home Settings → Home → Tabs*, or hold OK on a tab).
+- **Profiles:** **Family, Kids and Guest**, each with its own shelf, tabs and look, and a PIN if you want one.
+- **Shortcuts:** name your **HDMI inputs** (PlayStation, Xbox, Switch, Chromecast…) and put them **on the shelf**; hold OK on any app to put it
+  on the shelf or **in the quick panel**; a YouTube channel can go on the shelf; the last apps you opened show in the drawer.
+- **Screensaver:** **picture of the day** (Wikimedia), **astronomy** (NASA), **your photos** (an Immich shared album) or a **big clock** that moves
+  a little every minute; the weather on it; dimmer at night; and the **screen off** after 10, 30 or 60 minutes (OLED; the sound stays).
+- **Routines:** at a time of day, every day: calm mode on or off, the sleep timer, a theme, the screensaver, a profile.
+- **Kids:** a **daily time limit** in kids mode (a grown-up carries on with the PIN).
+- **Time of use** per app, today and this week, counted only on the TV.
+- **Copies of your settings:** save and restore them on the TV, or take them to the computer or another TV with
+  `node tools/settings_backup.js <IP> export > my-settings.json` (and `import`).
+- **The quick panel** has new tiles: weather, markets, my widgets, profile, time of use, routines, and the apps you put there.
+
 ### FreeTV 2.0: make it yours
 
 Many more settings, new widgets, a Store that tells you what each app is, a quick panel you fill yourself, and proper icons for Live TV and the Store. The TV shows **FreeTV v2.0.0** while it starts. Nothing from before was removed. All changes: [CHANGELOG.md](CHANGELOG.md).
@@ -285,6 +321,46 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.1: todo a tu manera
+
+El tiempo completo, mercados con gráficas y alertas de precio, una página de widgets, los botones del mando como atajos, una Tienda con
+búsqueda y filtros, perfiles, tus propias pestañas, rutinas y mucho más. No se ha quitado nada de lo de antes.
+
+<table><tr><td width="33%"><img src="docs/screens/tiempo.jpg" alt="El tiempo: por horas, seis días, UV, aire, lluvia en la próxima hora"><br><sub>El tiempo: por horas, seis días, UV, aire, lluvia en la próxima hora</sub></td><td width="33%"><img src="docs/screens/mercados.jpg" alt="Mercados: tus valores con sus últimas 24 horas; OK abre la gráfica"><br><sub>Mercados: tus valores con sus últimas 24 horas; OK abre la gráfica</sub></td><td width="33%"><img src="docs/screens/mis-widgets.jpg" alt="Mis widgets: calendario con festivos, cuentas atrás, notas, fútbol, divisas, noticias"><br><sub>Mis widgets: calendario con festivos, cuentas atrás, notas, fútbol, divisas, noticias</sub></td></tr><tr><td width="33%"><img src="docs/screens/tienda-filtros.jpg" alt="La Tienda: búsqueda, filtros, orden, apps nuevas, mi lista"><br><sub>La Tienda: búsqueda, filtros, orden, apps nuevas, mi lista</sub></td><td width="33%"><img src="docs/screens/perfiles.jpg" alt="Perfiles: Familia, Niños, Invitado, cada uno con su aspecto y PIN opcional"><br><sub>Perfiles: Familia, Niños, Invitado, cada uno con su aspecto y PIN opcional</sub></td><td width="33%"><img src="docs/screens/pestanas.jpg" alt="Pestañas: mostrar, ocultar, ordenar y renombrar"><br><sub>Pestañas: mostrar, ocultar, ordenar y renombrar</sub></td></tr></table>
+
+- **El mando:** con FreeTV en pantalla, del **1 al 9** abren las apps del estante y el **0** Todas las apps; los botones **rojo, verde, amarillo y
+  azul** hacen lo que elijas (panel rápido, buscar, el tiempo, mercados, mis widgets, salvapantallas, Tienda, cambiar de perfil, Ajustes del TV…).
+  *Ajustes de inicio → Mando*.
+- **El tiempo completo** (botón amarillo, el panel rápido o *Widgets → Previsión completa*): las próximas 12 horas con probabilidad de lluvia,
+  seis días con su máxima y mínima, sensación térmica, humedad, viento, índice UV, **calidad del aire** y **lluvia en la próxima hora**
+  (Open-Meteo, sin clave).
+- **Mercados:** añade tus propios valores (acciones, índices, fondos, oro, divisas, criptos: AAPL, SAN.MC, ^IBEX, EURUSD=X, ADA…), cada uno con
+  su **línea de 24 horas**; OK abre una **gráfica** (1 día, 5 días, 1 mes, 1 año) y **alertas de precio** («avísame si sube de / baja de»). Cualquiera
+  puede ir también en la fila de arriba. Solo información, no es consejo de inversión.
+- **Mis widgets:** un **calendario** con los festivos de tu país, **cuentas atrás** (Navidad, vacaciones, cumpleaños), **notas y recordatorios** a una
+  hora, el próximo y el último partido de **tu equipo de fútbol** (TheSportsDB), **divisas** y titulares de **noticias** de un RSS que elijas
+  (Google News, El País, RTVE, BBC… o cualquier dirección; en LG lo lee el propio servicio de la tienda de la tele).
+- **Tienda:** **búsqueda**, **filtros** (destacadas, nuevas, juegos, multimedia, utilidades, sin root, instaladas, mi lista), **orden**, una marca
+  **Nueva** en las apps que llegaron desde tu última visita, **mi lista** para guardar apps para luego, el **tamaño y si cabe**, **qué cambió** en su
+  última versión, **Desinstalar** desde su ficha y **repositorios extra** que añades tú (*Ajustes de inicio → Apps*). *Salud de la tele* avisa de
+  apps nuevas.
+- **Aspecto:** estilos listos (**OLED negro puro**, cristal claro, nocturno cálido, minimalista), **oscuro por horario** (desde-hasta), **tamaño del
+  texto**, **intensidad del cristal**, **esquinas**, **nombres de las apps** bajo los iconos, **tarjetas más pequeñas** (más por fila), **tu propia
+  foto de fondo** y la región de los paisajes (Andalucía, España, Lituania).
+- **Pestañas:** muéstralas, ocúltalas, ordénalas y renómbralas (*Ajustes de inicio → Inicio → Pestañas*, o mantén OK sobre una pestaña).
+- **Perfiles:** **Familia, Niños e Invitado**, cada uno con su estante, sus pestañas y su aspecto, y un PIN si quieres.
+- **Accesos directos:** pon nombre a tus **entradas HDMI** (PlayStation, Xbox, Switch, Chromecast…) y ponlas **en el estante**; mantén OK sobre
+  cualquier app para ponerla en el estante o **en el panel rápido**; un canal de YouTube también puede ir al estante; en el cajón salen las
+  últimas apps que abriste.
+- **Salvapantallas:** **foto del día** (Wikimedia), **astronomía** (NASA), **tus fotos** (un álbum compartido de Immich) o un **reloj grande** que se
+  mueve un poco cada minuto; con el tiempo; más tenue de noche; y la **pantalla apagada** tras 10, 30 o 60 minutos (OLED; el sonido sigue).
+- **Rutinas:** a una hora, todos los días: modo calma sí o no, el apagado programado, un tema, el salvapantallas, un perfil.
+- **Niños:** un **límite de tiempo diario** en modo niños (un adulto sigue con el PIN).
+- **Tiempo de uso** por app, hoy y esta semana, contado solo en la tele.
+- **Copias de tus ajustes:** guárdalas y restáuralas en la tele, o llévalas al ordenador o a otra tele con
+  `node tools/settings_backup.js <IP> export > mis-ajustes.json` (e `import`).
+- **El panel rápido** tiene casillas nuevas: el tiempo, mercados, mis widgets, perfil, tiempo de uso, rutinas y las apps que pongas ahí.
 
 ### FreeTV 2.0: a tu gusto
 

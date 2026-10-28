@@ -3,6 +3,32 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.1.0 (2026-10-28)
+
+**Everything your way.** Nothing from 2.0 was removed.
+
+### New
+- **Remote shortcuts:** 1-9 open the shelf's apps, 0 All Apps; the four colour buttons do what the person chooses (*Home Settings → Remote*).
+  Samsung asks Tizen for those keys.
+- **Weather sheet:** 12 hours with rain chance, six days, feels-like, humidity, wind, UV index, air quality (Open-Meteo air quality API),
+  rain in the next hour (minutely forecast).
+- **Markets sheet:** the person's own quotes (Yahoo Finance symbols, Binance coins), 24-hour sparklines, a chart per quote (1d/5d/1mo/1y),
+  price alerts, and any quote on the top row.
+- **My widgets:** calendar with public holidays (Nager.Date), countdowns, notes and timed reminders, football (TheSportsDB), currencies,
+  news from an RSS feed (read by the TV's store service: the screen cannot, no CORS; new `feed` method).
+- **Store:** search, filters, order, "New" since the last visit, my list, size and free space, release notes from GitHub, Uninstall from the
+  app's page, extra repositories; TV health counts new apps.
+- **Look:** ready-made styles, dark by schedule, text size, glass strength, corners, app names under the icons, smaller cards, own background
+  picture, landscapes by region.
+- **Tabs** shown, hidden, reordered and renamed; **profiles** (Family, Kids, Guest) with their own shelf, tabs and look and an optional PIN.
+- **Shortcuts:** named HDMI inputs on the shelf, any app onto the shelf or the quick panel, a YouTube channel onto the shelf, recent apps in
+  the drawer.
+- **Screensaver:** picture of the day (Wikimedia), astronomy (NASA APOD), an Immich shared album, a big moving clock, the weather on it,
+  dimmer at night, the screen off after a while (LG).
+- **Routines**, a **daily time limit** in kids mode, **time of use** per app, and **copies of the settings** on the TV and on the computer
+  (`tools/settings_backup.js`).
+- **Quick panel:** weather, markets, my widgets, profile, time of use, routines, and the person's apps.
+
 ## 2.0.0 (2026-10-28)
 
 **Make it yours.** Nothing from 1.x was removed.
