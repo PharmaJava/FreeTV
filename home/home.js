@@ -1759,7 +1759,7 @@
       {id: 'profile', sym: 'home', name: tr('Perfil', 'Profile', 'Perfil'), sub: profileName(profileNow()), run: function () { openInfo('profiles'); }},
       {id: 'usage', sym: 'timer', name: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), sub: tr('Hoje e esta semana', 'Today and this week', 'Hoy y esta semana'), run: function () { openInfo('usage'); }},
       {id: 'routines', sym: 'timer', name: tr('Rotinas', 'Routines', 'Rutinas'), sub: String(routines().length), run: function () { openInfo('routines'); }},
-      {id: 'theme', sym: 'sunny', name: tr('Tema', 'Theme', 'Tema'), sub: themes[theme], on: theme !== 'auto',
+      {id: 'theme', sym: 'partly_cloudy_night', name: tr('Tema', 'Theme', 'Tema'), sub: themes[theme], on: theme !== 'auto',
         run: function () { cycle('theme', ['auto', 'light', 'dark'], theme, 1); checkNight(); again(); }},
       {id: 'saver', sym: 'bedtime', name: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'), sub: tr('Agora', 'Now', 'Ahora'),
         run: function () { closeSheets(); setTimeout(showSaver, 300); }},
@@ -3563,7 +3563,7 @@
 
   // Ready to add: Yahoo Finance symbols (y) and Binance coins in dollars (b).
   var TICKER_PRESETS = [
-    ['y', '^GSPC', 'S&P 500'], ['y', '^IXIC', 'Nasdaq'], ['y', '^IBEX', 'IBEX 35'], ['y', '^STOXX50E', 'Euro Stoxx 50'], ['y', 'GC=F', tr('Ouro', 'Gold', 'Oro')],
+    ['y', '^GSPC', 'S&P 500'], ['y', '^IXIC', 'Nasdaq'], ['y', '^IBEX', 'IBEX 35'], ['y', '^STOXX50E', 'Euro Stoxx 50'], ['y', 'GC=F', 'Gold'],
     ['y', 'AAPL', 'Apple'], ['y', 'MSFT', 'Microsoft'], ['y', 'NVDA', 'Nvidia'], ['y', 'AMZN', 'Amazon'], ['y', 'TSLA', 'Tesla'], ['y', 'GOOGL', 'Alphabet'],
     ['y', 'SAN.MC', 'Santander'], ['y', 'ITX.MC', 'Inditex'], ['y', 'IBE.MC', 'Iberdrola'],
     ['y', 'EURUSD=X', 'EUR/USD'], ['y', 'EURGBP=X', 'EUR/GBP'], ['y', 'USDJPY=X', 'USD/JPY'], ['y', 'BRL=X', 'USD/BRL'],
@@ -3572,7 +3572,8 @@
 
   var BUILTIN_SPARK = {0: ['b', 'BTC'], 1: ['b', 'ETH'], 2: ['b', 'SOL'], 4: ['b', 'XRP'], 5: ['y', 'CSPX.L'], 6: ['y', 'CNDX.L']};
   var quoteData = {};   // 'y:AAPL' → {price, change, cur, spark: [...], at}
-  var RANGES = [['1d', '15m', tr('1 dia', '1 day', '1 día')], ['5d', '1h', tr('5 dias', '5 days', '5 días')], ['1mo', '1d', tr('1 mês', '1 month', '1 mes')], ['1y', '1wk', tr('1 ano', '1 year', '1 año')]];
+  var RANGES = [['1d', '15m'], ['5d', '1h'], ['1mo', '1d'], ['1y', '1wk']];
+  function rangeName(r) { return {'1d': tr('1 dia', '1 day', '1 día'), '5d': tr('5 dias', '5 days', '5 días'), '1mo': tr('1 mês', '1 month', '1 mes'), '1y': tr('1 ano', '1 year', '1 año')}[r[0]]; }
 
   function tickers() { var t = Prefs.opt('tickers', []); return t instanceof Array ? t : []; }
 
@@ -3671,6 +3672,7 @@
     }}];
     TICKER_PRESETS.forEach(function (p) {
       if (have.indexOf(p[0] + ':' + p[1]) >= 0) return;
+      if (p[1] === 'GC=F') p = [p[0], p[1], tr('Ouro', 'Gold', 'Oro')];
       rows.push({label: p[2], value: p[1], plain: true, run: function () { addTicker(p[0], p[1], p[2]); }});
     });
     return {title: tr('Adicionar um valor', 'Add a quote', 'Añadir un valor'), icon: 'bitcoin', visible: 7, rows: rows, back: function () { openInfo('markets'); }};
@@ -3687,7 +3689,7 @@
 
   INFO.ticker = function (q) {
     var range = RANGES[+Prefs.opt('tickerRange', 1)] || RANGES[1], t = q.ticker, d = quoteData[q.kind + ':' + q.sym + ':' + range[0]];
-    var rows = [{label: tr('Período', 'Range', 'Periodo'), value: range[2], step: function (dx) {
+    var rows = [{label: tr('Período', 'Range', 'Periodo'), value: rangeName(range), step: function (dx) {
       Prefs.set('tickerRange', (+Prefs.opt('tickerRange', 1) + (dx || 1) + RANGES.length) % RANGES.length);
     }}];
     rows.push({label: tr('Avisar se passar de…', 'Tell me if it goes above…', 'Avisarme si sube de…'), value: '›', icon: 'bell', run: function () { askAlert(q, 'above'); }});
@@ -3709,8 +3711,8 @@
       var head = el('div', 'tkhead', box);
       el('div', 'price', head, d ? money(d.price, d.cur) : q.price);
       var ch = d ? d.change : q.change;
-      if (!isNaN(ch)) el('div', 'change ' + (ch >= 0 ? 'up' : 'down'), head, Data.change(ch) + ' · ' + range[2]);
-      el('div', 'sym', head, q.sym);
+      if (!isNaN(ch)) el('div', 'change ' + (ch >= 0 ? 'up' : 'down'), head, Data.change(ch) + ' · ' + rangeName(range));
+      el('div', 'tsym', head, q.sym);
       var canvas = el('canvas', 'tkchart', box);
       canvas.width = 1440;
       canvas.height = 300;
@@ -4268,12 +4270,17 @@
   // MARK: - 2.1: HDMI inputs with a name and on the shelf; shelf and quick panel from any app; recent apps in the drawer
 
   var INPUT_KINDS = [['', 'HDMI', 'hdmi', ''], ['ps', 'PlayStation', 'gamepad', '#0070D1'], ['xbox', 'Xbox', 'gamepad', '#107C10'], ['switch', 'Nintendo Switch', 'gamepad', '#E60012'],
-    ['chromecast', 'Chromecast', 'tv', '#4285F4'], ['appletv', 'Apple TV', 'tv', '#1C1C1E'], ['pc', 'PC', 'tv', '#5B5F6B'], ['tdt', tr('Decodificador', 'Set-top box', 'Decodificador'), 'live_tv', '#7A4DFF'],
-    ['bar', tr('Barra de som', 'Soundbar', 'Barra de sonido'), 'speaker', '#3A3D45']];
+    ['chromecast', 'Chromecast', 'tv', '#4285F4'], ['appletv', 'Apple TV', 'tv', '#1C1C1E'], ['pc', 'PC', 'tv', '#5B5F6B'], ['tdt', 'Set-top box', 'live_tv', '#7A4DFF'],
+    ['bar', 'Soundbar', 'speaker', '#3A3D45']];
 
   function inputKind(id) {
     var k = (Prefs.opt('inputNames', {}) || {})[id] || '';
-    for (var i = 0; i < INPUT_KINDS.length; i++) if (INPUT_KINDS[i][0] === k) return INPUT_KINDS[i];
+    for (var i = 0; i < INPUT_KINDS.length; i++) if (INPUT_KINDS[i][0] === k) {
+      var x = INPUT_KINDS[i].slice();   // the two that have a word in each language
+      if (k === 'tdt') x[1] = tr('Decodificador', 'Set-top box', 'Decodificador');
+      if (k === 'bar') x[1] = tr('Barra de som', 'Soundbar', 'Barra de sonido');
+      return x;
+    }
     return INPUT_KINDS[0];
   }
 

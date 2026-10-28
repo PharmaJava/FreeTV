@@ -720,7 +720,7 @@ body.lessmotion *, body.lessmotion *::before, body.lessmotion *::after { -webkit
 .tkhead .change { position: absolute; left: 0; top: 70px; font-size: 24px; font-weight: 600; }
 .tkhead .change.up { color: #3FD69B; }
 .tkhead .change.down { color: #FF6B6B; }
-.tkhead .sym { position: absolute; right: 0; top: 18px; font-size: 26px; color: rgba(255, 255, 255, 0.45); }
+.tkhead .tsym { position: absolute; right: 0; top: 18px; font-size: 26px; color: rgba(255, 255, 255, 0.45); }
 .tkchart { display: block; width: 1440px; height: 300px; margin: 18px 0 14px; }
 
 .wgrid { margin: 0 6px 12px; white-space: normal; }
