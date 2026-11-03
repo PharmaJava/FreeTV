@@ -293,10 +293,13 @@ Store.prototype.selfUpdate = async function (info) {
     if ((h.out.trim().split(/\s+/)[0] || '').toLowerCase() !== want) throw fail('La suma SHA-256 NO coincide: la he borrado y no instalo nada.');
     this.set({phase: 'installing'});
     var payload = JSON.stringify({id: 'com.gathin.tvhome', ipkUrl: file, subscribe: true});
-    // Apart from this session and this service (the package replaces both): install, scan the services, open FreeTV, clean up.
-    var script = 'timeout -t 600 luna-send-pub -i luna://com.webos.appInstallService/dev/install ' + q(payload) + '; /usr/sbin/ls-control scan-services; sleep 3; ' +
-      'luna-send-pub -n 1 luna://com.webos.applicationManager/launch ' + q('{"id":"com.gathin.tvhome"}') + '; /bin/rm -f ' + q(file);
-    await this.exec(conn, 'nohup /bin/sh -c ' + q(script) + ' > ' + TEMP + '/freetv-self-update.log 2>&1 < /dev/null &');
+    // Apart from this session and this service (the package replaces both): install, scan the services, open FreeTV, clean up. The
+    // script goes over as base64 (it has quotes of its own) and runs with nohup.
+    var script = 'timeout -t 600 luna-send-pub -i luna://com.webos.appInstallService/dev/install \'' + payload + '\'\n/usr/sbin/ls-control scan-services\nsleep 3\n' +
+      'luna-send-pub -n 1 luna://com.webos.applicationManager/launch \'{"id":"com.gathin.tvhome"}\'\n/bin/rm -f \'' + file + '\'\n';
+    var runner = TEMP + '/freetv-self-update.sh';
+    await this.exec(conn, 'echo ' + Buffer.from(script).toString('base64') + ' | base64 -d > ' + runner);
+    await this.exec(conn, 'nohup /bin/sh ' + runner + ' > ' + TEMP + '/freetv-self-update.log 2>&1 < /dev/null &');
     this.set({phase: 'done', message: ''});
     file = '';
   } catch (e) {

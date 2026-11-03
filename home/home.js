@@ -1419,9 +1419,8 @@
         fresh = true;
         commFrom = 0;
         cache('catalogue', {at: Date.now(), packages: data.packages});
-        var had = commAll.length;
         accept(data.packages);
-        if (!finished) { finished = true; if (done) done(); } else if (st.zone === Z.COMM && commOpen < 0 && !had) renderCommunity();
+        if (!finished) { finished = true; if (done) done(); } else if (st.zone === Z.COMM && commOpen < 0) renderCommunity();   // the copy on screen gives way to the fresh list
         loadExtra();
       }, 25000);
     }

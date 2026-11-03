@@ -11,6 +11,27 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.2: lighter, and it updates itself
+
+- **Lighter and smoother.** The home no longer repaints big shadows on every frame, the permanent blurs (round buttons, drawer, toast) are
+  only used in *Pretty*, and the background follows the focus after a short pause. *Home Settings → Look → Smoothness*: **Automatic** (the
+  default: it times the first moves and, if they run under 32 frames a second, turns the smooth mode on by itself and says so), **Smooth**
+  (no glass, flat shadows), **Balanced** (blur only on the panels) or **Pretty** (everything).
+- **RAM line.** Under the top buttons: the TV's memory in use (`RAM 1416 / 1837 MB`, amber over 80 %, red over 90 %) and FreeTV's own
+  (`FreeTV 41 MB`). *Home Settings → Widgets → RAM in use* switches it off. (Netflix, Amazon and other apps keep memory while they sit in the
+  background: that is where most of a 2 GB TV's RAM goes.)
+- **The screensaver is solid.** It comes up opaque and instantly, in and out; only its photos fade, inside it. The night dimming no longer
+  makes it see-through.
+- **FreeTV updates itself from your repository** (LG). *Home Settings → Maintenance → FreeTV updates*: **Tell me** (default: it says so and
+  waits for your yes), **Automatic** (installs by itself, but only while FreeTV is on screen with a screensaver up, never over another app) or
+  **Never**. *FreeTV on GitHub* shows the state and installs on OK. The TV's own store service downloads the release's package, checks its
+  **SHA-256** against the release's `SHA256SUMS` and installs it over FreeTV; FreeTV opens again by itself. Your settings, **TMDB key and city
+  stay** (the package of a release carries none: they live on the TV). Which repository a TV follows: `state/update-repo.txt` in the store
+  service's folder (`owner/name`, default `PharmaJava/FreeTV`), so a fork's TVs can follow the fork.
+  To publish a version: `bash tools/make_release.sh --publish` (builds the package for everybody and makes the GitHub release).
+- **The Store** keeps the catalogue on the TV (it opens at once and works offline, saying how old the copy is), waits longer and tries three
+  times, and when it cannot connect it says **why** and offers **Try again**.
+
 ### FreeTV 2.1: everything your way
 
 The weather in full, markets with charts and price alerts, a page of widgets, the remote's buttons as shortcuts, a Store you can
@@ -321,6 +342,28 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.2: más ligero, y se actualiza solo
+
+- **Más ligero y fluido.** La pantalla de inicio ya no repinta sombras grandes en cada fotograma, los difuminados permanentes (botones redondos,
+  cajón, avisos) solo se usan en *Bonita*, y el fondo sigue al foco tras una pequeña pausa. *Ajustes de inicio → Aspecto → Fluidez*:
+  **Automática** (por defecto: mide los primeros movimientos y, si van por debajo de 32 fotogramas por segundo, activa sola el modo fluido y
+  lo dice), **Máxima** (sin cristal, sombras planas), **Equilibrada** (difuminado solo en los paneles) o **Bonita** (todo).
+- **Línea de RAM.** Bajo los botones de arriba: la memoria de la tele en uso (`RAM 1416 / 1837 MB`, ámbar a partir del 80 %, roja a partir del
+  90 %) y la de FreeTV (`FreeTV 41 MB`). *Ajustes de inicio → Widgets → RAM usada* la apaga. (Netflix, Amazon y otras apps se quedan con
+  memoria mientras están en segundo plano: ahí se va casi toda la RAM de una tele de 2 GB.)
+- **El salvapantallas es sólido.** Sale opaco y al instante, al entrar y al salir; solo sus fotos se funden, dentro de él. El oscurecimiento
+  nocturno ya no lo vuelve transparente.
+- **FreeTV se actualiza solo desde tu repositorio** (LG). *Ajustes de inicio → Mantenimiento → Actualizaciones de FreeTV*: **Avisar** (por
+  defecto: lo dice y espera tu sí), **Automáticas** (se instala sola, pero solo con FreeTV en pantalla y un salvapantallas puesto, nunca encima
+  de otra app) o **Nunca**. *FreeTV en GitHub* enseña el estado e instala con OK. El servicio de la tienda de la propia tele descarga el
+  paquete de la release, comprueba su **SHA-256** con el `SHA256SUMS` de la release y lo instala encima de FreeTV; FreeTV se reabre solo. Tus
+  ajustes, **tu clave de TMDB y tu ciudad se quedan** (el paquete de una release no lleva ninguno: viven en la tele). Qué repositorio sigue
+  cada tele: `state/update-repo.txt` en la carpeta del servicio de la tienda (`dueño/nombre`, por defecto `PharmaJava/FreeTV`), así las teles de
+  un fork pueden seguir al fork. Para publicar una versión: `bash tools/make_release.sh --publish` (construye el paquete para todos y crea la
+  release en GitHub).
+- **La Tienda** guarda el catálogo en la tele (abre al instante y funciona sin conexión, diciendo qué antigüedad tiene la copia), espera más y
+  lo intenta tres veces, y cuando no puede conectar dice **por qué** y ofrece **Intentar de nuevo**.
 
 ### FreeTV 2.1: todo a tu manera
 

@@ -3,6 +3,28 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.2.0 (2026-11-03)
+
+**Lighter, and it updates itself.** Nothing from 2.1 was removed.
+
+### New
+- **FreeTV updates itself from its GitHub releases** (LG): *Home Settings → Maintenance → FreeTV updates* (tell me / automatic / never) and
+  *FreeTV on GitHub*. `store-service/update.js` reads the latest release of the repository in `state/update-repo.txt` (default
+  PharmaJava/FreeTV); `Store.selfUpdate` downloads `FreeTV-webos-<version>.ipk`, checks it against the release's `SHA256SUMS` and installs it
+  with `/dev/install`, apart from the service (the package replaces it), then opens FreeTV. The settings, TMDB key and city survive: a build
+  with them keeps a copy in `fmtv.cfg`, which is backed up with the rest, and a build without them takes it back (`home/data.js`).
+  `tools/make_release.sh [--publish]` builds the package for everybody (`build_home.py --generic`) and makes the release.
+- **RAM line** (*Widgets → RAM in use*): the TV's memory in use (the store service's `sysinfo`, read from /proc) and FreeTV's JS heap.
+- **Smoothness** (*Look*): Automatic (times the first moves; under 32 fps it turns the smooth mode on), Smooth, Balanced, Pretty.
+- **Store:** the catalogue is kept on the TV and refreshed behind it, three tries with a longer wait, the reason of a failure and *Try again*.
+
+### Fixed
+- **The screensaver mixed with the home:** the night dimming was the layer's opacity and it faded in over 1.2 s. It is solid and instant now
+  (`#saver .dimmer` darkens inside it).
+- Heavier than it needed to be: shadows were animated (repainted every frame), the round buttons, drawer and toast blurred all the time, the
+  backdrop decoded a picture for every card the focus crossed, the power watcher asked LG every 0.7 s even with someone using the TV, and
+  everything kept ticking while another app was in front. The store service no longer loads its SSH library to answer `sysinfo`.
+
 ## 2.1.0 (2026-10-28)
 
 **Everything your way.** Nothing from 2.0 was removed.

@@ -162,5 +162,95 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('FreeTV updating itself');
+    var update = require(path.join(root, 'store-service', 'update.js'));
+    var base = 'https://github.com/PharmaJava/FreeTV/releases/download/v9.9.0/';
+    function release(extra) {
+      var r = {tag_name: 'v9.9.0', draft: false, prerelease: false, body: 'Notes', published_at: '2026-11-03T10:00:00Z', assets: [
+        {name: 'FreeTV-webos-9.9.0.ipk', browser_download_url: base + 'FreeTV-webos-9.9.0.ipk', size: 1700000},
+        {name: 'SHA256SUMS', browser_download_url: base + 'SHA256SUMS', size: 90}]};
+      for (var k in extra) r[k] = extra[k];
+      return r;
+    }
+    return ok('a release is read, and only what comes from the repository itself', function () {
+      var d = update.describe(release(), 'PharmaJava/FreeTV');
+      assert.strictEqual(d.version, '9.9.0');
+      assert.strictEqual(d.ipkName, 'FreeTV-webos-9.9.0.ipk');
+      assert.strictEqual(update.describe(release({prerelease: true}), 'PharmaJava/FreeTV'), null);
+      assert.strictEqual(update.describe(release({draft: true}), 'PharmaJava/FreeTV'), null);
+      assert.strictEqual(update.describe(release({tag_name: 'nightly'}), 'PharmaJava/FreeTV'), null);
+      assert.strictEqual(update.describe(release({assets: release().assets.slice(0, 1)}), 'PharmaJava/FreeTV'), null, 'no SHA256SUMS: not offered');
+      assert.strictEqual(update.describe(release(), 'someone/else'), null, 'assets of another repository');
+      var evil = release();
+      evil.assets[0].browser_download_url = 'https://evil.example/FreeTV-webos-9.9.0.ipk';
+      assert.strictEqual(update.describe(evil, 'PharmaJava/FreeTV'), null);
+    });
+  })
+  .then(function () {
+    var update = require(path.join(root, 'store-service', 'update.js'));
+    return ok('versions: 2.10 is newer than 2.9, equal is not newer', function () {
+      assert.ok(update.isNewer('2.10.0', '2.9.5'));
+      assert.ok(update.isNewer('2.2.1', '2.2'));
+      assert.ok(!update.isNewer('2.2.0', '2.2'));
+      assert.ok(!update.isNewer('2.1.9', '2.2.0'));
+    });
+  })
+  .then(function () {
+    function selfFake(sumsText, hashOut) {
+      var s = new Store({}), ran = [];
+      s.connect = function () { return Promise.resolve({end: function () {}}); };
+      s.freeMb = function () { return Promise.resolve(250); };
+      s.exec = function (conn, cmd) {
+        ran.push(cmd);
+        if (/^curl .*65536/.test(cmd)) return Promise.resolve({code: 0, out: sumsText, err: ''});
+        if (/^sha256sum/.test(cmd)) return Promise.resolve({code: 0, out: hashOut + '  /media/developer/temp/freetv-self-update.ipk\n', err: ''});
+        return Promise.resolve({code: 0, out: '', err: ''});
+      };
+      s.ran = ran;
+      return s;
+    }
+    var info = {version: '9.9.0', ipkName: 'FreeTV-webos-9.9.0.ipk', size: 1700000,
+      ipkUrl: 'https://github.com/PharmaJava/FreeTV/releases/download/v9.9.0/FreeTV-webos-9.9.0.ipk', sumsUrl: 'https://github.com/PharmaJava/FreeTV/releases/download/v9.9.0/SHA256SUMS'};
+    var good = new Array(65).join('b');
+    return ok('a package whose hash does not match is deleted, not installed', function () {
+      var s = selfFake(good + '  FreeTV-webos-9.9.0.ipk\n', new Array(65).join('c'));
+      return s.selfUpdate(info).then(function () {
+        assert.strictEqual(s.job.phase, 'failed');
+        assert.ok(/NO coincide/.test(s.job.message));
+        assert.ok(!s.ran.some(function (c) { return /dev\/install/.test(c); }), 'nothing was installed');
+        assert.ok(s.ran.some(function (c) { return /rm -f/.test(c); }), 'the package was removed');
+      });
+    }).then(function () {
+      return ok('a release without its hash line is not installed', function () {
+        var s = selfFake('', good);
+        return s.selfUpdate(info).then(function () {
+          assert.strictEqual(s.job.phase, 'failed');
+          assert.ok(!s.ran.some(function (c) { return /dev\/install/.test(c); }));
+        });
+      });
+    }).then(function () {
+      return ok('a checked package is installed apart from the service, and FreeTV is opened again', function () {
+        var s = selfFake(good + '  FreeTV-webos-9.9.0.ipk\n', good);
+        return s.selfUpdate(info).then(function () {
+          assert.strictEqual(s.job.phase, 'done');
+          var script = s.ran.filter(function (c) { return /base64 -d/.test(c); })[0] || '', run = s.ran.filter(function (c) { return /^nohup \/bin\/sh /.test(c); })[0] || '';
+          var text = Buffer.from((/echo (\S+) \|/.exec(script) || [])[1] || '', 'base64').toString();
+          assert.ok(/dev\/install/.test(text) && /applicationManager\/launch/.test(text) && /com\.gathin\.tvhome/.test(text), 'installs, then opens FreeTV');
+          assert.ok(/ &$/.test(run) && /< \/dev\/null/.test(run), 'runs apart from the session');
+          assert.strictEqual(s.busy, false);
+        });
+      });
+    });
+  })
+  .then(function () {
+    return ok('a bad address is refused before anything is downloaded', function () {
+      var s = new Store({});
+      s.connect = function () { throw new Error('should not connect'); };
+      return s.selfUpdate({version: '9', ipkName: 'x.ipk', ipkUrl: 'http://x/y; rm -rf /', sumsUrl: 'https://a/b'}).then(function () {
+        assert.strictEqual(s.job.phase, 'failed');
+      });
+    });
+  })
+  .then(function () {
     console.log('\n' + passed + ' checks passed' + (process.exitCode ? ', some FAILED' : ''));
   });

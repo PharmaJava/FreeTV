@@ -96,3 +96,17 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   NASA APOD (DEMO_KEY), GitHub releases, an Immich shared link, RSS through the store service's `feed`.
 - German and Russian are not kept up to date for the 2.0/2.1 texts (the person asked for Spanish, English and Portuguese only).
 
+## 2.2: updates, lighter home
+
+- **Releases and self-update.** `tools/make_release.sh [--publish]` builds `release/FreeTV-webos-<version>.ipk` and `SHA256SUMS` with
+  `build_home.py --generic` (no key, no city) and makes the GitHub release `v<version>`; the TVs' service (`update.js`) only accepts assets
+  of that repository. Never publish a package built from your own `config.properties`. To test an update on a TV: publish the release, then
+  put an older version on the TV (`bash install.sh`) and use *Maintenance → FreeTV on GitHub*.
+- **A package without settings must find them on the TV:** `fmtv.cfg` (written by `home/data.js` when a build has a key or a city; in
+  `SAVED_KEYS` and the service's `PREF_KEYS`). Add a new build-time setting to `KEYS` there.
+- **Smoothness:** `body.lite` (smooth) and `body.blurhome` (pretty) are decided in `applyLook` from `perfNow()`; a persistent element must
+  not use `backdrop-filter` outside `body.blurhome`, and no transition may animate `box-shadow`.
+- **The service must stay light:** `service.js` loads `store.js`/`youtube.js` (and so ssh2) only when a method needs them: `sysinfo` is
+  called every 15 s while FreeTV is on screen.
+- The dev shell cannot close other apps (`luna-send` is denied to it): the RAM line shows the cause, it cannot free it.
+
