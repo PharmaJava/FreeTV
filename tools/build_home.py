@@ -127,4 +127,7 @@ def build(config):
 
 
 if __name__ == '__main__':
-    build(read_config(config_path(sys.argv[1:])))
+    cfg = read_config(config_path(sys.argv[1:]))
+    if '--generic' in sys.argv:   # a package for everybody (a release): no city, no key; the TV's time zone says where it is
+        cfg.update({'tmdbKey': '', 'latitude': '', 'longitude': '', 'city': '', 'tmdbRegion': '', 'currency': '', 'language': 'auto'})
+    build(cfg)

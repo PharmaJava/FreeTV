@@ -5,8 +5,10 @@
  * when FreeTV is installed from the computer (the page cannot write it: this service has no method for that).
  */
 var fs = require('fs'), path = require('path'), Service = require('webos-service');
-var Store = require('./store').Store;
-var youtube = require('./youtube');
+// Loaded when a method needs them (the SSH library is most of this service's memory: sysinfo, which FreeTV's RAM line calls every
+// few seconds, must not pay for it).
+var Store = function (options) { return new (require('./store').Store)(options); };
+var youtube = { search: function (q, done) { require('./youtube').search(q, done); } };
 
 var service = new Service('com.gathin.tvhome.store');
 var dir = path.join(__dirname, 'state'), keyFile = path.join(dir, 'key.pem');
@@ -20,7 +22,7 @@ function current() {
   var key = readKey();
   if (!key) { store = null; return null; }
   if (!store || store.key !== key) {
-    store = new Store({key: key, log: function (m) { console.log(m); }});
+    store = Store({key: key, log: function (m) { console.log(m); }});
     store.hardenState();   // key.pem back to 640 (a reinstall makes it readable by every app)
   }
   return store;
@@ -109,7 +111,7 @@ service.register('devmode', function (message) {
 
 /** The settings the person chose (and the keys of the TV's remote API) survive a reinstall of FreeTV: the page keeps a copy here. */
 var PREFS = path.join(dir, 'prefs.json');
-var PREF_KEYS = /^fmtv\.(prefs|devApps|ssapKey|ssapPowerKey2|ssapRefused|ssapPowerRefused|usage)$/;
+var PREF_KEYS = /^fmtv\.(prefs|devApps|ssapKey|ssapPowerKey2|ssapRefused|ssapPowerRefused|usage|cfg)$/;
 service.register('prefsSave', function (message) {
   var data = (message.payload || {}).data, clean = {}, k;
   if (!data || typeof data !== 'object') { message.respond({returnValue: false, error: 'sin datos'}); return; }
@@ -146,6 +148,36 @@ service.register('feed', function (message) {
   fetchText((message.payload || {}).url, function (err, text) {
     message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, text: text});
   });
+});
+
+/** FreeTV's own releases: is there a newer one than {have}? The answer is what the release says, never anything the page sends. */
+var lastRelease = null;
+service.register('updateCheck', function (message) {
+  var u = require('./update'), have = String((message.payload || {}).have || '');
+  u.latest(u.repo(dir), function (err, d) {
+    if (err) { message.respond({returnValue: false, error: String(err.message || err)}); return; }
+    lastRelease = d;
+    message.respond({returnValue: true, repo: u.repo(dir), version: d.version, notes: d.notes, size: d.size, at: d.at, newer: !have || u.isNewer(d.version, have)});
+  });
+});
+
+/** Installs the release updateCheck found (and only that one), once the person said yes (or chose automatic) on the TV. */
+service.register('updateInstall', function (message) {
+  var s = current(), u = require('./update'), want = String((message.payload || {}).version || '');
+  if (!s) { message.respond({returnValue: false, error: 'FreeTV todavía no tiene permiso para instalar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
+  if (!lastRelease || lastRelease.version !== want) { message.respond({returnValue: false, error: 'Busca primero las actualizaciones.'}); return; }
+  var r = s.startSelfUpdate(lastRelease);
+  message.respond(r.ok ? {returnValue: true} : {returnValue: false, error: r.error});
+});
+
+/** The TV's memory (MB) and load, for FreeTV's RAM line: read from /proc, nothing else. */
+service.register('sysinfo', function (message) {
+  try {
+    var m = fs.readFileSync('/proc/meminfo', 'utf8');
+    var kb = function (key) { var r = new RegExp('^' + key + ':\\s+(\\d+)', 'm').exec(m); return r ? Math.round(r[1] / 1024) : 0; };
+    message.respond({returnValue: true, total: kb('MemTotal'), avail: kb('MemAvailable'), swapTotal: kb('SwapTotal'), swapFree: kb('SwapFree'),
+      load: parseFloat(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) || 0});
+  } catch (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); }
 });
 
 /** LG's ACR state (see store.js privacy). */

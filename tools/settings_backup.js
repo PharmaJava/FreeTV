@@ -14,7 +14,7 @@
 var fs = require('fs'), path = require('path');
 var Store = require(path.join(__dirname, '..', 'store-service', 'store.js')).Store;
 var STATE = '/media/developer/apps/usr/palm/services/com.gathin.tvhome.store/state/prefs.json';
-var MINE = /^fmtv\.(prefs|usage)$/;
+var MINE = /^fmtv\.(prefs|usage|cfg)$/;
 
 function usage() {
   console.error('node tools/settings_backup.js <IP> export > my-settings.json\nnode tools/settings_backup.js <IP> import my-settings.json');

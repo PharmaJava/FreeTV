@@ -98,7 +98,7 @@ var TV = (function () {
   // the TV once to allow it (power state and screen: turnOnScreen needs more than CONTROL_POWER); the key it gives back is kept.
   // It is asked when FreeTV opens (powerPair), while someone is looking: asked when the screensaver starts, nobody answered it.
   var POWER_KEY = 'fmtv.ssapPowerKey2', POWER_REFUSED = 'fmtv.ssapPowerRefused';
-  var power = {on: false, ws: null, timer: 0, retry: 0, pairing: false, woke: 0, hook: null};
+  var power = {on: false, ws: null, timer: 0, retry: 0, pairing: false, woke: 0, hook: null, pace: null};
   var POWER_MANIFEST = {manifestVersion: 1, appVersion: '1.0', permissions: ['READ_POWER_STATE', 'CONTROL_POWER', 'CONTROL_TV_SCREEN', 'CONTROL_DISPLAY']};
 
   function powerKey() {
@@ -179,7 +179,7 @@ var TV = (function () {
     function ask() {
       if (!power.on || power.ws !== ws) return;
       send('state', 'com.webos.service.tvpower/power/getPowerState');
-      power.timer = setTimeout(ask, 700);
+      power.timer = setTimeout(ask, power.pace ? power.pace() : 1500);
     }
     function again() {
       if (!power.on || power.ws !== ws) return;
@@ -488,7 +488,7 @@ var TV = (function () {
 
     /** Watch for LG's screensaver while FreeTV is on screen: when it comes, fn() says whether FreeTV takes over (it shows its own
         and returns true, and LG's is sent away) or leaves it (false). */
-    watchScreen: function (fn) { power.hook = fn; powerStart(); },
+    watchScreen: function (fn, pace) { power.hook = fn; power.pace = pace || null; powerStart(); },
 
     /** Asks once, while someone is looking, for what holdScreen needs; done(ok). */
     pairScreen: powerPair,

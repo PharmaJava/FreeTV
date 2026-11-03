@@ -262,6 +262,61 @@ Store.prototype.run = async function (appId, flag, opts) {
   }
 };
 
+/**
+ * FreeTV's own update (see update.js): the package of a release of FreeTV's repository, downloaded by the TV's curl, checked against the
+ * release's SHA256SUMS, and installed over this app with the same /dev/install call an app install uses. The install then runs apart from
+ * this service (the package replaces this very service), and opens FreeTV again when it is done.
+ * info comes from update.js (never from the page): {version, ipkName, ipkUrl, sumsUrl, size}.
+ */
+Store.prototype.selfUpdate = async function (info) {
+  var self = this, conn = null, file = TEMP + '/freetv-self-update.ipk';
+  try {
+    if (!info || !URL_RE.test(info.ipkUrl || '') || !URL_RE.test(info.sumsUrl || '') || !/^[A-Za-z0-9._-]+$/.test(info.ipkName || '')) throw fail('La actualización no es válida.');
+    conn = await this.connect();
+    this.set({phase: 'starting', id: 'com.gathin.tvhome', title: 'FreeTV ' + info.version, message: '', note: ''});
+    var free = await this.freeMb(conn), sizeMb = (info.size || 0) / 1048576;
+    if (free !== null && sizeMb && free < sizeMb * 2.5) throw fail('Ocupa unos ' + Math.round(sizeMb) + ' MB y solo quedan ' + free + ' MB libres: borra apps que no uses.');
+    await this.exec(conn, '/bin/mkdir -p ' + TEMP + ' && /bin/chmod 777 ' + TEMP);
+    this.set({phase: 'downloading'});
+    var d = await this.exec(conn, '/bin/rm -f ' + q(file) + '; curl -fsSL --connect-timeout 20 --max-time 900 --max-filesize ' + (60 * 1048576) + ' -o ' + q(file) + ' ' + q(info.ipkUrl));
+    if (d.code !== 0) throw fail('No pude descargar la actualización (' + (d.err.trim().split('\n').pop() || 'código ' + d.code) + ').');
+    var sums = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 --max-filesize 65536 ' + q(info.sumsUrl));
+    if (sums.code !== 0) throw fail('No pude leer las sumas de comprobación de la versión.');
+    var want = '';
+    sums.out.split('\n').forEach(function (line) {
+      var m = /^([0-9a-fA-F]{64})\s+\*?(\S+)\s*$/.exec(line.trim());
+      if (m && m[2] === info.ipkName) want = m[1].toLowerCase();
+    });
+    if (!SHA_RE.test(want)) throw fail('La versión no publica la suma SHA-256 de su paquete: no la instalo.');
+    this.set({phase: 'verifying'});
+    var h = await this.exec(conn, 'sha256sum ' + q(file));
+    if ((h.out.trim().split(/\s+/)[0] || '').toLowerCase() !== want) throw fail('La suma SHA-256 NO coincide: la he borrado y no instalo nada.');
+    this.set({phase: 'installing'});
+    var payload = JSON.stringify({id: 'com.gathin.tvhome', ipkUrl: file, subscribe: true});
+    // Apart from this session and this service (the package replaces both): install, scan the services, open FreeTV, clean up.
+    var script = 'timeout -t 600 luna-send-pub -i luna://com.webos.appInstallService/dev/install ' + q(payload) + '; /usr/sbin/ls-control scan-services; sleep 3; ' +
+      'luna-send-pub -n 1 luna://com.webos.applicationManager/launch ' + q('{"id":"com.gathin.tvhome"}') + '; /bin/rm -f ' + q(file);
+    await this.exec(conn, 'nohup /bin/sh -c ' + q(script) + ' > ' + TEMP + '/freetv-self-update.log 2>&1 < /dev/null &');
+    this.set({phase: 'done', message: ''});
+    file = '';
+  } catch (e) {
+    this.set({phase: 'failed', message: e && e.fatal ? e.message : 'No se pudo actualizar: ' + (e && e.message ? e.message : e)});
+    this.log('self update failed: ' + this.job.message);
+    try { if (conn && file) await this.exec(conn, '/bin/rm -f ' + q(file)); } catch (x) {}
+  } finally {
+    try { if (conn) conn.end(); } catch (e) {}
+    this.busy = false;
+  }
+};
+
+Store.prototype.startSelfUpdate = function (info) {
+  if (this.busy) return {ok: false, error: 'Ya hay una instalación en marcha.'};
+  this.busy = true;
+  this.set({phase: 'starting', id: 'com.gathin.tvhome', title: '', message: '', note: '', batch: null});
+  this.selfUpdate(info);
+  return {ok: true};
+};
+
 var DEVMODE_TOKEN = '/var/luna/preferences/devmode_enabled';
 var DEVMODE_URL = 'https://developer.lge.com/secure/';
 

@@ -184,13 +184,18 @@
     list = $('buttons').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TOP && st.top === TABS + i);
     setClass($('quotes'), 'hide', st.zone === Z.TOP && st.top >= TABS);
+    setClass($('sysmem'), 'hide', st.zone === Z.TOP && st.top >= TABS);
     list = $('cards').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.CARDS && st.card === i);
     if (st.zone === Z.CARDS) {
       // keep the focused card inside the screen, and let the blurred background follow it
       cardShift = st.card > 0 ? Math.max(0, cardLeft(st.card) + cardW(st.card) - 1840) : 0;
       $('cards').style.webkitTransform = $('cards').style.transform = cardShift ? 'translateX(' + (-cardShift) + 'px)' : '';
-      if (cards[st.card] && cards[st.card] !== bgShown) { bgShown = cards[st.card]; backdrop(bgFor(cardBackdrop(bgShown))); }
+      if (cards[st.card] && cards[st.card] !== bgShown) {
+        bgShown = cards[st.card];
+        clearTimeout(bgTimer);
+        bgTimer = setTimeout(function () { backdrop(bgFor(cardBackdrop(bgShown))); }, 220);
+      }
     }
     list = $('tiles').children;
     for (i = 0; i < list.length; i++) {
@@ -258,6 +263,39 @@
   }
   function localTab() { return st.tab < 2; }
 
+  /** How much the home may spend: 'pretty' (every blur), 'balanced' (blur only on the panels) or 'smooth' (none, flat shadows). Automatic
+      starts balanced and goes to smooth when the first moves run under 32 frames a second (it says so). */
+  function perfNow() {
+    var p = Prefs.opt('perf', 'auto');
+    if (p === 'auto') p = Prefs.opt('perfAuto', 'balanced');
+    return p === 'smooth' || p === 'pretty' ? p : 'balanced';
+  }
+
+  var probe = {n: 0, slow: 0, on: false};
+  /** Called after a move: times the frames of the next second; two slow samples turn the smooth mode on by themselves. */
+  function probeFrames() {
+    if (probe.on || probe.n >= 8 || document.hidden || Prefs.opt('perf', 'auto') !== 'auto' || Prefs.opt('perfAuto', 'balanced') === 'smooth' || !window.requestAnimationFrame) return;
+    probe.on = true;
+    var last = 0, frames = 0, t0 = 0, stop = 0;
+    function tick(t) {
+      if (!t0) t0 = t;
+      if (last) frames++;
+      last = t;
+      if (t - t0 < 900 && !document.hidden) { stop = requestAnimationFrame(tick); return; }
+      probe.on = false;
+      probe.n++;
+      var fps = frames / ((t - t0) / 1000);
+      if (frames >= 6 && fps < 32) probe.slow++;
+      if (probe.slow >= 2) {
+        Prefs.set('perfAuto', 'smooth');
+        applyLook();
+        toast(tr('Modo fluido ligado: menos efeitos para ir mais rápido (Aparência → Fluidez)', 'Smooth mode on: fewer effects to go faster (Look → Smoothness)',
+          'Modo fluido activado: menos efectos para ir más rápido (Aspecto → Fluidez)'));
+      }
+    }
+    stop = requestAnimationFrame(tick);
+  }
+
   function frostWanted() {
     var m = Prefs.glass();
     if (m === 'off') return false;
@@ -269,7 +307,11 @@
 
   /** The look the person chose: frosted glass, calm mode, the accent colour, and the tabs that go with them. */
   function applyLook() {
-    setClass(body, 'frost', frostWanted());
+    var perf = perfNow(), frost = frostWanted();
+    setClass(body, 'frost', frost && perf !== 'smooth');
+    setClass(body, 'blurhome', frost && perf === 'pretty');
+    setClass(body, 'lite', perf === 'smooth');
+    setClass(body, 'nosysmem', Prefs.opt('ramWidget', true) === false);
     setClass(body, 'calm', Prefs.calm());
     setClass(body, 'kids', Prefs.kids());
     ACCENTS.forEach(function (a) { setClass(body, 'acc-' + a, Prefs.accent() === a); });
@@ -546,7 +588,7 @@
     updateFocus();
   }
 
-  var bgUrl = null, bgFront = 'bgA';
+  var bgUrl = null, bgFront = 'bgA', bgTimer = 0;
 
   /** The first pick's photo as the background: drawn tiny and stretched, it's already as soft as a heavy blur. */
   function backdrop(url) {
@@ -957,6 +999,10 @@
       if (Prefs.wallpaper() === 'url') rows.push({label: tr('   endereço da foto', '   picture address', '   dirección de la foto'), value: '›', step: function (d) { if (d >= 0) askWall(); }});
       if (Prefs.wallpaper() === 'places' || /^(both|places)$/.test(Data.saver())) rows.push({label: tr('Paisagens de', 'Landscapes of', 'Paisajes de'), value: regionName(Prefs.opt('placesRegion', 'all')),
         step: function (d) { cycle('placesRegion', ['all', 'andalucia', 'spain', 'lithuania'], Prefs.opt('placesRegion', 'all'), d); refreshBackdrop(); }});
+      var pf = Prefs.opt('perf', 'auto');
+      rows.push({label: tr('Fluidez', 'Smoothness', 'Fluidez'), value: pf === 'smooth' ? tr('Máxima (sem vidro)', 'Smooth (no glass)', 'Máxima (sin cristal)') : pf === 'pretty' ? tr('Bonita (todo o vidro)', 'Pretty (all the glass)', 'Bonita (todo el cristal)')
+        : pf === 'balanced' ? tr('Equilibrada', 'Balanced', 'Equilibrada') : tr('Automática', 'Automatic', 'Automática') + (Prefs.opt('perfAuto', 'balanced') === 'smooth' ? ' · ' + tr('fluida', 'smooth', 'fluida') : ''),
+        step: function (d) { Prefs.set('perfAuto', 'balanced'); probe.n = 0; probe.slow = 0; cycle('perf', ['auto', 'smooth', 'balanced', 'pretty'], pf, d); applyLook(); }});
       var gl = Prefs.opt('glassLevel', 'normal');
       rows.push({label: tr('Intensidade do vidro', 'Glass strength', 'Intensidad del cristal'), value: gl === 'clear' ? tr('Mais transparente', 'More see-through', 'Más transparente') : gl === 'solid' ? tr('Mais opaco', 'More solid', 'Más opaco') : tr('Normal', 'Normal', 'Normal'),
         step: function (d) { cycle('glassLevel', ['clear', 'normal', 'solid'], gl, d); applyLook(); }});
@@ -988,6 +1034,8 @@
         step: function (d) { cycle('clock24', ['auto', '24', '12'], c24, d); renderClock(); }});
       rows.push({label: tr('Data ao lado do relógio', 'Date beside the clock', 'Fecha junto al reloj'), toggle: Prefs.opt('topDate', false) === true,
         step: function () { Prefs.set('topDate', Prefs.opt('topDate', false) !== true); renderClock(); }});
+      rows.push({label: tr('Memória RAM usada', 'RAM in use', 'RAM usada'), toggle: Prefs.opt('ramWidget', true) !== false,
+        step: function () { Prefs.set('ramWidget', Prefs.opt('ramWidget', true) === false); applyLook(); renderSysmem(); pollSysmem(); }});
       rows.push({label: tr('Meus widgets', 'My widgets', 'Mis widgets'), value: '›', step: function (d) { if (d >= 0) openInfo('widgets'); }});
       WIDGETS.forEach(function (w) {
         rows.push({label: '   ' + widgetName(w), toggle: widgetOn(w), step: function () {
@@ -1062,6 +1110,11 @@
       }
       rows.push({label: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), value: '›', step: function (d) { if (d >= 0) openInfo('usage'); }});
       if (TV.name === 'webos') {
+        var um = updMode();
+        rows.push({label: tr('Atualizações do FreeTV', 'FreeTV updates', 'Actualizaciones de FreeTV'), value: um === 'auto' ? tr('Automáticas', 'Automatic', 'Automáticas') : um === 'off' ? tr('Nunca', 'Never', 'Nunca') : tr('Avisar', 'Tell me', 'Avisar'),
+          step: function (d) { cycle('updMode', ['ask', 'auto', 'off'], um, d); }});
+        rows.push({label: tr('FreeTV no repositório', 'FreeTV on GitHub', 'FreeTV en GitHub'), value: updText(), plain: !updNewer(),
+          step: function (d) { if (d < 0) return; if (updNewer()) updAsk(); else updCheck(true); }});
         rows.push({label: tr('Guardar uma cópia dos ajustes', 'Save a copy of the settings', 'Guardar una copia de los ajustes'), value: '›', step: function (d) { if (d >= 0) { saveSettings(); toast(tr('Cópia guardada na TV', 'Copy saved on the TV', 'Copia guardada en la tele')); } }});
         rows.push({label: tr('Restaurar a cópia guardada', 'Restore the saved copy', 'Restaurar la copia guardada'), value: '›', step: function (d) { if (d >= 0) showDialog(tr('Restaurar?', 'Restore?', '¿Restaurar?'), [{text: tr('Os ajustes de agora são trocados pelos da cópia.', 'The settings now are replaced by the copy\'s.', 'Los ajustes de ahora se cambian por los de la copia.')}], [{label: cancelText()}, {label: tr('Sim, restaurar', 'Yes, restore', 'Sí, restaurar'), run: restoreBackup}], 0); }});
         rows.push({label: tr('Cópia no computador / outra TV', 'Copy on the computer / another TV', 'Copia en el ordenador / otra tele'), value: '›', step: function (d) {
@@ -1190,7 +1243,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' ? 70000 : method === 'remove' ? 130000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -1332,17 +1385,54 @@
     renderCommunity();
   }
 
-  /** The catalogue and the extra sources, once; done() when the main one is in (or failed: commState). */
+  var commWhy = '', commFrom = 0;
+
+  function commFail(err) {
+    var m = err && err.message ? String(err.message) : '';
+    commWhy = m === 'timeout' ? tr('A TV demorou demais a responder (está sem memória livre?)', 'The TV took too long to answer (is it short of memory?)', 'La tele tardó demasiado en responder (¿va justa de memoria?)')
+      : /^HTTP (\d+)/.test(m) ? tr('O catálogo respondeu com o erro ', 'The catalogue answered with error ', 'El catálogo respondió con el error ') + m.slice(5)
+      : tr('Sem internet na TV, ou o catálogo está fora do ar', 'No internet on the TV, or the catalogue is down', 'Sin internet en la tele, o el catálogo está caído');
+  }
+
+  /** The catalogue and the extra sources, once; done() when the main one is in (or failed: commState). A copy from the last visit is
+      shown at once and refreshed behind it; a slow TV gets three tries and a longer wait. */
   function commLoad(done) {
     if (commAll.length) { if (done) done(); return; }
-    Data.getJson(CATALOGUE, function (err, data) {
-      if (err || !data || !data.packages) { commState = 'error'; if (done) done(); return; }
+    var saved = cache('catalogue'), fresh = false, finished = false;
+    function accept(list) {
       commInst = instMap();
-      commAll = data.packages.filter(function (p) { return p && p.id && p.manifest; });
+      commAll = list.filter(function (p) { return p && p.id && p.manifest; });
       if (!commSeen()) commMarkSeen();   // the first visit: nothing is "new" yet
       commRebuild();
       commState = 'ready';
+    }
+    function load(tries) {
+      Data.getJson(CATALOGUE, function (err, data) {
+        if (err || !data || !data.packages) {
+          if (tries > 1) { setTimeout(function () { load(tries - 1); }, 1500); return; }
+          commFail(err);
+          if (!commAll.length) commState = 'error';
+          else commFrom = saved ? saved.at : 0;   // the copy stays on screen
+          if (!finished) { finished = true; if (done) done(); } else if (st.zone === Z.COMM && commOpen < 0) renderCommunity();
+          return;
+        }
+        fresh = true;
+        commFrom = 0;
+        cache('catalogue', {at: Date.now(), packages: data.packages});
+        var had = commAll.length;
+        accept(data.packages);
+        if (!finished) { finished = true; if (done) done(); } else if (st.zone === Z.COMM && commOpen < 0 && !had) renderCommunity();
+        loadExtra();
+      }, 25000);
+    }
+    if (saved && saved.packages && saved.packages.length) {
+      accept(saved.packages);
+      finished = true;
       if (done) done();
+      if (Date.now() - saved.at < 10 * 60000) { loadExtra(); return; }   // fresh enough: no need to ask again now
+    }
+    load(3);
+    function loadExtra() {
       var extra = EXTRA.concat((Prefs.opt('repos', []) || []).map(function (u) { return {url: u, all: true}; }));
       extra.forEach(function (src) {
         Data.getJson(src.url, function (e2, d2) {
@@ -1356,7 +1446,7 @@
           if (commOpen < 0) { commInst = instMap(); commRebuild(); if (st.zone === Z.COMM) renderCommunity(); }
         });
       });
-    });
+    }
   }
 
   function infoRepos() {
@@ -1481,6 +1571,15 @@
   }
 
   var commFromShelf = false;
+
+  /** The catalogue again, after an error. */
+  function commRetry() {
+    commState = 'loading';
+    commOpen = -1;
+    commAll = [];
+    renderCommunity();
+    commLoad(function () { commOpen = -1; applyUpdateRow(); st.comm = commList.length > 3 ? 3 : 0; renderCommunity(); });
+  }
 
   function openCommunity(fromShelf) {
     if (TV.name === 'tizen') { setClass($('settings'), 'open', false); openModules(); return; }
@@ -2230,6 +2329,12 @@
     if (commState !== 'ready') {
       line(box, '', commState === 'error' ? tr('Sem conexão com o catálogo agora.', 'No connection to the catalogue right now.', 'Sin conexión con el catálogo ahora mismo.')
           : tr('Carregando o catálogo…', 'Loading the catalogue…', 'Cargando el catálogo…'));
+      commActs = [];
+      if (commState === 'error') {
+        if (commWhy) line(box, 'warn', commWhy);
+        action(box, tr('Tentar de novo', 'Try again', 'Intentar de nuevo'), function () { commRetry(); });
+        commOpen = 0;   // the actions below are what OK runs
+      }
       updateFocus();
       return;
     }
@@ -2242,6 +2347,7 @@
             'From the webOS Homebrew catalogue. To install from here, connect the computer (see any app page).',
             'Del catálogo webOS Homebrew. Para instalar desde aquí, conecta el ordenador (mira cualquier ficha).')).style.marginBottom = '14px';
     if (store.freeMb) box.lastChild.textContent += '  ·  ' + tr('Espaço livre: ', 'Free space: ', 'Espacio libre: ') + store.freeMb + ' MB';
+    if (commFrom) box.lastChild.textContent += '  ·  ' + tr('Sem conexão: cópia de ', 'Offline: copy from ', 'Sin conexión: copia de ') + agoText(commFrom);
     var list = el('div', 'list', box), holder = el('div', 'rows', list);
     holder.setAttribute('data-pitch', 112);
     holder.setAttribute('data-visible', 5);
@@ -2914,6 +3020,7 @@
   }
 
   function move(dx, dy) {
+    probeFrames();
     var tiles = $('tiles').children, cardNodes = $('cards').children;
     switch (st.zone) {
       case Z.SHELF:
@@ -3159,10 +3266,10 @@
     s.innerHTML = '';
     var a = el('div', 'photo', s), b = el('div', 'photo', s);
     el('div', 'shade', s);
+    if (Prefs.opt('saverDim', true) !== false && Data.isNight(Date.now())) el('div', 'dimmer', s);
     var clock = el('div', 'clock', s);
     if (Prefs.opt('saverClock', true) === false && mode !== 'clock') clock.style.visibility = 'hidden';
     setClass(s, 'bigclock', mode === 'clock');
-    setClass(s, 'dim', Prefs.opt('saverDim', true) !== false && Data.isNight(Date.now()));
     el('div', 'time', clock);
     el('div', 'date', clock);
     var wx = Data.weather;
@@ -3223,6 +3330,7 @@
     setClass(s, 'on', true);
     TV.holdScreen(true);   // LG's own screensaver would go over ours
     next();
+    setTimeout(updQuiet, 90000);   // a screensaver that has been up a minute and a half: the automatic update may go now
     // An OLED rests better dark: after a while the screen goes off (the sound stays); any key turns it on again.
     clearTimeout(screenOffTimer);
     var offAfter = +Prefs.opt('screenOff', 0);
@@ -3292,6 +3400,146 @@
     grabbed = st.shelf = to;
     Prefs.set('shelf', shelf.map(function (x) { return x.id; }));
     updateFocus();
+  }
+
+  // MARK: - 2.2: FreeTV updating itself from its repository's releases (LG). off: never; ask: says so and waits for a yes (default);
+  // auto: installs by itself, but only while FreeTV is on screen and a screensaver is up (nobody is watching something else).
+
+  var upd = {version: '', notes: '', busy: false, error: '', checked: 0, phase: ''};
+  function updMode() { var m = Prefs.opt('updMode', 'ask'); return m === 'off' || m === 'auto' ? m : 'ask'; }
+  function updNewer() { return !!upd.version && isNewerVersion(upd.version, (window.CONFIG && CONFIG.version) || '0'); }
+
+  /** Looks at the repository's latest release (through the TV's service); done() when it answered. */
+  function updCheck(manual, done) {
+    if (TV.name !== 'webos' || upd.busy) { if (done) done(); return; }
+    upd.busy = true;
+    svcCall('updateCheck', {have: (window.CONFIG && CONFIG.version) || ''}, function (r) {
+      upd.busy = false;
+      if (r && r.returnValue) {
+        upd.version = r.version;
+        upd.notes = r.notes || '';
+        upd.error = '';
+        upd.checked = Date.now();
+        Prefs.set('updCheckedFreeTV', upd.checked);
+      } else upd.error = r && r.error ? r.error : tr('A loja da TV não respondeu', 'The TV\'s store did not answer', 'La tienda de la tele no respondió');
+      if (done) done();
+      if (st.zone === Z.SETTINGS) renderSettings();
+    });
+  }
+
+  /** The quiet moments to look: when FreeTV opens, then every twelve hours while it is on screen. */
+  function updAuto() {
+    if (TV.name !== 'webos' || updMode() === 'off' || document.hidden) return;
+    if (Date.now() - (+Prefs.opt('updCheckedFreeTV', 0) || 0) < 12 * 3600000 && !updNewer()) return;
+    updCheck(false, function () {
+      if (!updNewer()) return;
+      if (updMode() === 'auto') return;   // the install waits for a screensaver: updQuiet()
+      if (Prefs.opt('updAsked', '') === upd.version) return;   // asked about this one already
+      Prefs.set('updAsked', upd.version);
+      if (st.zone === Z.SHELF || st.zone === Z.CARDS || st.zone === Z.TOP) updAsk();
+      else toast(tr('FreeTV ' + upd.version + ' disponível (Ajustes → Manutenção)', 'FreeTV ' + upd.version + ' is available (Settings → Maintenance)', 'FreeTV ' + upd.version + ' disponible (Ajustes → Mantenimiento)'));
+    });
+  }
+
+  /** Called while a screensaver is up: the automatic mode installs now. */
+  function updQuiet() {
+    if (updMode() === 'auto' && updNewer() && !upd.busy && upd.phase === '' && TV.name === 'webos') updInstall(true);
+  }
+
+  function updAsk() {
+    var lines = [{text: tr('Uma versão nova do FreeTV: ', 'A new FreeTV is out: ', 'Hay un FreeTV nuevo: ') + 'v' + upd.version + ' (' + tr('você tem a v', 'you have v', 'tienes la v') + ((window.CONFIG && CONFIG.version) || '?') + ').'}];
+    if (upd.notes) lines.push({text: upd.notes.replace(/[#*`>_]/g, '').replace(/\s+/g, ' ').slice(0, 320)});
+    lines.push({text: tr('Seus ajustes, sua chave do TMDB e sua cidade ficam. A TV baixa, confere o SHA-256 e instala; FreeTV reabre sozinho.', 'Your settings, your TMDB key and your city stay. The TV downloads it, checks its SHA-256 and installs it; FreeTV reopens by itself.',
+      'Tus ajustes, tu clave de TMDB y tu ciudad se quedan. La tele la descarga, comprueba su SHA-256 y la instala; FreeTV se reabre solo.')});
+    showDialog.icon = 'sync';
+    showDialog(tr('FreeTV novo', 'New FreeTV', 'FreeTV nuevo'), lines, [
+      {label: tr('Atualizar agora', 'Update now', 'Actualizar ahora'), run: function () { updInstall(false); }},
+      {label: tr('Mais tarde', 'Later', 'Más tarde')},
+      {label: tr('Não perguntar sobre esta versão', 'Skip this version', 'No preguntar por esta versión'), run: function () { Prefs.set('updAsked', upd.version); }}], 0);
+  }
+
+  function updInstall(quiet) {
+    if (TV.name !== 'webos' || upd.busy) return;
+    upd.busy = true;
+    upd.phase = 'starting';
+    saveSettings();   // the copy of the settings the new package asks for when it opens
+    var token = quiet ? 0 : showDialog(tr('Atualizando o FreeTV', 'Updating FreeTV', 'Actualizando FreeTV'), [{text: tr('Preparando…', 'Getting ready…', 'Preparando…')}], [], 0);
+    function say(text, done) {
+      if (quiet || dlg.token !== token || st.zone !== Z.DLG) return;
+      showDialog(tr('Atualizando o FreeTV', 'Updating FreeTV', 'Actualizando FreeTV'), [{text: text}], done ? [{label: 'OK'}] : [], 0);
+      token = dlg.token;
+    }
+    svcCall('updateInstall', {version: upd.version}, function (r) {
+      if (!r || !r.returnValue) {
+        upd.busy = false; upd.phase = '';
+        var why = r && r.error ? r.error : tr('A loja da TV não respondeu (precisa do acesso da Loja: bash install.sh no computador).', 'The TV\'s store did not answer (it needs the Store permission: bash install.sh on the computer).',
+          'La tienda de la tele no respondió (necesita el permiso de la Tienda: bash install.sh en el ordenador).');
+        if (quiet) return;
+        say(why, true);
+        return;
+      }
+      var tries = 0;
+      (function poll() {
+        svcCall('job', {}, function (j) {
+          var job = j && j.job;
+          if (job && job.phase) upd.phase = job.phase;
+          if (job && job.phase === 'failed') { upd.busy = false; upd.phase = ''; say(job.message || tr('Não deu certo.', 'It did not work.', 'No salió bien.'), true); return; }
+          if (job && job.phase === 'done') {
+            say(tr('Instalado. O FreeTV vai reabrir em instantes na nova versão.', 'Installed. FreeTV will reopen in a moment on the new version.', 'Instalado. FreeTV se reabrirá en un instante con la versión nueva.'));
+            return;   // the package replaces this very app: the page goes away by itself
+          }
+          if (!job && ++tries > 12) { upd.busy = false; upd.phase = ''; return; }
+          say(({starting: tr('Preparando…', 'Getting ready…', 'Preparando…'), downloading: tr('Baixando…', 'Downloading…', 'Descargando…'), verifying: tr('Conferindo o SHA-256…', 'Checking the SHA-256…', 'Comprobando el SHA-256…'),
+            installing: tr('Instalando…', 'Installing…', 'Instalando…')})[upd.phase] || '…');
+          setTimeout(poll, 2500);
+        });
+      })();
+    });
+  }
+
+  function updText() {
+    if (upd.busy && upd.phase) return tr('Atualizando…', 'Updating…', 'Actualizando…');
+    if (upd.busy) return tr('Procurando…', 'Looking…', 'Buscando…');
+    if (upd.error) return tr('Sem resposta', 'No answer', 'Sin respuesta');
+    if (updNewer()) return 'v' + upd.version + ' · ' + tr('OK atualiza', 'OK updates', 'OK actualiza');
+    return upd.checked ? tr('Em dia', 'Up to date', 'Al día') + ' · v' + ((window.CONFIG && CONFIG.version) || '?') : tr('Procurar agora', 'Look now', 'Buscar ahora');
+  }
+
+  // MARK: - 2.2: the RAM line under the top buttons: the TV's memory in use (from its service) and FreeTV's own (the page's JS heap)
+
+  var mem = {sys: null, busy: false, timer: 0};
+
+  function renderSysmem() {
+    var box = $('sysmem');
+    if (!box) return;
+    box.innerHTML = '';
+    if (Prefs.opt('ramWidget', true) === false) return;
+    var s = mem.sys;
+    if (s && s.total) {
+      var used = s.total - s.avail, pct = used / s.total * 100;
+      el('b', pct > 90 ? 'bad' : pct > 80 ? 'warn' : '', box, 'RAM');
+      el('span', pct > 90 ? 'bad' : pct > 80 ? 'warn' : '', box, used + ' / ' + s.total + ' MB');
+    }
+    var pm = window.performance && performance.memory;
+    if (pm && pm.usedJSHeapSize) {
+      if (s && s.total) box.appendChild(document.createTextNode('  ·  '));
+      else el('b', '', box, 'RAM');
+      box.appendChild(document.createTextNode('FreeTV ' + Math.round(pm.usedJSHeapSize / 1048576) + ' MB'));
+    }
+  }
+
+  function pollSysmem() {
+    clearTimeout(mem.timer);
+    mem.timer = setTimeout(pollSysmem, 15000);
+    if (document.hidden || mem.busy || Prefs.opt('ramWidget', true) === false || Prefs.kids()) return;
+    renderSysmem();   // FreeTV's own figure is there at once
+    if (TV.name !== 'webos') return;
+    mem.busy = true;
+    svcCall('sysinfo', {}, function (r) {
+      mem.busy = false;
+      mem.sys = r && r.returnValue ? r : mem.sys;
+      renderSysmem();
+    });
   }
 
   // MARK: - 2.1: info sheets. A wide glass box for the weather, the markets, my widgets, the time of use, the profiles…: something
@@ -4517,7 +4765,7 @@
       if (!saverOn && (document.hidden || !+Prefs.opt('saverAfter', 2))) return false;
       if (!saverOn) showSaver();
       return true;
-    });
+    }, function () { return saverOn || Date.now() - idleAt > 90000 ? 700 : 4000; });   // LG's clock comes after minutes of quiet: look slowly until then
   }
 
   function askScreen() {
@@ -4539,7 +4787,7 @@
   });
   // The settings are kept in two places: this page's storage, which a reinstall of FreeTV empties, and the store service's folder, which a
   // reinstall keeps. A copy goes there a few seconds after a change; an empty page asks for it back once.
-  var SAVED_KEYS = ['fmtv.prefs', 'fmtv.devApps', 'fmtv.ssapKey', 'fmtv.ssapPowerKey2', 'fmtv.ssapRefused', 'fmtv.ssapPowerRefused', 'fmtv.usage'], savedLast = '', saveTimer = 0;
+  var SAVED_KEYS = ['fmtv.prefs', 'fmtv.devApps', 'fmtv.ssapKey', 'fmtv.ssapPowerKey2', 'fmtv.ssapRefused', 'fmtv.ssapPowerRefused', 'fmtv.usage', 'fmtv.cfg'], savedLast = '', saveTimer = 0;
 
   function snapshot() {
     var out = {}, any = false;
@@ -4597,6 +4845,7 @@
 
   setInterval(function () { if (Prefs.wallpaper() === 'places') backdrop(bgFor('')); }, 600000);   // a new landscape every half hour
   setInterval(function () {
+    if (document.hidden) return;   // nothing to draw or fetch while another app is in front
     renderClock();
     checkNight();
     Data.refresh();
@@ -4608,6 +4857,9 @@
   }, 30000);
   var ticks = 0;
   setTimeout(refreshTickers, 8000);
+  setTimeout(pollSysmem, 3000);
+  setTimeout(updAuto, 60000);
+  setInterval(updAuto, 3 * 3600000);
   setInterval(function () {   // looked at often, so it starts at 2 minutes and not up to 30 seconds late
     var after = +Prefs.opt('saverAfter', 2) * 60000;   // 0: never
     if (after && !saverOn && !sheetOpen() && Date.now() - idleAt > after) showSaver();
@@ -4615,5 +4867,5 @@
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
-    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, openInfo: openInfo, runAction: runAction, apps: function () { return others; }};
+    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, openInfo: openInfo, runAction: runAction, openCommunity: openCommunity, apps: function () { return others; }};
 })();

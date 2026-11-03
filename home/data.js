@@ -8,6 +8,23 @@
  */
 var CONFIG = window.CONFIG || {};
 
+// A build made on the person's computer carries their settings (TMDB key, city…); the package of a GitHub release carries none. This
+// build's settings are kept in fmtv.cfg (backed up on the TV with the rest, see home.js), and a build without them takes them back.
+(function () {
+  var KEYS = ['tmdbKey', 'tmdbRegion', 'latitude', 'longitude', 'city', 'language', 'currency', 'temperature', 'showCrypto', 'hideAnimation', 'communityHost', 'hideServices'];
+  try {
+    var mine = !!(CONFIG.tmdbKey || CONFIG.city);   // (a release's package has neither)
+    if (mine) {
+      var copy = {};
+      KEYS.forEach(function (k) { if (CONFIG[k] !== undefined) copy[k] = CONFIG[k]; });
+      localStorage.setItem('fmtv.cfg', JSON.stringify(copy));
+    } else {
+      var saved = JSON.parse(localStorage.getItem('fmtv.cfg') || 'null');
+      if (saved && typeof saved === 'object') KEYS.forEach(function (k) { if (saved[k] !== undefined) CONFIG[k] = saved[k]; });
+    }
+  } catch (e) {}
+})();
+
 var Place = (function () {
   'use strict';
   var EURO = /^(AT|BE|CY|DE|EE|ES|FI|FR|GR|HR|IE|IT|LT|LU|LV|MT|NL|PT|SI|SK)$/;
@@ -128,11 +145,11 @@ var Data = (function () {
   function stored(key) { try { return JSON.parse(localStorage.getItem('fmtv.' + key)); } catch (e) { return null; } }
 
   /** GET a JSON document; done(error, json). */
-  function get(url, headers, done) {
+  function get(url, headers, done, timeout) {
     var x = new XMLHttpRequest();
     var over = false;
     x.open('GET', url, true);
-    x.timeout = 10000;
+    x.timeout = timeout || 10000;
     for (var h in headers) if (headers.hasOwnProperty(h)) x.setRequestHeader(h, headers[h]);
     x.onreadystatechange = function () {
       if (x.readyState !== 4 || over) return;
@@ -142,7 +159,8 @@ var Data = (function () {
       try { json = JSON.parse(x.responseText); } catch (e) { done(e); return; }
       done(null, json);
     };
-    x.ontimeout = x.onerror = function () { if (!over) { over = true; done(new Error('no connection')); } };
+    x.ontimeout = function () { if (!over) { over = true; done(new Error('timeout')); } };
+    x.onerror = function () { if (!over) { over = true; done(new Error('no connection')); } };
     x.send();
   }
 
@@ -678,7 +696,7 @@ var Data = (function () {
   return {
     COINS: COINS,
     FIRST_FUND: FIRST_FUND,
-    getJson: function (url, done) { get(url, {}, done); },
+    getJson: function (url, done, timeout) { get(url, {}, done, timeout); },
     city: Place.city,
     currency: CURRENCY,
     onChange: function (fn) { listeners.push(fn); },
