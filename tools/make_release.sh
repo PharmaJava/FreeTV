@@ -23,8 +23,11 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 mkdir "$WORK/launcher"
 cp -R out/home/. "$WORK/launcher/"
-cp -R work/helper/renewal-service work/helper/store-service work/helper/scripts "$WORK/"
-rm -f "$WORK/store-service/state/key.pem" "$WORK/store-service/state/prefs.json"
+cp -R work/helper/renewal-service work/helper/scripts "$WORK/"
+# the store service from this repository (not the helper's older copy), with the one library it needs
+[[ -d store-service/node_modules/ssh2 ]] || (cd store-service && npm ci --omit=dev --ignore-scripts --no-audit --no-fund >/dev/null)
+cp -R store-service "$WORK/store-service"
+rm -rf "$WORK/store-service/state"; mkdir "$WORK/store-service/state"; touch "$WORK/store-service/state/.keep"
 (cd "$WORK" && ares-package launcher renewal-service store-service -o dist >/dev/null \
   && python3 scripts/fix-store-package.py "dist/com.gathin.tvhome_${VERSION}_all.ipk")
 mkdir -p release
