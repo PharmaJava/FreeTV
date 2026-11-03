@@ -110,3 +110,11 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   called every 15 s while FreeTV is on screen.
 - The dev shell cannot close other apps (`luna-send` is denied to it): the RAM line shows the cause, it cannot free it.
 
+## 2.3: closing apps
+
+- `TV.closeApps(ids, quiet, done)` (tv.js) opens a session on ws://127.0.0.1:3000 with the permission CLOSE (own key `fmtv.ssapCloseKey`, refusal
+  `fmtv.ssapCloseRefused`) and sends `system.launcher/close` for each id; an app that was not running answers with an error and that is fine.
+  Quiet calls (the screensaver's) never prompt. `closable()` (home.js) leaves out FreeTV (`PROTECTED`), `com.webos.app.*`, inputs and channels.
+- The RAM line is the top row's stop `TABS + 3` (only on webOS, `memShown()`).
+- Not verified on a TV when written (the TV was in use): the prompt's wording and what `close` answers for an app that is not running.
+

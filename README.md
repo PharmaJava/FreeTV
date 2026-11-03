@@ -11,6 +11,15 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.3: close what you do not use
+
+- **Memory sheet.** The RAM line under the top buttons is now a stop of the top row: press ▶ past the three round buttons and **OK**
+  (or the quick panel's *Memory* tile, or a colour button). It shows the TV's memory in use with a bar, the swap, and **the apps that are
+  open**, with the MB each holds when it can tell (Netflix, Amazon…). **Free memory now** closes every app you have not marked *Keep*
+  (YouTube AdFree is kept by default); **OK** on an app closes just that one; **◀ ▶** switches an app between *Keep* and *Close*;
+  **Free it by itself with the screensaver** does it when the screensaver comes up. FreeTV never closes itself or LG's own apps.
+  It uses LG's remote-control API: **the TV asks once** ("allow FreeTV to close apps?"), and the answer is kept.
+
 ### FreeTV 2.2: lighter, and it updates itself
 
 - **Lighter and smoother.** The home no longer repaints big shadows on every frame, the permanent blurs (round buttons, drawer, toast) are
@@ -342,6 +351,16 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.3: cierra lo que no uses
+
+- **Hoja de Memoria.** La línea de RAM bajo los botones de arriba ahora es una parada de la fila de arriba: pulsa ▶ más allá de los tres botones
+  redondos y **OK** (o la casilla *Memoria* del panel rápido, o un botón de color). Enseña la memoria de la tele en uso con una barra, el
+  intercambio y **las apps que están abiertas**, con los MB que ocupa cada una cuando se sabe (Netflix, Amazon…). **Liberar memoria ahora**
+  cierra todas las apps que no hayas marcado *Mantener* (YouTube AdFree se mantiene por defecto); **OK** sobre una app cierra solo esa; **◀ ▶**
+  cambia una app entre *Mantener* y *Cerrar*; **Liberar solo con el salvapantallas** lo hace cuando sale el salvapantallas. FreeTV nunca se
+  cierra a sí mismo ni cierra las apps de LG. Usa la API de mando a distancia de LG: **la tele pregunta una vez** («¿permitir que FreeTV cierre
+  apps?») y la respuesta se guarda.
 
 ### FreeTV 2.2: más ligero, y se actualiza solo
 

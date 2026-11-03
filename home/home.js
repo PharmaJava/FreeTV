@@ -184,7 +184,8 @@
     list = $('buttons').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TOP && st.top === TABS + i);
     setClass($('quotes'), 'hide', st.zone === Z.TOP && st.top >= TABS);
-    setClass($('sysmem'), 'hide', st.zone === Z.TOP && st.top >= TABS);
+    setClass($('sysmem'), 'hide', st.zone === Z.TOP && st.top >= TABS && st.top !== TABS + 3);
+    setClass($('sysmem'), 'focus', st.zone === Z.TOP && st.top === TABS + 3);
     list = $('cards').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.CARDS && st.card === i);
     if (st.zone === Z.CARDS) {
@@ -1850,6 +1851,7 @@
       {id: 'timer', lg: true, sym: 'timer', name: tr('Desligar em…', 'Sleep timer', 'Apagar en…'), sub: left ? tr('Faltam ' + left + ' min', left + ' min left', 'Quedan ' + left + ' min') : off, on: !!left, run: sleepNext},
       {id: 'kids', sym: 'kids', name: tr('Modo crianças', 'Kids mode', 'Modo niños'), sub: Prefs.kids() ? tr('Ligado', 'On', 'Activado') : tr('Só os canais deles', 'Only their channels', 'Solo sus canales'), on: Prefs.kids(), run: function () { closeSheets(); kidsStart(); }},
       {id: 'health', lg: true, sym: 'health', name: tr('Saúde da TV', 'TV health', 'Salud de la tele'), sub: healthSummary(), run: function () { openTiles('health'); }},
+      {id: 'memory', lg: true, sym: 'tv', name: tr('Memória', 'Memory', 'Memoria'), sub: mem.sys && mem.sys.total ? (mem.sys.total - mem.sys.avail) + ' / ' + mem.sys.total + ' MB' : tr('Fechar apps abertas', 'Close open apps', 'Cerrar apps abiertas'), run: function () { openInfo('memory'); }},
       {id: 'weather', sym: Data.weather ? Data.symbol(Data.weather.code, Data.weather.isDay) : 'cloud', name: tr('Clima', 'Weather', 'El tiempo'),
         sub: Data.weather ? Data.degrees(Data.weather.temp) + ' · ' + Data.condition(Data.weather.code, Data.weather.isDay) : '', run: function () { openInfo('weather'); }},
       {id: 'markets', sym: 'bitcoin', name: tr('Mercados', 'Markets', 'Mercados'), sub: tr('Gráficos e alertas', 'Charts and alerts', 'Gráficas y alertas'), run: function () { openInfo('markets'); }},
@@ -2962,6 +2964,7 @@
         if (st.top < TABS) return;
         if (st.top === TABS) { var live = liveTV(); if (live) launcher(live.id, tr('TV aberta', 'Live TV', 'TV en vivo'))(); }
         else if (st.top === TABS + 1) { st.zone = Z.SHELF; openDrawer(); st.drawer = 1 < drawerInputs ? 1 : 0; updateFocus(); }
+        else if (st.top === TABS + 3) openInfo('memory');
         else openSettings();
         return;
       case Z.CARDS:
@@ -3038,7 +3041,7 @@
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(0, Math.min(Prefs.kids() ? TABS - 1 : TABS + 2, st.top + dx));
+          st.top = Math.max(0, Math.min(Prefs.kids() ? TABS - 1 : TABS + (memShown() ? 3 : 2), st.top + dx));
           if (st.top < TABS) selectTab(VIS[st.top]);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < TABS ? 0 : cards.length - 1); }
@@ -3329,7 +3332,8 @@
     setClass(s, 'on', true);
     TV.holdScreen(true);   // LG's own screensaver would go over ours
     next();
-    setTimeout(updQuiet, 90000);   // a screensaver that has been up a minute and a half: the automatic update may go now
+    setTimeout(updQuiet, 90000);
+    if (Prefs.opt('ramAuto', false) === true && TV.name === 'webos') setTimeout(function () { if (saverOn) memFree(true); }, 5000);   // a screensaver that has been up a minute and a half: the automatic update may go now
     // An OLED rests better dark: after a while the screen goes off (the sound stays); any key turns it on again.
     clearTimeout(screenOffTimer);
     var offAfter = +Prefs.opt('screenOff', 0);
@@ -3504,13 +3508,93 @@
     return upd.checked ? tr('Em dia', 'Up to date', 'Al día') + ' · v' + ((window.CONFIG && CONFIG.version) || '?') : tr('Procurar agora', 'Look now', 'Buscar ahora');
   }
 
+  // MARK: - 2.3: Memory: what the TV has in use, and a way to close what is open in the background (LG's remote control API, with its own
+  // permission, asked once). FreeTV never closes itself, the system's apps or the ones the person keeps (YouTube AdFree by default).
+
+  var memApps = {};   // MB held by apps that name themselves (from the service)
+
+  /** The apps that can be closed from here: installed, not FreeTV, not LG's own. */
+  function closable() {
+    return apps.filter(function (a) { return !PROTECTED.test(a.id) && !/^com\.webos\.app\./.test(a.id) && a.id.indexOf(':') < 0 && a.id.indexOf('tizenbrew') < 0 && !a.input && !a.chan; });
+  }
+
+  function memKeep() { var k = Prefs.opt('ramKeep', ['youtube.leanback.v4']); return k instanceof Array ? k : ['youtube.leanback.v4']; }
+
+  /** Closes every app that is not kept; quiet: no questions, no sheet (only when the TV already allowed it). */
+  function memFree(quiet, done) {
+    var keep = memKeep(), ids = closable().map(function (a) { return a.id; }).filter(function (id) { return keep.indexOf(id) < 0; });
+    if (quiet && !TV.canCloseApps()) { if (done) done(); return; }
+    if (!quiet) toast(TV.canCloseApps() ? tr('Fechando apps em segundo plano…', 'Closing background apps…', 'Cerrando apps en segundo plano…')
+      : tr('A TV vai perguntar se pode: aceite no controle (uma vez só)', 'The TV will ask if it may: accept it (just once)', 'La tele te preguntará si puede: acéptalo (solo una vez)'));
+    TV.closeApps(ids, quiet, function (r) {
+      pollSysmem();
+      if (!quiet) {
+        if (r.ok) toast(tr('Pronto: ' + r.closed + ' apps fechadas', 'Done: ' + r.closed + ' apps closed', 'Listo: ' + r.closed + ' apps cerradas'));
+        else toast(r.refused ? tr('Você disse que não: ative em Aparência/Memória ou limpe a recusa', 'You said no: allow it from Memory', 'Dijiste que no: permítelo desde Memoria')
+          : tr('Não deu para fechar (a TV não respondeu ou foi recusado)', 'Could not close them (the TV did not answer, or it was refused)', 'No se pudo cerrar (la tele no respondió, o se rechazó)'));
+      }
+      if (done) done(r);
+    });
+  }
+
+  function infoMemory() {
+    var s = mem.sys, rows = [];
+    var used = s && s.total ? s.total - s.avail : 0;
+    rows.push({label: tr('Liberar memória agora', 'Free memory now', 'Liberar memoria ahora'), value: '›', icon: 'sync', run: function () {
+      memFree(false, function () { setTimeout(function () { memRefresh(); }, 1500); });
+    }});
+    rows.push({label: tr('Liberar sozinho com o protetor de tela', 'Free it by itself with the screensaver', 'Liberar solo con el salvapantallas'), toggle: Prefs.opt('ramAuto', false) === true,
+      step: function () { Prefs.set('ramAuto', Prefs.opt('ramAuto', false) !== true); if (Prefs.opt('ramAuto', false) && !TV.canCloseApps()) toast(tr('Peça a permissão uma vez com «Liberar agora»', 'Ask for the permission once with "Free now"', 'Pide el permiso una vez con «Liberar ahora»')); }});
+    var keep = memKeep();
+    closable().sort(function (a, b) { return (memApps[b.id] || 0) - (memApps[a.id] || 0) || (a.title < b.title ? -1 : 1); }).forEach(function (a) {
+      var mb = memApps[a.id];
+      rows.push({label: a.title + (mb ? '  ·  ' + mb + ' MB' : ''), value: keep.indexOf(a.id) >= 0 ? tr('Manter', 'Keep', 'Mantener') : tr('Fechar', 'Close', 'Cerrar'),
+        step: function (d) {
+          if (d === 1 || d === undefined) {   // OK: close this one now
+            if (keep.indexOf(a.id) >= 0) { toast(a.title + ': ' + tr('está em «Manter»', 'is set to Keep', 'está en «Mantener»')); return; }
+            TV.closeApps([a.id], false, function (r) { toast(r.ok ? a.title + ': ' + tr('fechada', 'closed', 'cerrada') : tr('Não deu para fechar', 'Could not close it', 'No se pudo cerrar')); setTimeout(memRefresh, 1500); });
+            return;
+          }
+        },
+        move: function () {   // ◀ ▶: keep or close when freeing
+          var k = memKeep().slice(), at = k.indexOf(a.id);
+          if (at >= 0) k.splice(at, 1); else k.push(a.id);
+          Prefs.set('ramKeep', k);
+        }});
+    });
+    return {title: tr('Memória', 'Memory', 'Memoria'), icon: 'tv', rows: rows, visible: 6, build: function (box) {
+      setClass(box, 'wide', false);
+      var head = el('div', 'memhead', box);
+      if (s && s.total) {
+        var pct = Math.round(used / s.total * 100);
+        el('div', 'big', head, used + ' / ' + s.total + ' MB  ·  ' + pct + '%');
+        var bar = el('div', 'membar', head), fill = el('div', 'fill' + (pct > 90 ? ' bad' : pct > 80 ? ' warn' : ''), bar);
+        fill.style.width = Math.min(100, pct) + '%';
+        el('div', 'sub', head, tr('Troca (disco): ', 'Swap (disk): ', 'Intercambio (disco): ') + (s.swapTotal - s.swapFree) + ' / ' + s.swapTotal + ' MB');
+      } else el('div', 'sub', head, tr('Lendo a memória da TV…', 'Reading the TV\'s memory…', 'Leyendo la memoria de la tele…'));
+      el('div', 'sub', head, tr('Fechar apps só libera o que está em segundo plano; a que está aberta aqui não é fechada.', 'Closing only frees what sits in the background; FreeTV itself is never closed.',
+        'Cerrar solo libera lo que está en segundo plano; FreeTV nunca se cierra a sí mismo.'));
+    }, hint: tr('OK fecha a app · ◀ ▶ Manter/Fechar ao liberar · Voltar fecha', 'OK closes it · ◀ ▶ Keep/Close when freeing · Back closes', 'OK la cierra · ◀ ▶ Mantener/Cerrar al liberar · Atrás cierra')};
+  }
+
+  function memRefresh() {
+    svcCall('sysinfo', {procs: true}, function (r) {
+      if (r && r.returnValue) { mem.sys = r; memApps = r.apps || {}; renderSysmem(); }
+      if (st.zone === Z.INFO && info.kind === 'memory') renderInfo();
+    });
+  }
+
   // MARK: - 2.2: the RAM line under the top buttons: the TV's memory in use (from its service) and FreeTV's own (the page's JS heap)
 
   var mem = {sys: null, busy: false, timer: 0};
 
+  function memShown() { return Prefs.opt('ramWidget', true) !== false && !Prefs.kids() && TV.name === 'webos'; }
+
   function renderSysmem() {
     var box = $('sysmem');
     if (!box) return;
+    if (!box.onmouseover) hover(box, Z.TOP, TABS + 3);   // the pointer reaches it too (focus follows TABS)
+    box.onmouseover = function () { if (memShown() && !sheetOpen() && !saverOn) { st.zone = Z.TOP; st.top = TABS + 3; updateFocus(); } };
     box.innerHTML = '';
     if (Prefs.opt('ramWidget', true) === false) return;
     var s = mem.sys;
@@ -3547,8 +3631,10 @@
   var info = {kind: '', arg: null, rows: [], index: 0, back: null};
   var INFO = {};   // kind → function (arg): {title, icon, build(box), rows, hint, visible, back}
   INFO.repos = infoRepos;
+  INFO.memory = infoMemory;
 
   function openInfo(kind, arg) {
+    if (kind === 'memory' && TV.name === 'webos') memRefresh();
     ['settings', 'tilesheet', 'community', 'dialog'].forEach(function (id) { setClass($(id), 'open', false); });
     setClass(body, 'drawer-open', false);
     info.kind = kind;
@@ -3688,11 +3774,11 @@
 
   // MARK: - 2.1: the remote's number and colour keys
 
-  var KEY_ACTIONS = ['quick', 'search', 'weather', 'markets', 'widgets', 'saver', 'apps', 'settings', 'store', 'profile', 'tvset', 'live', 'none'];
+  var KEY_ACTIONS = ['quick', 'search', 'weather', 'markets', 'memory', 'widgets', 'saver', 'apps', 'settings', 'store', 'profile', 'tvset', 'live', 'none'];
 
   function keyActionName(a) {
     return {quick: tr('Painel rápido', 'Quick panel', 'Panel rápido'), search: tr('Procurar', 'Search', 'Buscar'), weather: tr('Clima', 'Weather', 'El tiempo'),
-      markets: tr('Mercados', 'Markets', 'Mercados'), widgets: tr('Meus widgets', 'My widgets', 'Mis widgets'), saver: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'),
+      markets: tr('Mercados', 'Markets', 'Mercados'), memory: tr('Memória', 'Memory', 'Memoria'), widgets: tr('Meus widgets', 'My widgets', 'Mis widgets'), saver: tr('Protetor de tela', 'Screensaver', 'Salvapantallas'),
       apps: tr('Todos os Apps', 'All Apps', 'Todas las apps'), settings: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), store: tr('Loja', 'Store', 'Tienda'),
       profile: tr('Trocar de perfil', 'Switch profile', 'Cambiar de perfil'), tvset: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'),
       live: tr('TV em direto', 'Live TV', 'TV en directo'), none: tr('Nada', 'Nothing', 'Nada')}[a] || a;
@@ -3707,6 +3793,7 @@
     else if (a === 'search') openSearch();
     else if (a === 'weather') openInfo('weather');
     else if (a === 'markets') openInfo('markets');
+    else if (a === 'memory') openInfo('memory');
     else if (a === 'widgets') openInfo('widgets');
     else if (a === 'saver') { closeSheets(); setTimeout(showSaver, 200); }
     else if (a === 'apps') openApps();

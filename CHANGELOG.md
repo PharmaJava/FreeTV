@@ -3,6 +3,18 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.3.0 (2026-11-03)
+
+**Close what you do not use.** Nothing from 2.2 was removed.
+
+### New
+- **Memory sheet** (the RAM line is now selectable; also a quick panel tile and a colour-key action): memory in use with a bar, the swap,
+  the apps that can be closed with the MB each holds (the store service's `sysinfo {procs}` reads them from /proc for apps that name
+  themselves in their command line), **Free memory now**, per-app close, *Keep/Close* per app (`ramKeep`, YouTube AdFree kept by default) and
+  *free it with the screensaver* (`ramAuto`).
+- Closing goes through LG's remote-control API (`ssap://system.launcher/close`, permission CLOSE, its own key `fmtv.ssapCloseKey`, asked once on the
+  TV): the Developer Mode shell is denied `close` and `running`, so there is no other way. It is never used quietly without that key.
+
 ## 2.2.0 (2026-11-03)
 
 **Lighter, and it updates itself.** Nothing from 2.1 was removed.

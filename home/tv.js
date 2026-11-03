@@ -127,6 +127,57 @@ var TV = (function () {
     ws.onerror = function () { finish(false); };
   }
 
+  // Closing apps (the "Memory" sheet): ssap://system.launcher/close. The TV asks once ("allow FreeTV to close apps?") and gives a key that is kept.
+  var CLOSE_KEY = 'fmtv.ssapCloseKey', CLOSE_REFUSED = 'fmtv.ssapCloseRefused';
+  var CLOSE_MANIFEST = {manifestVersion: 1, appVersion: '1.0', permissions: ['CLOSE']};
+
+  function closeAllowed() { try { return !!localStorage.getItem(CLOSE_KEY); } catch (e) { return false; } }
+
+  /** Closes the apps in ids, one after another, in one session; done({ok, closed, tried, asked}). Never prompts when quiet is true. */
+  function closeApps(ids, quiet, done) {
+    done = done || function () {};
+    var key = null, ws = null, finished = false, i = 0, closed = 0, asked = false;
+    try { key = localStorage.getItem(CLOSE_KEY); } catch (e) {}
+    if (!webos || !ids.length) { done({ok: false, closed: 0, tried: 0, asked: false}); return; }
+    if (!key && (quiet || refused(CLOSE_REFUSED))) { done({ok: false, closed: 0, tried: 0, asked: false, refused: refused(CLOSE_REFUSED)}); return; }
+    var timer = setTimeout(function () { finish(false); }, key ? 20000 : 90000);   // with no key yet, the time to answer the TV's prompt
+    function finish(ok) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      try { ws.close(); } catch (e) {}
+      done({ok: ok, closed: closed, tried: i, asked: asked});
+    }
+    function next() {
+      if (i >= ids.length) { finish(true); return; }
+      ws.send(JSON.stringify({type: 'request', id: 'c' + i, uri: 'ssap://system.launcher/close', payload: {id: ids[i]}}));
+    }
+    try { ws = new WebSocket('ws://127.0.0.1:3000'); } catch (e) { finish(false); return; }
+    ws.onopen = function () {
+      if (!key) asked = true;
+      var payload = {forcePairing: false, pairingType: 'PROMPT', manifest: CLOSE_MANIFEST};
+      if (key) payload['client-key'] = key;
+      ws.send(JSON.stringify({type: 'register', id: 'register', payload: payload}));
+    };
+    ws.onmessage = function (event) {
+      var m = null;
+      try { m = JSON.parse(event.data); } catch (e) {}
+      if (!m) return;
+      if (m.type === 'registered') {
+        try { localStorage.setItem(CLOSE_KEY, m.payload['client-key']); localStorage.removeItem(CLOSE_REFUSED); } catch (e) {}
+        next();
+      } else if (m.id === 'register' && m.type === 'error') {
+        if (key) { try { localStorage.removeItem(CLOSE_KEY); } catch (e) {} } else refuse(CLOSE_REFUSED, m);
+        finish(false);
+      } else if (m.id && m.id.charAt(0) === 'c') {
+        if (m.type !== 'error' && !(m.payload && m.payload.returnValue === false)) closed++;
+        i++;
+        next();   // an app that was not running answers with an error: that is not a failure
+      }
+    };
+    ws.onerror = function () { finish(false); };
+  }
+
   /** Asks the TV for the power permission when FreeTV has none yet; done(ok). The TV shows its prompt (up to 90 seconds to answer). */
   function powerPair(done) {
     done = done || function () {};
@@ -492,6 +543,10 @@ var TV = (function () {
 
     /** Asks once, while someone is looking, for what holdScreen needs; done(ok). */
     pairScreen: powerPair,
+
+    /** Closes these apps (LG): done({ok, closed, tried, asked}). The first time the TV asks the person to allow it (once). */
+    closeApps: closeApps,
+    canCloseApps: function () { return webos && closeAllowed(); },
 
     /** The screen off (the sound and the TV stay on; any key turns it on again) or on; done(ok). LG, with the power permission. */
     screenOff: function (done) { powerCall('com.webos.service.tvpower/power/turnOffScreen', done); },

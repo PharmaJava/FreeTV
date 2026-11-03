@@ -829,3 +829,17 @@ body.lite #sky .grad, body.lite #sky .veil { -webkit-transition: none; transitio
 .night #sysmem .bad { color: #FF6B6B; }
 #sysmem.hide { opacity: 0; }
 body.nosysmem #sysmem, body.kids #sysmem { display: none; }
+
+/* MARK: - 2.3: the RAM line is selectable, and the Memory sheet */
+
+#sysmem { padding: 0 14px; margin-right: -14px; border-radius: 15px; -webkit-transition: background-color 0.2s, opacity 0.2s; transition: background-color 0.2s, opacity 0.2s; }
+#sysmem.focus { background: #FFF; color: #1D1D1F; }
+#sysmem.focus b, #sysmem.focus .warn, #sysmem.focus .bad { color: #1D1D1F; }
+.night #sysmem.focus { background: rgba(255, 255, 255, 0.92); color: #1D1D1F; }
+.memhead { margin: 0 18px 14px; }
+.memhead .big { font-size: 46px; font-weight: 650; letter-spacing: -0.01em; }
+.memhead .sub { font-size: 22px; line-height: 30px; color: rgba(255, 255, 255, 0.6); margin-top: 8px; }
+.membar { height: 14px; margin-top: 12px; border-radius: 7px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.membar .fill { height: 14px; border-radius: 7px; background: #3FD69B; }
+.membar .fill.warn { background: #FFB840; }
+.membar .fill.bad { background: #FF5A52; }

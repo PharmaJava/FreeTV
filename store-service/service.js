@@ -175,8 +175,20 @@ service.register('sysinfo', function (message) {
   try {
     var m = fs.readFileSync('/proc/meminfo', 'utf8');
     var kb = function (key) { var r = new RegExp('^' + key + ':\\s+(\\d+)', 'm').exec(m); return r ? Math.round(r[1] / 1024) : 0; };
-    message.respond({returnValue: true, total: kb('MemTotal'), avail: kb('MemAvailable'), swapTotal: kb('SwapTotal'), swapFree: kb('SwapFree'),
-      load: parseFloat(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) || 0});
+    var out = {returnValue: true, total: kb('MemTotal'), avail: kb('MemAvailable'), swapTotal: kb('SwapTotal'), swapFree: kb('SwapFree'),
+      load: parseFloat(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) || 0};
+    if ((message.payload || {}).procs) {   // MB held by each app that names itself ("appId":"netflix") in its command line
+      out.apps = {};
+      fs.readdirSync('/proc').forEach(function (pid) {
+        if (!/^\d+$/.test(pid)) return;
+        try {
+          var id = /"appId":"([^"]+)"/.exec(fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8'));
+          var rss = id && /VmRSS:\s+(\d+)/.exec(fs.readFileSync('/proc/' + pid + '/status', 'utf8'));
+          if (rss) out.apps[id[1]] = (out.apps[id[1]] || 0) + Math.round(rss[1] / 1024);
+        } catch (e) {}
+      });
+    }
+    message.respond(out);
   } catch (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); }
 });
 
