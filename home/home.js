@@ -3451,7 +3451,8 @@
 
   function updAsk() {
     var lines = [{text: tr('Uma versão nova do FreeTV: ', 'A new FreeTV is out: ', 'Hay un FreeTV nuevo: ') + 'v' + upd.version + ' (' + tr('você tem a v', 'you have v', 'tienes la v') + ((window.CONFIG && CONFIG.version) || '?') + ').'}];
-    if (upd.notes) lines.push({text: upd.notes.replace(/[#*`>_]/g, '').replace(/\s+/g, ' ').slice(0, 320)});
+    var first = String(upd.notes || '').split('\n')[0].replace(/[#*`>_]/g, '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+    if (first) lines.push({text: first.slice(0, 160)});
     lines.push({text: tr('Seus ajustes, sua chave do TMDB e sua cidade ficam. A TV baixa, confere o SHA-256 e instala; FreeTV reabre sozinho.', 'Your settings, your TMDB key and your city stay. The TV downloads it, checks its SHA-256 and installs it; FreeTV reopens by itself.',
       'Tus ajustes, tu clave de TMDB y tu ciudad se quedan. La tele la descarga, comprueba su SHA-256 y la instala; FreeTV se reabre solo.')});
     showDialog.icon = 'sync';
@@ -3465,6 +3466,22 @@
     if (TV.name !== 'webos' || upd.busy) return;
     upd.busy = true;
     upd.phase = 'starting';
+    // The package of a release has no list of this TV's apps (the computer's installer makes that): the TV gives it, once it has allowed it.
+    // Ask now, while someone is here; without it the new version would open with no apps.
+    if (!TV.appsPaired()) {
+      if (quiet) { upd.busy = false; upd.phase = ''; return; }
+      showDialog(tr('Uma permissão antes', 'One permission first', 'Un permiso antes'), [{text: tr('A TV vai perguntar se o FreeTV pode ler a lista das suas apps (com ícones). Aceite no controle: é uma vez só e assim as suas apps continuam depois de atualizar.',
+        'The TV will ask if FreeTV may read the list of your apps (with icons). Accept it with the remote: just once, and your apps stay after the update.',
+        'La tele va a preguntar si FreeTV puede leer la lista de tus apps (con iconos). Acéptalo con el mando: solo una vez, y así tus apps siguen después de actualizar.')}], [], 0);
+      TV.pairApps(function (ok) {
+        upd.busy = false;
+        upd.phase = '';
+        if (ok) { saveSettings(); updInstall(false); return; }
+        showDialog(tr('Sem a permissão não atualizo', 'Not updating without that permission', 'Sin ese permiso no actualizo'), [{text: tr('Sem poder ler as suas apps, a versão nova abriria sem elas. Tente de novo e aceite no controle.',
+          'Without reading your apps, the new version would open without them. Try again and accept it with the remote.', 'Sin poder leer tus apps, la versión nueva se abriría sin ellas. Inténtalo de nuevo y acéptalo con el mando.')}], [{label: 'OK'}], 0);
+      });
+      return;
+    }
     saveSettings();   // the copy of the settings the new package asks for when it opens
     var token = quiet ? 0 : showDialog(tr('Atualizando o FreeTV', 'Updating FreeTV', 'Actualizando FreeTV'), [{text: tr('Preparando…', 'Getting ready…', 'Preparando…')}], [], 0);
     function say(text, done) {

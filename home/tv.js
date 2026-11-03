@@ -544,6 +544,10 @@ var TV = (function () {
     /** Asks once, while someone is looking, for what holdScreen needs; done(ok). */
     pairScreen: powerPair,
 
+    /** Whether the TV has already allowed FreeTV to read its apps (the remote API's first key), and asking for it (the TV prompts once). */
+    appsPaired: function () { try { return !!localStorage.getItem(SSAP_KEY); } catch (e) { return false; } },
+    pairApps: function (done) { ssap('com.webos.applicationManager/listLaunchPoints', function (r) { done(!!r); }); },
+
     /** Closes these apps (LG): done({ok, closed, tried, asked}). The first time the TV asks the person to allow it (once). */
     closeApps: closeApps,
     canCloseApps: function () { return webos && closeAllowed(); },

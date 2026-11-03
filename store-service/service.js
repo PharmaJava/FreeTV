@@ -165,9 +165,12 @@ service.register('updateCheck', function (message) {
 service.register('updateInstall', function (message) {
   var s = current(), u = require('./update'), want = String((message.payload || {}).version || '');
   if (!s) { message.respond({returnValue: false, error: 'FreeTV todavía no tiene permiso para instalar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
-  if (!lastRelease || lastRelease.version !== want) { message.respond({returnValue: false, error: 'Busca primero las actualizaciones.'}); return; }
-  var r = s.startSelfUpdate(lastRelease);
-  message.respond(r.ok ? {returnValue: true} : {returnValue: false, error: r.error});
+  // Asked again here: this service exits when idle, so what updateCheck found is gone by the time the person says yes.
+  u.latest(u.repo(dir), function (err, d) {
+    if (err || !d || d.version !== want) { message.respond({returnValue: false, error: 'La versión ha cambiado: busca de nuevo.'}); return; }
+    var r = s.startSelfUpdate(d);
+    message.respond(r.ok ? {returnValue: true} : {returnValue: false, error: r.error});
+  });
 });
 
 /** The TV's memory (MB) and load, for FreeTV's RAM line: read from /proc, nothing else. */

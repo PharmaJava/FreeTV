@@ -3,6 +3,20 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.3.1 (2026-11-03)
+
+Found by updating a real TV from 2.2.0 to 2.3.0 (the update installed, but...):
+
+### Fixed
+- **A TV updated from GitHub lost its apps and suggestions.** The package of a release has no list of the TV's apps (the computer's installer
+  makes it). Updating now first asks the TV (once) for permission to read its apps through the remote API, backs the key up with the
+  settings, and only then installs; without the permission it does not update.
+- The service forgot what the check had found when it exited between the check and the install ("Look for updates first"): the install
+  asks the repository again.
+- The script after the install waited ten minutes for the installer's call to end before opening FreeTV and cleaning up: it now waits for
+  "installed" and lets go.
+- The update dialog showed the release notes cut in half: only their first line now.
+
 ## 2.3.0 (2026-11-03)
 
 **Close what you do not use.** Nothing from 2.2 was removed.
