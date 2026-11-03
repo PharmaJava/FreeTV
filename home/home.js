@@ -3537,16 +3537,40 @@
 
   function memKeep() { var k = Prefs.opt('ramKeep', ['youtube.leanback.v4']); return k instanceof Array ? k : ['youtube.leanback.v4']; }
 
-  /** Closes every app that is not kept; quiet: no questions, no sheet (only when the TV already allowed it). */
-  function memFree(quiet, done) {
-    var keep = memKeep(), ids = closable().map(function (a) { return a.id; }).filter(function (id) { return keep.indexOf(id) < 0; });
+  /** The MB the TV gained after a close: its free memory before and two seconds after. */
+  function memGain(before, say) {
+    setTimeout(function () {
+      svcCall('sysinfo', {procs: true}, function (r) {
+        if (r && r.returnValue) { mem.sys = r; memApps = r.apps || {}; renderSysmem(); }
+        var gain = r && r.returnValue && before ? r.avail - before : 0;
+        if (say) toast(gain > 4 ? tr('Liberados ' + gain + ' MB', gain + ' MB freed', gain + ' MB liberados') : tr('Nada novo para liberar (a TV já tinha o resto em uso pelo sistema)', 'Nothing more to free (the rest is the system\'s)', 'No había más que liberar (el resto es del sistema)'));
+        if (st.zone === Z.INFO && info.kind === 'memory') renderInfo();
+      });
+    }, 2500);
+  }
+
+  /** Closes these apps and says how many MB that freed. */
+  function memClose(ids, title) {
+    var before = mem.sys ? mem.sys.avail : 0;
+    TV.closeApps(ids, false, function (r) {
+      if (!r.ok) { toast(tr('Não deu para fechar', 'Could not close it', 'No se pudo cerrar')); return; }
+      memGain(before, true);
+    });
+  }
+
+  /** Closes every app that is not kept (all = everything, the kept ones too; LG's own apps with the option on); quiet: only if already allowed. */
+  function memFree(quiet, all, done) {
+    if (typeof all === 'function') { done = all; all = false; }
+    var keep = all ? [] : memKeep(), ids = closable().map(function (a) { return a.id; }).filter(function (id) { return keep.indexOf(id) < 0; });
+    if (Prefs.opt('ramLg', false) === true) ids = ids.concat(LG_CLOSABLE);
+    var before = mem.sys ? mem.sys.avail : 0;
     if (quiet && !TV.canCloseApps()) { if (done) done(); return; }
     if (!quiet) toast(TV.canCloseApps() ? tr('Fechando apps em segundo plano…', 'Closing background apps…', 'Cerrando apps en segundo plano…')
       : tr('A TV vai perguntar se pode: aceite no controle (uma vez só)', 'The TV will ask if it may: accept it (just once)', 'La tele te preguntará si puede: acéptalo (solo una vez)'));
     TV.closeApps(ids, quiet, function (r) {
       pollSysmem();
       if (!quiet) {
-        if (r.ok) toast(tr('Pronto: ' + r.closed + ' apps fechadas', 'Done: ' + r.closed + ' apps closed', 'Listo: ' + r.closed + ' apps cerradas'));
+        if (r.ok) memGain(before, true);
         else toast(r.refused ? tr('Você disse que não: ative em Aparência/Memória ou limpe a recusa', 'You said no: allow it from Memory', 'Dijiste que no: permítelo desde Memoria')
           : tr('Não deu para fechar (a TV não respondeu ou foi recusado)', 'Could not close them (the TV did not answer, or it was refused)', 'No se pudo cerrar (la tele no respondió, o se rechazó)'));
       }
@@ -3554,14 +3578,48 @@
     });
   }
 
+  // What the TV's own processes are, in plain words (the ones that show up in the Memory sheet; LG needs them all).
+  function sysWhat(p) {
+    var n = p.n;
+    var T = {
+      'WebAppMgr': p.kind === 'renderer' ? [tr('Uma app web aberta (YouTube, FreeTV…)', 'A web app that is open (YouTube, FreeTV…)', 'Una app web abierta (YouTube, FreeTV…)'), 'web']
+        : [tr('Motor das apps web da LG (todas vivem aqui)', 'LG\'s web app engine (every web app lives here)', 'Motor de apps web de LG (todas viven aquí)'), 'sys'],
+      'surface-manager': [tr('Gráficos e tela', 'Graphics and screen', 'Gráficos y pantalla'), 'sys'],
+      'MaliitServer': [tr('Teclado na tela', 'On-screen keyboard', 'Teclado en pantalla'), 'sys'],
+      'airplay': [tr('AirPlay (Apple). Desligue em Ajustes da TV → Conexão', 'AirPlay (Apple). Turn it off in TV Settings → Connection', 'AirPlay (Apple). Apágalo en Ajustes del TV → Conexión'), 'opt'],
+      'homekit': [tr('HomeKit (Apple). Desligue em Ajustes da TV → Conexão', 'HomeKit (Apple). Turn it off in TV Settings → Connection', 'HomeKit (Apple). Apágalo en Ajustes del TV → Conexión'), 'opt'],
+      'legacy-broadcas': [tr('TV por antena/cabo', 'Aerial/cable TV', 'TV por antena/cable'), 'sys'],
+      'ss.gateway': [tr('Serviços inteligentes da LG', 'LG smart services', 'Servicios inteligentes de LG'), 'sys'],
+      'accountmanager': [tr('Contas da LG', 'LG accounts', 'Cuentas de LG'), 'sys'],
+      'update': [tr('Atualizações da LG', 'LG updates', 'Actualizaciones de LG'), 'sys'],
+      'contentminer': [tr('Indexador de conteúdo da LG', 'LG content indexer', 'Indexador de contenido de LG'), 'sys'],
+      'audiooutputd': [tr('Saída de áudio', 'Audio output', 'Salida de audio'), 'sys'],
+      'pqcontroller': [tr('Qualidade de imagem', 'Picture quality', 'Calidad de imagen'), 'sys'],
+      'panelcontroller': [tr('Painel OLED', 'OLED panel', 'Panel OLED'), 'sys'],
+      'securitymanager': [tr('Segurança do sistema', 'System security', 'Seguridad del sistema'), 'sys'],
+      'LunaSysService': [tr('Serviços do sistema', 'System services', 'Servicios del sistema'), 'sys']
+    };
+    if (/^com\.webos\.app\.h/.test(n)) return [tr('Início da LG (necessário)', 'LG\'s home (needed)', 'Inicio de LG (necesario)'), 'sys'];
+    if (/^com\.webos\.app\.v/.test(n)) return [tr('Voz da LG', 'LG voice', 'Voz de LG'), 'lg'];
+    if (/^com\.webos\.app\.i/.test(n)) return [tr('Entradas da LG', 'LG inputs', 'Entradas de LG'), 'sys'];
+    return T[n] || [tr('Serviço da LG', 'LG service', 'Servicio de LG'), 'sys'];
+  }
+
+  // LG's own apps that are only an overlay and come back when called (voice, browser…): closed too when the person asks for it.
+  var LG_CLOSABLE = ['com.webos.app.voice', 'com.webos.app.browser', 'com.webos.app.discovery', 'com.webos.app.photovideo', 'com.webos.app.music'];
+
   function infoMemory() {
-    var s = mem.sys, rows = [];
+    var s = mem.sys, rows = [], top = (s && s.top) || [];
     var used = s && s.total ? s.total - s.avail : 0;
-    rows.push({label: tr('Liberar memória agora', 'Free memory now', 'Liberar memoria ahora'), value: '›', icon: 'sync', run: function () {
-      memFree(false, function () { setTimeout(function () { memRefresh(); }, 1500); });
+    rows.push({label: tr('Liberar memória agora', 'Free memory now', 'Liberar memoria ahora'), value: '›', icon: 'sync', run: function () { memFree(false, false); }});
+    rows.push({label: tr('Liberar TUDO (também as que você mantém)', 'Free EVERYTHING (also the ones you keep)', 'Liberar TODO (también las que mantienes)'), value: '›', icon: 'sync', run: function () {
+      showDialog(tr('Liberar tudo?', 'Free everything?', '¿Liberar todo?'), [{text: tr('Fecha também as apps em «Manter» (o YouTube, por exemplo). Se alguém estiver vendo algo, vai parar.', 'This also closes the apps set to Keep (YouTube, say). If somebody is watching something, it stops.',
+        'Cierra también las apps en «Mantener» (YouTube, por ejemplo). Si alguien está viendo algo, se para.')}], [{label: cancelText()}, {label: tr('Sim, liberar tudo', 'Yes, free everything', 'Sí, liberar todo'), run: function () { memFree(false, true); }}], 0);
     }});
     rows.push({label: tr('Liberar sozinho com o protetor de tela', 'Free it by itself with the screensaver', 'Liberar solo con el salvapantallas'), toggle: Prefs.opt('ramAuto', false) === true,
       step: function () { Prefs.set('ramAuto', Prefs.opt('ramAuto', false) !== true); if (Prefs.opt('ramAuto', false) && !TV.canCloseApps()) toast(tr('Peça a permissão uma vez com «Liberar agora»', 'Ask for the permission once with "Free now"', 'Pide el permiso una vez con «Liberar ahora»')); }});
+    rows.push({label: tr('Fechar também apps da LG (voz, navegador…)', 'Also close LG\'s own apps (voice, browser…)', 'Cerrar también apps de LG (voz, navegador…)'), toggle: Prefs.opt('ramLg', false) === true,
+      step: function () { Prefs.set('ramLg', Prefs.opt('ramLg', false) !== true); }});
     var keep = memKeep();
     closable().sort(function (a, b) { return (memApps[b.id] || 0) - (memApps[a.id] || 0) || (a.title < b.title ? -1 : 1); }).forEach(function (a) {
       var mb = memApps[a.id];
@@ -3569,8 +3627,7 @@
         step: function (d) {
           if (d === 1 || d === undefined) {   // OK: close this one now
             if (keep.indexOf(a.id) >= 0) { toast(a.title + ': ' + tr('está em «Manter»', 'is set to Keep', 'está en «Mantener»')); return; }
-            TV.closeApps([a.id], false, function (r) { toast(r.ok ? a.title + ': ' + tr('fechada', 'closed', 'cerrada') : tr('Não deu para fechar', 'Could not close it', 'No se pudo cerrar')); setTimeout(memRefresh, 1500); });
-            return;
+            memClose([a.id], a.title);
           }
         },
         move: function () {   // ◀ ▶: keep or close when freeing
@@ -3578,6 +3635,18 @@
           if (at >= 0) k.splice(at, 1); else k.push(a.id);
           Prefs.set('ramKeep', k);
         }});
+    });
+    // What the TV itself holds: read-only (closing it takes root, which FreeTV never uses)
+    var shown = 0;
+    top.forEach(function (p) {
+      if (shown >= 9 || p.app && closable().some(function (a) { return a.id === p.app; })) return;
+      var w = sysWhat(p);
+      shown++;
+      rows.push({label: (w[1] === 'web' ? '◦ ' : '· ') + w[0], value: p.mb + ' MB', plain: true,
+        run: function () { showDialog(w[0], [{text: tr('Processo ' + p.n + ': ' + p.mb + ' MB. ', 'Process ' + p.n + ': ' + p.mb + ' MB. ', 'Proceso ' + p.n + ': ' + p.mb + ' MB. ') + (w[1] === 'opt' ? tr('Dá para desligar nos ajustes da TV.', 'It can be turned off in the TV\'s settings.', 'Se puede apagar en los ajustes de la tele.')
+          : w[1] === 'web' ? tr('É uma app web que ficou aberta em segundo plano: feche-a na lista de cima (se ela está em «Manter», use «Liberar TUDO»).', 'It is a web app left open in the background: close it from the list above (if it is set to Keep, use "Free EVERYTHING").',
+            'Es una app web que se quedó abierta en segundo plano: ciérrala en la lista de arriba (si está en «Mantener», usa «Liberar TODO»).')
+          : tr('É da LG e a TV precisa dela: só daria para fechar com root, e o FreeTV não faz isso.', 'It is LG\'s and the TV needs it: closing it takes root, and FreeTV never uses root.', 'Es de LG y la tele la necesita: cerrarla exige root, y FreeTV nunca lo usa.'))}], [{label: 'OK'}], 0); }});
     });
     return {title: tr('Memória', 'Memory', 'Memoria'), icon: 'tv', rows: rows, visible: 6, build: function (box) {
       setClass(box, 'wide', false);
@@ -3587,11 +3656,12 @@
         el('div', 'big', head, used + ' / ' + s.total + ' MB  ·  ' + pct + '%');
         var bar = el('div', 'membar', head), fill = el('div', 'fill' + (pct > 90 ? ' bad' : pct > 80 ? ' warn' : ''), bar);
         fill.style.width = Math.min(100, pct) + '%';
-        el('div', 'sub', head, tr('Troca (disco): ', 'Swap (disk): ', 'Intercambio (disco): ') + (s.swapTotal - s.swapFree) + ' / ' + s.swapTotal + ' MB');
+        el('div', 'sub', head, (s.cma ? tr('Reservada para gráficos e vídeo (fixa): ', 'Kept for graphics and video (fixed): ', 'Reservada para gráficos y vídeo (fija): ') + s.cma + ' MB  ·  ' : '') +
+          tr('Troca (disco): ', 'Swap (disk): ', 'Intercambio (disco): ') + (s.swapTotal - s.swapFree) + ' / ' + s.swapTotal + ' MB');
       } else el('div', 'sub', head, tr('Lendo a memória da TV…', 'Reading the TV\'s memory…', 'Leyendo la memoria de la tele…'));
-      el('div', 'sub', head, tr('Fechar apps só libera o que está em segundo plano; a que está aberta aqui não é fechada.', 'Closing only frees what sits in the background; FreeTV itself is never closed.',
-        'Cerrar solo libera lo que está en segundo plano; FreeTV nunca se cierra a sí mismo.'));
-    }, hint: tr('OK fecha a app · ◀ ▶ Manter/Fechar ao liberar · Voltar fecha', 'OK closes it · ◀ ▶ Keep/Close when freeing · Back closes', 'OK la cierra · ◀ ▶ Mantener/Cerrar al liberar · Atrás cierra')};
+      el('div', 'sub', head, tr('Abaixo, o que a própria LG mantém (só leitura): sem root não se fecha. FreeTV nunca fecha a si mesmo.', 'Further down, what LG itself keeps (read-only): it cannot be closed without root. FreeTV never closes itself.',
+        'Más abajo, lo que mantiene la propia LG (solo lectura): sin root no se cierra. FreeTV nunca se cierra a sí mismo.'));
+    }, hint: tr('OK fecha · ◀ ▶ Manter/Fechar ao liberar · Voltar fecha', 'OK closes · ◀ ▶ Keep/Close when freeing · Back closes', 'OK cierra · ◀ ▶ Mantener/Cerrar al liberar · Atrás cierra')};
   }
 
   function memRefresh() {

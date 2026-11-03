@@ -180,16 +180,26 @@ service.register('sysinfo', function (message) {
     var kb = function (key) { var r = new RegExp('^' + key + ':\\s+(\\d+)', 'm').exec(m); return r ? Math.round(r[1] / 1024) : 0; };
     var out = {returnValue: true, total: kb('MemTotal'), avail: kb('MemAvailable'), swapTotal: kb('SwapTotal'), swapFree: kb('SwapFree'),
       load: parseFloat(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) || 0};
-    if ((message.payload || {}).procs) {   // MB held by each app that names itself ("appId":"netflix") in its command line
+    out.cma = kb('CmaTotal');   // memory the TV keeps for graphics and video: fixed
+    if ((message.payload || {}).procs) {   // MB held by each app that names itself ("appId":"netflix"), and every process over 6 MB
       out.apps = {};
+      out.top = [];
       fs.readdirSync('/proc').forEach(function (pid) {
         if (!/^\d+$/.test(pid)) return;
         try {
-          var id = /"appId":"([^"]+)"/.exec(fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8'));
-          var rss = id && /VmRSS:\s+(\d+)/.exec(fs.readFileSync('/proc/' + pid + '/status', 'utf8'));
-          if (rss) out.apps[id[1]] = (out.apps[id[1]] || 0) + Math.round(rss[1] / 1024);
+          var st = fs.readFileSync('/proc/' + pid + '/status', 'utf8'), rss = /VmRSS:\s+(\d+)/.exec(st);
+          if (!rss) return;
+          var mb = Math.round(rss[1] / 1024), cmd = fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8');
+          var id = /"appId":"([^"]+)"/.exec(cmd), name = (/Name:\s+(\\S+)/.exec(st) || [])[1] || '?';
+          if (id) out.apps[id[1]] = (out.apps[id[1]] || 0) + mb;
+          if (mb >= 6) {
+            var kind = /--type=renderer/.test(cmd) ? 'renderer' : /--type=/.test(cmd) ? 'helper' : '';
+            out.top.push({n: name, mb: mb, app: id ? id[1] : '', kind: kind});
+          }
         } catch (e) {}
       });
+      out.top.sort(function (a, b) { return b.mb - a.mb; });
+      out.top = out.top.slice(0, 40);
     }
     message.respond(out);
   } catch (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); }
