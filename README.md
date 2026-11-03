@@ -11,6 +11,18 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.4: where the RAM goes, and more to close
+
+- **Memory, in full.** The sheet now also says **where the memory goes**: a bar, the part the TV keeps for graphics and video (fixed, ~196 MB on
+  a 2 GB OLED), the swap, and, read-only, the biggest things **LG itself keeps** in plain words (the web app engine, LG's home, graphics,
+  the on-screen keyboard, AirPlay, HomeKit…). With nothing open, that is most of the ~1 GB you see in use: it needs root to close, which
+  FreeTV never uses (AirPlay and HomeKit can be turned off in the TV's own settings). What you *can* close: every app, including the web
+  apps that stay in the background (YouTube can hold 200 MB or more).
+- **Free everything** (also the apps you marked *Keep*, after a question), **Free memory now**, and after each close FreeTV tells you the
+  **MB it freed**. *Also close LG's own apps* (voice, browser…) is an option that is off by default.
+- **From Settings too:** *Home Settings → Maintenance* has *Memory: see it and free it*, *Free memory now*, *Free it by itself with the
+  screensaver* and the LG apps option.
+
 ### FreeTV 2.3: close what you do not use
 
 - **Memory sheet.** The RAM line under the top buttons is now a stop of the top row: press ▶ past the three round buttons and **OK**
@@ -351,6 +363,18 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.4: a dónde va la RAM, y más que cerrar
+
+- **Memoria, completa.** La hoja ahora también dice **a dónde va la memoria**: una barra, la parte que la tele reserva para gráficos y vídeo (fija,
+  ~196 MB en un OLED de 2 GB), el intercambio y, en solo lectura, lo más grande que **mantiene la propia LG** en palabras claras (el motor de
+  apps web, el inicio de LG, los gráficos, el teclado en pantalla, AirPlay, HomeKit…). Con nada abierto, eso es casi todo el ~1 GB que ves
+  en uso: cerrarlo exige root, que FreeTV nunca usa (AirPlay y HomeKit se pueden apagar en los ajustes de la propia tele). Lo que sí puedes
+  cerrar: todas las apps, incluidas las apps web que se quedan en segundo plano (YouTube puede tener 200 MB o más).
+- **Liberar todo** (también las que marcaste *Mantener*, tras una pregunta), **Liberar memoria ahora**, y tras cada cierre FreeTV te dice los
+  **MB que liberó**. *Cerrar también apps de LG* (voz, navegador…) es una opción apagada por defecto.
+- **También desde Ajustes:** *Ajustes de inicio → Mantenimiento* tiene *Memoria RAM: ver y liberar*, *Liberar memoria ahora*, *Liberar solo con el
+  salvapantallas* y la opción de las apps de LG.
 
 ### FreeTV 2.3: cierra lo que no uses
 

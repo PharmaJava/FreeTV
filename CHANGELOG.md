@@ -3,6 +3,22 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.4.0 (2026-11-03)
+
+**Where the RAM goes, and more to close.** Nothing from 2.3 was removed.
+
+### New
+- **Memory sheet:** memory kept for graphics (`CmaTotal`), the biggest processes of the TV in plain words (read-only: LG's web app engine, home,
+  graphics, keyboard, AirPlay, HomeKit…; the store service's `sysinfo {procs}` now returns `top`, every process over 6 MB, named from
+  `/proc/<pid>/comm`), **Free everything** (also the apps set to Keep, with a question), the **MB freed** after each close (free memory two
+  seconds later), and *Also close LG's own apps* (`LG_CLOSABLE`: voice, browser, discovery, photos/video, music; off by default).
+- **Settings → Maintenance:** *Memory: see it and free it*, *Free memory now*, *Free it by itself with the screensaver*, LG's apps.
+
+### Measured on an LG OLED (webOS 6.5, 1.8 GB), nothing open
+~196 MB kept for graphics and video, ~700 MB LG's own processes (web engine 207, graphics 65, home 50–73, keyboard 33, AirPlay 21,
+HomeKit 14…), FreeTV itself ~35 MB, and any web app left in the background (a YouTube AdFree held ~240 MB). The Developer Mode shell
+cannot close anything (`close`/`running` denied) and cannot change LG's settings; closing LG's services needs root.
+
 ## 2.3.1 (2026-11-03)
 
 Found by updating a real TV from 2.2.0 to 2.3.0 (the update installed, but...):

@@ -118,3 +118,9 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
 - The RAM line is the top row's stop `TABS + 3` (only on webOS, `memShown()`).
 - Not verified on a TV when written (the TV was in use): the prompt's wording and what `close` answers for an app that is not running.
 
+## 2.4: reading the TV's memory
+- `sysinfo {procs:true}` returns `apps` (MB per app that names itself), `top` (processes over 6 MB with `n` from `/proc/<pid>/comm`, `kind`
+  renderer/helper from the command line) and `cma`. `sysWhat()` (home.js) names the usual ones; add a name there when a new one shows up.
+- Web apps cannot be attributed to a process (their renderers do not name the app): the sheet says "a web app", and the MB freed is measured.
+- Escapes: code written into files from Python must keep `\d`/`\S` as one backslash (a doubled one silently matches nothing: process names read `?`).
+
