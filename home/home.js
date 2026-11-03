@@ -1111,6 +1111,13 @@
       }
       rows.push({label: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), value: '›', step: function (d) { if (d >= 0) openInfo('usage'); }});
       if (TV.name === 'webos') {
+        rows.push({label: tr('Memória RAM: ver e liberar', 'Memory: see it and free it', 'Memoria RAM: ver y liberar'), value: mem.sys && mem.sys.total ? (mem.sys.total - mem.sys.avail) + ' / ' + mem.sys.total + ' MB' : '›',
+          step: function (d) { if (d >= 0) openInfo('memory', {fromSettings: true}); }});
+        rows.push({label: tr('Liberar memória agora', 'Free memory now', 'Liberar memoria ahora'), value: '›', step: function (d) { if (d >= 0) memFree(false, false); }});
+        rows.push({label: tr('Liberar sozinho com o protetor de tela', 'Free it by itself with the screensaver', 'Liberar solo con el salvapantallas'), toggle: Prefs.opt('ramAuto', false) === true,
+          step: function () { Prefs.set('ramAuto', Prefs.opt('ramAuto', false) !== true); }});
+        rows.push({label: tr('Fechar também apps da LG (voz, navegador…)', 'Also close LG\'s own apps (voice, browser…)', 'Cerrar también apps de LG (voz, navegador…)'), toggle: Prefs.opt('ramLg', false) === true,
+          step: function () { Prefs.set('ramLg', Prefs.opt('ramLg', false) !== true); }});
         var um = updMode();
         rows.push({label: tr('Atualizações do FreeTV', 'FreeTV updates', 'Actualizaciones de FreeTV'), value: um === 'auto' ? tr('Automáticas', 'Automatic', 'Automáticas') : um === 'off' ? tr('Nunca', 'Never', 'Nunca') : tr('Avisar', 'Tell me', 'Avisar'),
           step: function (d) { cycle('updMode', ['ask', 'auto', 'off'], um, d); }});
@@ -3608,7 +3615,7 @@
   // LG's own apps that are only an overlay and come back when called (voice, browser…): closed too when the person asks for it.
   var LG_CLOSABLE = ['com.webos.app.voice', 'com.webos.app.browser', 'com.webos.app.discovery', 'com.webos.app.photovideo', 'com.webos.app.music'];
 
-  function infoMemory() {
+  function infoMemory(arg) {
     var s = mem.sys, rows = [], top = (s && s.top) || [];
     var used = s && s.total ? s.total - s.avail : 0;
     rows.push({label: tr('Liberar memória agora', 'Free memory now', 'Liberar memoria ahora'), value: '›', icon: 'sync', run: function () { memFree(false, false); }});
@@ -3648,7 +3655,12 @@
             'Es una app web que se quedó abierta en segundo plano: ciérrala en la lista de arriba (si está en «Mantener», usa «Liberar TODO»).')
           : tr('É da LG e a TV precisa dela: só daria para fechar com root, e o FreeTV não faz isso.', 'It is LG\'s and the TV needs it: closing it takes root, and FreeTV never uses root.', 'Es de LG y la tele la necesita: cerrarla exige root, y FreeTV nunca lo usa.'))}], [{label: 'OK'}], 0); }});
     });
-    return {title: tr('Memória', 'Memory', 'Memoria'), icon: 'tv', rows: rows, visible: 6, build: function (box) {
+    return {title: tr('Memória', 'Memory', 'Memoria'), icon: 'tv', rows: rows, visible: 6, back: arg && arg.fromSettings ? function () {
+      setClass($('infosheet'), 'open', false);
+      openSettings();
+      settingsCat = 'care';
+      renderSettings();
+    } : null, build: function (box) {
       setClass(box, 'wide', false);
       var head = el('div', 'memhead', box);
       if (s && s.total) {

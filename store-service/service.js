@@ -190,7 +190,8 @@ service.register('sysinfo', function (message) {
           var st = fs.readFileSync('/proc/' + pid + '/status', 'utf8'), rss = /VmRSS:\s+(\d+)/.exec(st);
           if (!rss) return;
           var mb = Math.round(rss[1] / 1024), cmd = fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8');
-          var id = /"appId":"([^"]+)"/.exec(cmd), name = (/Name:\s+(\\S+)/.exec(st) || [])[1] || '?';
+          var id = /"appId":"([^"]+)"/.exec(cmd), name = '?';
+          try { name = fs.readFileSync('/proc/' + pid + '/comm', 'utf8').trim() || '?'; } catch (e2) {}
           if (id) out.apps[id[1]] = (out.apps[id[1]] || 0) + mb;
           if (mb >= 6) {
             var kind = /--type=renderer/.test(cmd) ? 'renderer' : /--type=/.test(cmd) ? 'helper' : '';
