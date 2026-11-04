@@ -1114,6 +1114,7 @@
         rows.push({label: tr('Renovar o Modo Desenvolvedor sozinha', 'Renew Developer Mode by itself', 'Renovar el Modo Desarrollador sola'), toggle: Prefs.devAuto(), step: function () { Prefs.set('devAuto', !Prefs.devAuto()); }});
       }
       rows.push({label: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), value: '›', step: function (d) { if (d >= 0) openInfo('usage'); }});
+      rows.push({label: tr('Minha lista', 'My list', 'Mi lista'), value: wlist().length ? String(wlist().length) : '›', step: function (d) { if (d >= 0) openInfo('watchlist', {fromSettings: true}); }});
       if (TV.name === 'webos') {
         rows.push({label: tr('Memória RAM: ver e liberar', 'Memory: see it and free it', 'Memoria RAM: ver y liberar'), value: mem.sys && mem.sys.total ? (mem.sys.total - mem.sys.avail) + ' / ' + mem.sys.total + ' MB' : '›',
           step: function (d) { if (d >= 0) openInfo('memory', {fromSettings: true}); }});
@@ -1127,6 +1128,7 @@
           step: function (d) { cycle('updMode', ['ask', 'auto', 'off'], um, d); }});
         rows.push({label: tr('FreeTV no repositório', 'FreeTV on GitHub', 'FreeTV en GitHub'), value: updText(), plain: !updNewer(),
           step: function (d) { if (d < 0) return; if (updNewer()) updAsk(); else updCheck(true); }});
+        rows.push({label: tr('Diagnóstico (relatório para ajuda)', 'Diagnostics (a report for help)', 'Diagnóstico (informe para pedir ayuda)'), value: '›', step: function (d) { if (d >= 0) openInfo('diag', {fromSettings: true}); }});
         rows.push({label: tr('Guardar uma cópia dos ajustes', 'Save a copy of the settings', 'Guardar una copia de los ajustes'), value: '›', step: function (d) { if (d >= 0) { saveSettings(); toast(tr('Cópia guardada na TV', 'Copy saved on the TV', 'Copia guardada en la tele')); } }});
         rows.push({label: tr('Restaurar a cópia guardada', 'Restore the saved copy', 'Restaurar la copia guardada'), value: '›', step: function (d) { if (d >= 0) showDialog(tr('Restaurar?', 'Restore?', '¿Restaurar?'), [{text: tr('Os ajustes de agora são trocados pelos da cópia.', 'The settings now are replaced by the copy\'s.', 'Los ajustes de ahora se cambian por los de la copia.')}], [{label: cancelText()}, {label: tr('Sim, restaurar', 'Yes, restore', 'Sí, restaurar'), run: restoreBackup}], 0); }});
         rows.push({label: tr('Cópia no computador / outra TV', 'Copy on the computer / another TV', 'Copia en el ordenador / otra tele'), value: '›', step: function (d) {
@@ -1831,7 +1833,7 @@
   /** Columns for a tile sheet: two for up to four tiles, three for six, four for more. */
   function tileCols(n) { return n <= 4 ? 2 : n <= 6 ? 3 : 4; }
 
-  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines'];   // tiles that start hidden (Home Settings → Quick panel)
+  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines', 'watchlist'];   // tiles that start hidden (Home Settings → Quick panel)
   function quickShown(id) { return (Prefs.opt('quickHidden', QUICK_OFF) || []).indexOf(id) < 0; }
   function quickShow(id, on) {
     var hidden = (Prefs.opt('quickHidden', QUICK_OFF) || []).filter(function (x) { return x !== id; });
@@ -1867,6 +1869,7 @@
         sub: Data.weather ? Data.degrees(Data.weather.temp) + ' · ' + Data.condition(Data.weather.code, Data.weather.isDay) : '', run: function () { openInfo('weather'); }},
       {id: 'markets', sym: 'bitcoin', name: tr('Mercados', 'Markets', 'Mercados'), sub: tr('Gráficos e alertas', 'Charts and alerts', 'Gráficas y alertas'), run: function () { openInfo('markets'); }},
       {id: 'widgets', sym: 'partly_cloudy_day', name: tr('Meus widgets', 'My widgets', 'Mis widgets'), sub: tr('Calendário, notas, futebol…', 'Calendar, notes, football…', 'Calendario, notas, fútbol…'), run: function () { openInfo('widgets'); }},
+      {id: 'watchlist', sym: 'play', name: tr('Minha lista', 'My list', 'Mi lista'), sub: String(wlist().length), run: function () { openInfo('watchlist'); }},
       {id: 'profile', sym: 'home', name: tr('Perfil', 'Profile', 'Perfil'), sub: profileName(profileNow()), run: function () { openInfo('profiles'); }},
       {id: 'usage', sym: 'timer', name: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), sub: tr('Hoje e esta semana', 'Today and this week', 'Hoy y esta semana'), run: function () { openInfo('usage'); }},
       {id: 'routines', sym: 'timer', name: tr('Rotinas', 'Routines', 'Rutinas'), sub: String(routines().length), run: function () { openInfo('routines'); }},
@@ -2895,6 +2898,7 @@
     var p = st.zone === Z.CARDS ? cards[st.card] : null;
     if (p && st.tab === 0 && p.local === 'channel') return function () { openChannelMenu(p.chan); };
     if (p && st.tab === 1 && (p.local === 'channel' || p.local === 'app')) return function () { openRecentMenu(p); };
+    if (p && st.tab >= 2 && !p.local && p.id && p.kind) return function () { openPickMenu(p); };
     if (st.zone === Z.APPS && others[st.grid] && TV.name === 'webos') { var app = others[st.grid]; return function () { openAppMenu(app); }; }
     return null;
   }
@@ -3650,6 +3654,111 @@
   // LG's own apps that are only an overlay and come back when called (voice, browser…): closed too when the person asks for it.
   var LG_CLOSABLE = ['com.webos.app.voice', 'com.webos.app.browser', 'com.webos.app.discovery', 'com.webos.app.photovideo', 'com.webos.app.music'];
 
+  // MARK: - 2.5: Diagnostics. One page of facts about this TV and this FreeTV, with no keys, names, cities or PINs, to read or to attach to a GitHub issue.
+
+  var diagErrors = [];
+  window.addEventListener('error', function (e) {
+    diagErrors.push(String(e && e.message || 'error').slice(0, 160) + ' @' + String(e && e.filename || '').replace(/^.*\//, '') + ':' + (e && e.lineno || 0));
+    if (diagErrors.length > 12) diagErrors.shift();
+  });
+
+  function diagReport() {
+    var L = [], ver = (window.CONFIG && CONFIG.version) || '?', chrome = /Chrom(?:e|ium)\/(\d+)/.exec(navigator.userAgent || ''), s = mem.sys, pm = window.performance && performance.memory;
+    L.push('FreeTV ' + ver + ' on ' + TV.name + (TV.name === 'webos' && window.webOSSystem && webOSSystem.platformVersion ? ' (webOS ' + webOSSystem.platformVersion + ')' : ''));
+    L.push('engine: Chrome ' + (chrome ? chrome[1] : '?') + ', screen ' + window.innerWidth + 'x' + window.innerHeight + ', language ' + (navigator.language || '?'));
+    if (s && s.total) L.push('memory: ' + (s.total - s.avail) + ' / ' + s.total + ' MB, swap ' + (s.swapTotal - s.swapFree) + ' / ' + s.swapTotal + ' MB, graphics reserve ' + (s.cma || 0) + ' MB, load ' + (s.load || 0).toFixed(1));
+    if (pm && pm.usedJSHeapSize) L.push('FreeTV heap: ' + Math.round(pm.usedJSHeapSize / 1048576) + ' MB');
+    L.push('Developer Mode: ' + (dev.hours === null ? 'unknown' : devDays(dev.hours)));
+    L.push('store service: ' + store.svc + ', free space ' + (store.freeMb || '?') + ' MB, apps with updates ' + store.updList.length);
+    L.push('FreeTV updates: mode ' + updMode() + ', latest on GitHub ' + (latestVer || '?'));
+    L.push('apps known to FreeTV: ' + apps.length);
+    var keys = ['theme', 'accent', 'perf', 'perfAuto', 'ramWidget', 'ramAuto', 'ramLg', 'updMode', 'pointer'], o = [];
+    keys.forEach(function (k) { var v = Prefs.opt(k, null); if (v !== null && v !== undefined && typeof v !== 'object') o.push(k + '=' + v); });
+    L.push('options: ' + (o.join(', ') || 'default'));
+    L.push('remote API: apps ' + (TV.appsPaired && TV.appsPaired() ? 'allowed' : 'not allowed') + ', close ' + (TV.canCloseApps && TV.canCloseApps() ? 'allowed' : 'not allowed'));
+    L.push(diagErrors.length ? 'recent errors:\n  ' + diagErrors.join('\n  ') : 'recent errors: none');
+    return L.join('\n');
+  }
+
+  function infoDiag(arg) {
+    var rows = [];
+    rows.push({label: tr('Guardar o relatório na TV', 'Save the report on the TV', 'Guardar el informe en la tele'), value: '›', icon: 'check', run: function () {
+      svcCall('diagSave', {text: diagReport()}, function (r) {
+        toast(r && r.returnValue ? tr('Guardado na TV. No computador: node tools/diagnostics.js <IP>', 'Saved on the TV. On the computer: node tools/diagnostics.js <IP>', 'Guardado en la tele. En el ordenador: node tools/diagnostics.js <IP>')
+          : tr('Não consegui guardar', 'Could not save it', 'No pude guardarlo'));
+      });
+    }});
+    rows.push({label: tr('Ver o relatório', 'Read the report', 'Ver el informe'), value: '›', icon: 'apps', run: function () {
+      showDialog('FreeTV', diagReport().split('\n').map(function (l) { return {cls: 'code', text: l}; }), [{label: 'OK'}], 0);
+    }});
+    rows.push({label: tr('Reportar um problema', 'Report a problem', 'Reportar un problema'), value: '›', icon: 'home', run: function () {
+      showDialog(tr('Reportar um problema', 'Report a problem', 'Reportar un problema'), [
+        {text: tr('Guarde o relatório e, no computador, cole-o numa issue do GitHub. Não leva chaves, nomes nem cidade.', 'Save the report and paste it into a GitHub issue from the computer. It has no keys, names or city.', 'Guarda el informe y pégalo en una issue de GitHub desde el ordenador. No lleva claves, nombres ni ciudad.')},
+        {cls: 'code', text: 'github.com/PharmaJava/FreeTV/issues'}], [{label: 'OK'}], 0);
+    }});
+    return {title: tr('Diagnóstico', 'Diagnostics', 'Diagnóstico'), icon: 'health', rows: rows, visible: 5, back: arg && arg.fromSettings ? function () {
+      setClass($('infosheet'), 'open', false);
+      openSettings();
+      settingsCat = 'care';
+      renderSettings();
+    } : null, build: function (box) {
+      setClass(box, 'wide', false);
+      var head = el('div', 'memhead', box);
+      el('div', 'sub', head, tr('O que o FreeTV sabe sobre esta TV, sem dados pessoais. Serve para entender um problema sem adivinhar.', 'What FreeTV knows about this TV, with nothing personal. It is there so a problem can be understood without guessing.', 'Lo que FreeTV sabe de esta tele, sin datos personales. Sirve para entender un problema sin adivinar.'));
+      el('div', 'sub', head, diagReport().split('\n').slice(0, 3).join('  ·  ')).style.marginTop = '14px';
+    }, hint: tr('OK escolhe · Voltar fecha', 'OK chooses · Back closes', 'OK elige · Atrás cierra')};
+  }
+
+  // MARK: - 2.5: My list. Titles kept from the picks (hold OK on one); OK on a title opens the streaming app that has it on this TV
+  // (the TV gives no way to open a title inside another app, so it opens the app).
+
+  function wlist() { var l = Prefs.opt('watchlist', []); return l && l.length !== undefined ? l : []; }
+  function wlKey(p) { return p.kind + ':' + p.id; }
+  function wlHas(p) { var k = wlKey(p); return wlist().some(function (x) { return x.key === k; }); }
+
+  function wlToggle(p) {
+    var k = wlKey(p), l = wlist().filter(function (x) { return x.key !== k; });
+    if (l.length === wlist().length) {
+      l.unshift({key: k, kind: p.kind, id: p.id, title: String(p.title || '').slice(0, 80), thumb: /^https:\/\//.test(p.thumb || '') ? p.thumb : '', app: p.app || '', service: p.service || '', at: Date.now()});
+      toast(p.title + ': ' + tr('na minha lista', 'on my list', 'en mi lista'));
+    } else toast(p.title + ': ' + tr('fora da minha lista', 'off my list', 'fuera de mi lista'));
+    Prefs.set('watchlist', l.slice(0, 60));
+  }
+
+  /** Hold OK on a pick. */
+  function openPickMenu(p) {
+    var app = p.app && Data.appFor(p.app), buttons = [];
+    if (app) buttons.push({label: tr('Abrir ', 'Open ', 'Abrir ') + app.title, run: launcher(app.id, app.title)});
+    buttons.push({label: wlHas(p) ? tr('Tirar da minha lista', 'Take off my list', 'Quitar de mi lista') : tr('Pôr na minha lista', 'Put on my list', 'Añadir a mi lista'), run: function () { wlToggle(p); }});
+    buttons.push({label: tr('Ver a minha lista', 'See my list', 'Ver mi lista'), run: function () { openInfo('watchlist'); }});
+    buttons.push({label: cancelText()});
+    showDialog(p.title, [], buttons, 0);
+  }
+
+  function infoWatchlist(arg) {
+    var rows = [], l = wlist();
+    l.forEach(function (w) {
+      var app = w.app && Data.appFor(w.app);
+      rows.push({label: w.title, value: app ? app.title : w.service || (w.kind === 'tv' ? tr('Série', 'Series', 'Serie') : tr('Filme', 'Movie', 'Película')), plain: true, run: function () {
+        var b = [];
+        if (app) b.push({label: tr('Abrir ', 'Open ', 'Abrir ') + app.title, run: launcher(app.id, app.title)});
+        b.push({label: tr('Tirar da lista', 'Take off the list', 'Quitar de la lista'), run: function () { wlToggle(w); renderInfo(); }});
+        b.push({label: cancelText()});
+        showDialog(w.title, [], b, 0);
+      }});
+    });
+    if (!rows.length) rows.push({label: tr('Ainda vazia', 'Empty for now', 'Vacía por ahora'), value: tr('Segure OK numa sugestão', 'Hold OK on a pick', 'Mantén OK en una sugerencia'), plain: true});
+    return {title: tr('Minha lista', 'My list', 'Mi lista'), icon: 'play', rows: rows, visible: 6, back: arg && arg.fromSettings ? function () {
+      setClass($('infosheet'), 'open', false);
+      openSettings();
+      settingsCat = 'care';
+      renderSettings();
+    } : null, build: function (box) {
+      setClass(box, 'wide', false);
+      el('div', 'sub', el('div', 'memhead', box), tr('Filmes e séries guardados das sugestões. OK abre a app onde estão nesta TV.', 'Films and series kept from the picks. OK opens the app that has them on this TV.', 'Películas y series guardadas de las sugerencias. OK abre la app que las tiene en esta tele.'));
+    }, hint: tr('OK escolhe · Voltar fecha', 'OK chooses · Back closes', 'OK elige · Atrás cierra')};
+  }
+
   function infoMemory(arg) {
     var s = mem.sys, rows = [], top = (s && s.top) || [];
     var used = s && s.total ? s.total - s.avail : 0;
@@ -3766,6 +3875,8 @@
   var INFO = {};   // kind → function (arg): {title, icon, build(box), rows, hint, visible, back}
   INFO.repos = infoRepos;
   INFO.memory = infoMemory;
+  INFO.diag = infoDiag;
+  INFO.watchlist = infoWatchlist;
 
   function openInfo(kind, arg) {
     if (kind === 'memory' && TV.name === 'webos') memRefresh();

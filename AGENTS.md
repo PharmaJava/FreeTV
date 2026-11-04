@@ -124,3 +124,10 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
 - Web apps cannot be attributed to a process (their renderers do not name the app): the sheet says "a web app", and the MB freed is measured.
 - Escapes: code written into files from Python must keep `\d`/`\S` as one backslash (a doubled one silently matches nothing: process names read `?`).
 
+## 2.5: Diagnostics and My list
+
+- `diagReport()` (home.js) is the only place that decides what the report says: keep secrets and personal values out of it (a test checks the
+  obvious ones). `diagSave` in the service writes `state/diagnostics.txt`; `tools/diagnostics.js` reads it over the Developer Mode key.
+- `watchlist` (Prefs, `{key: kind:id, title, app, service, at}`) is filled from `openPickMenu`; picks open the app, never the title.
+- Not built on purpose: a phone companion needs the store service to listen on a port (it exits when idle, costs RAM, and the TV's firewall is
+  unknown): probe that on the TV first.

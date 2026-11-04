@@ -11,6 +11,14 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.5: Diagnostics and My list
+
+- **Diagnostics** (*Home Settings → Maintenance*): one page of facts about the TV and FreeTV (version, webOS, memory, Developer Mode, store,
+  updates, recent errors) with **no keys, names or city**. Read it on the TV, or *Save the report on the TV* and run
+  `node tools/diagnostics.js <IP>` on the computer; paste it into a GitHub issue (there is a template now).
+- **My list:** hold OK on a pick to put it on your list (or take it off); *Quick panel* and *Maintenance* open the list, and OK on a title
+  opens the streaming app that has it on this TV (an app cannot be told to open one title inside another).
+
 ### FreeTV 2.4.1: the Magic Remote's pointer
 
 - The pointer now works on the **app shelf** (a transparent layer was taking it), no longer **runs away** down lists and along the cards, and
@@ -368,6 +376,14 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.5: Diagnóstico y Mi lista
+
+- **Diagnóstico** (*Ajustes de inicio → Mantenimiento*): una página con datos de la tele y de FreeTV (versión, webOS, memoria, Modo
+  Desarrollador, tienda, actualizaciones, errores recientes) **sin claves, nombres ni ciudad**. Se lee en la tele, o *Guardar el informe en
+  la tele* y `node tools/diagnostics.js <IP>` en el ordenador; pégalo en una issue de GitHub (ya hay plantilla).
+- **Mi lista:** mantén OK en una sugerencia para ponerla en tu lista (o quitarla); el *Panel rápido* y *Mantenimiento* abren la lista, y OK en
+  un título abre la app de streaming que lo tiene en esta tele (no se puede ordenar a otra app que abra un título concreto).
 
 ### FreeTV 2.4.1: el puntero del Magic Remote
 

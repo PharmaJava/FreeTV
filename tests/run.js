@@ -162,6 +162,17 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('diagnostics and my list');
+    var js = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8'), svc = fs.readFileSync(path.join(root, 'store-service', 'service.js'), 'utf8');
+    return ok('the diagnostics report and my list are registered, and the report carries no keys or names', function () {
+      assert.ok(/INFO\.diag = infoDiag;/.test(js) && /INFO\.watchlist = infoWatchlist;/.test(js), 'both sheets are registered next to the table');
+      assert.ok(/service\.register\('diagSave'/.test(svc), 'the service keeps the report');
+      var report = /function diagReport\(\) \{[\s\S]*?\n  \}\n/.exec(js)[0];
+      assert.ok(!/tmdbKey|userName|city|kidsPin|ssapKey|Key\b/.test(report.replace(/ssapKey/g, '')), 'nothing secret or personal in the report');
+      assert.ok(/openPickMenu\(p\)/.test(js), 'holding OK on a pick opens its menu');
+    });
+  })
+  .then(function () {
     console.log('the pointer and the screensaver');
     var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
     return ok('the closed drawer does not take the pointer from the shelf (the Magic Remote could not reach the apps)', function () {

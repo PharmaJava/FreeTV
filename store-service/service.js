@@ -122,6 +122,18 @@ service.register('prefsLoad', function (message) {
   message.respond({returnValue: true, data: readJson(PREFS, null)});
 });
 
+/** The report FreeTV's Diagnostics sheet makes (no keys, no names): kept on the TV with this service's own facts, to read or to attach to an issue. */
+service.register('diagSave', function (message) {
+  var text = String((message.payload || {}).text || '').slice(0, 30000), extra = [];
+  extra.push('service: node ' + process.version + ', up ' + Math.round(process.uptime()) + ' s, pid ' + process.pid);
+  try { extra.push('state files: ' + fs.readdirSync(dir).filter(function (f) { return !/key|pem/i.test(f); }).join(', ')); } catch (e) {}
+  try { extra.push('uptime of the TV: ' + fs.readFileSync('/proc/uptime', 'utf8').split(' ')[0] + ' s'); } catch (e) {}
+  try { extra.push('kernel: ' + fs.readFileSync('/proc/version', 'utf8').split(' ').slice(0, 3).join(' ')); } catch (e) {}
+  var ok = false;
+  try { fs.writeFileSync(path.join(dir, 'diagnostics.txt'), text + '\n' + extra.join('\n') + '\n'); ok = true; } catch (e) {}
+  message.respond(ok ? {returnValue: true, extra: extra} : {returnValue: false, error: 'no se pudo escribir'});
+});
+
 /**
  * A news feed for FreeTV's News widget: the screen cannot read RSS (no CORS), the TV's service can. {url}: an https address;
  * the answer is its text, up to 1 MB. Only GET, only https, nothing kept.

@@ -3,6 +3,15 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.5.0 (2026-11-04)
+
+### New
+- **Diagnostics** (*Maintenance*): version, webOS, engine, memory, Developer Mode, store, updates, options and the last page errors, with no
+  keys, names, city or PINs. Read on the TV, or saved there (`diagSave`, `state/diagnostics.txt`, with the service's own facts) and read on the
+  computer with `node tools/diagnostics.js <IP>`. `.github/ISSUE_TEMPLATE/bug.md` asks for it.
+- **My list:** hold OK on a pick (*put on / take off my list*, open its app); a sheet from *Maintenance* and the quick panel (off by default).
+  Kept in the settings (`watchlist`, up to 60), so copies and updates carry it.
+
 ## 2.4.1 (2026-11-04)
 
 Three reports from a GitHub user (LG OLED, Magic Remote MR25GA, v2.1.0):
