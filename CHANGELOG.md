@@ -3,6 +3,13 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.6.0 (2026-11-04)
+
+### New
+- **Companion:** a QR code (`home/qr.js`, a small maker of our own) leads the phone to a page served by `store-service/companion.js`, started
+  by the service's `companionStart` through the TV's SSH and ended by `/bye` when the sheet closes (or after ten idle minutes). The page reads what
+  was typed from 127.0.0.1 every two seconds. Three fields (name, note, news address), the token in the address, no libraries.
+
 ## 2.5.0 (2026-11-04)
 
 ### New

@@ -11,6 +11,13 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.6: Companion
+
+- **Companion** (*Home Settings → Maintenance*, or the quick panel): a QR code on the TV. Scan it with your phone (same Wi-Fi) and type your
+  **name**, a **note or reminder** or a **news (RSS) address** on the phone's keyboard; it arrives on the TV at once. It costs nothing while
+  you do not use it: the tiny server on the TV exists only while the sheet is open (and ends by itself after ten idle minutes). Only those
+  three fields, only with the code in the address, and only on your own network.
+
 ### FreeTV 2.5: Diagnostics and My list
 
 - **Diagnostics** (*Home Settings → Maintenance*): one page of facts about the TV and FreeTV (version, webOS, memory, Developer Mode, store,
@@ -376,6 +383,13 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.6: Companion
+
+- **Companion** (*Ajustes de inicio → Mantenimiento*, o el panel rápido): un código QR en la tele. Escanéalo con el móvil (mismo Wi-Fi) y escribe
+  tu **nombre**, una **nota o recordatorio** o una **dirección de noticias (RSS)** con el teclado del móvil; llega a la tele al instante. No
+  gasta nada mientras no lo uses: el servidor diminuto de la tele existe solo mientras la hoja está abierta (y se apaga solo tras diez minutos
+  sin uso). Solo esos tres campos, solo con el código en la dirección, y solo en tu red.
 
 ### FreeTV 2.5: Diagnóstico y Mi lista
 

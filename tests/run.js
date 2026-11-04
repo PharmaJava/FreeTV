@@ -173,6 +173,26 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('companion');
+    var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
+    return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {
+      assert.ok(/FIELDS = \{name: 24, note: 140, news: 300\}/.test(comp), 'three fields with a length each');
+      assert.ok(/d\.f === 'news' && !\/\^https:\\\/\\\//.test(comp), 'the news address must be https');
+      assert.ok(/p === '\/inbox' && local/.test(comp) && /p === '\/bye' && local/.test(comp), 'the inbox and bye answer only 127.0.0.1');
+      assert.ok(/if \(!ok\(req, query\)\) \{ res\.writeHead\(403\)/.test(comp), 'every other path needs the token');
+      assert.ok(/idleMs/.test(comp) && /process\.exit\(0\)/.test(comp), 'it ends by itself');
+    });
+  })
+  .then(function () {
+    var QRsrc = fs.readFileSync(path.join(root, 'home', 'qr.js'), 'utf8'), win = {};
+    new Function('window', QRsrc)(win);
+    return ok('the QR maker builds a square for an address and refuses what does not fit', function () {
+      var m = win.QR.make('http://192.168.1.140:8089/?t=0123456789ab');
+      assert.ok(m && m.length === m[0].length && m.length >= 25, 'a square matrix');
+      assert.strictEqual(win.QR.make(new Array(200).join('x')), null);
+    });
+  })
+  .then(function () {
     console.log('the pointer and the screensaver');
     var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
     return ok('the closed drawer does not take the pointer from the shelf (the Magic Remote could not reach the apps)', function () {

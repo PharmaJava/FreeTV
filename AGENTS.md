@@ -129,5 +129,11 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
 - `diagReport()` (home.js) is the only place that decides what the report says: keep secrets and personal values out of it (a test checks the
   obvious ones). `diagSave` in the service writes `state/diagnostics.txt`; `tools/diagnostics.js` reads it over the Developer Mode key.
 - `watchlist` (Prefs, `{key: kind:id, title, app, service, at}`) is filled from `openPickMenu`; picks open the app, never the title.
-- Not built on purpose: a phone companion needs the store service to listen on a port (it exits when idle, costs RAM, and the TV's firewall is
-  unknown): probe that on the TV first.
+
+## 2.6: Companion
+
+- A process of its own (`store-service/companion.js`, plain Node, no libraries), not the store service: that one exits when idle. The service
+  only starts it (`companionStart`, over the TV's SSH, `nohup`) and says the TV's IP, port (8089-8092) and the token. The sheet polls
+  `http://127.0.0.1:<port>/inbox` while it is open and calls `/bye` when it closes. Tested: a listener on 0.0.0.0:8089 of the TV is reachable
+  from the LAN (no firewall in the way); a phone on another subnet or a guest Wi-Fi with client isolation will not reach it.
+- New fields: add them to `FIELDS` in companion.js, to the page there, and to `compApply` in home.js (every value is checked on both sides).

@@ -122,6 +122,28 @@ service.register('prefsLoad', function (message) {
   message.respond({returnValue: true, data: readJson(PREFS, null)});
 });
 
+/**
+ * Companion: starts store-service/companion.js apart from this service (it ends by itself) and says where the phone must go.
+ * Started through the TV's own SSH like the other jobs, so it lives and dies on its own and this service can exit as usual.
+ */
+service.register('companionStart', function (message) {
+  var s = current(), crypto = require('crypto'), os = require('os');
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  var token = crypto.randomBytes(6).toString('hex'), ip = '', nets = os.networkInterfaces();
+  Object.keys(nets).forEach(function (n) { (nets[n] || []).forEach(function (a) { if (!ip && a.family === 'IPv4' && !a.internal) ip = a.address; }); });
+  var log = '/media/developer/temp/fmtv-companion.log', file = path.join(__dirname, 'companion.js');
+  s.connect().then(function (conn) {
+    var cmd = '/usr/bin/curl -s -m 2 http://127.0.0.1:8089/bye >/dev/null 2>&1; /bin/mkdir -p /media/developer/temp; rm -f ' + log + '; ' +
+      'nohup node \'' + file + '\' ' + token + ' 600 > ' + log + ' 2>&1 < /dev/null & sleep 2; cat ' + log;
+    return s.exec(conn, cmd).then(function (r) {
+      try { conn.end(); } catch (e) {}
+      var port = /listening (\d+)/.exec(r.out || '');
+      if (!port || !ip) { message.respond({returnValue: false, error: 'no arrancó'}); return; }
+      message.respond({returnValue: true, ip: ip, port: +port[1], token: token});
+    });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+});
+
 /** The report FreeTV's Diagnostics sheet makes (no keys, no names): kept on the TV with this service's own facts, to read or to attach to an issue. */
 service.register('diagSave', function (message) {
   var text = String((message.payload || {}).text || '').slice(0, 30000), extra = [];

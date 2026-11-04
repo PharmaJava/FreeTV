@@ -1114,6 +1114,7 @@
         rows.push({label: tr('Renovar o Modo Desenvolvedor sozinha', 'Renew Developer Mode by itself', 'Renovar el Modo Desarrollador sola'), toggle: Prefs.devAuto(), step: function () { Prefs.set('devAuto', !Prefs.devAuto()); }});
       }
       rows.push({label: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), value: '›', step: function (d) { if (d >= 0) openInfo('usage'); }});
+      if (TV.name === 'webos') rows.push({label: tr('Companion: escrever pelo celular', 'Companion: type from your phone', 'Companion: escribir desde el móvil'), value: '›', step: function (d) { if (d >= 0) openInfo('companion', {fromSettings: true}); }});
       rows.push({label: tr('Minha lista', 'My list', 'Mi lista'), value: wlist().length ? String(wlist().length) : '›', step: function (d) { if (d >= 0) openInfo('watchlist', {fromSettings: true}); }});
       if (TV.name === 'webos') {
         rows.push({label: tr('Memória RAM: ver e liberar', 'Memory: see it and free it', 'Memoria RAM: ver y liberar'), value: mem.sys && mem.sys.total ? (mem.sys.total - mem.sys.avail) + ' / ' + mem.sys.total + ' MB' : '›',
@@ -1257,7 +1258,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'companionStart' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -1833,7 +1834,7 @@
   /** Columns for a tile sheet: two for up to four tiles, three for six, four for more. */
   function tileCols(n) { return n <= 4 ? 2 : n <= 6 ? 3 : 4; }
 
-  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines', 'watchlist'];   // tiles that start hidden (Home Settings → Quick panel)
+  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines', 'watchlist', 'companion'];   // tiles that start hidden (Home Settings → Quick panel)
   function quickShown(id) { return (Prefs.opt('quickHidden', QUICK_OFF) || []).indexOf(id) < 0; }
   function quickShow(id, on) {
     var hidden = (Prefs.opt('quickHidden', QUICK_OFF) || []).filter(function (x) { return x !== id; });
@@ -1869,6 +1870,7 @@
         sub: Data.weather ? Data.degrees(Data.weather.temp) + ' · ' + Data.condition(Data.weather.code, Data.weather.isDay) : '', run: function () { openInfo('weather'); }},
       {id: 'markets', sym: 'bitcoin', name: tr('Mercados', 'Markets', 'Mercados'), sub: tr('Gráficos e alertas', 'Charts and alerts', 'Gráficas y alertas'), run: function () { openInfo('markets'); }},
       {id: 'widgets', sym: 'partly_cloudy_day', name: tr('Meus widgets', 'My widgets', 'Mis widgets'), sub: tr('Calendário, notas, futebol…', 'Calendar, notes, football…', 'Calendario, notas, fútbol…'), run: function () { openInfo('widgets'); }},
+      {id: 'companion', lg: true, sym: 'sparkles', name: 'Companion', sub: tr('Escrever pelo celular', 'Type from your phone', 'Escribir desde el móvil'), run: function () { openInfo('companion'); }},
       {id: 'watchlist', sym: 'play', name: tr('Minha lista', 'My list', 'Mi lista'), sub: String(wlist().length), run: function () { openInfo('watchlist'); }},
       {id: 'profile', sym: 'home', name: tr('Perfil', 'Profile', 'Perfil'), sub: profileName(profileNow()), run: function () { openInfo('profiles'); }},
       {id: 'usage', sym: 'timer', name: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), sub: tr('Hoje e esta semana', 'Today and this week', 'Hoy y esta semana'), run: function () { openInfo('usage'); }},
@@ -3709,6 +3711,94 @@
     }, hint: tr('OK escolhe · Voltar fecha', 'OK chooses · Back closes', 'OK elige · Atrás cierra')};
   }
 
+  // MARK: - 2.5: Companion. The TV serves a small page; the phone reads a QR, types there, and it arrives here. The server (store-service/
+  // companion.js) exists only while this sheet is open (the sheet says bye when it closes; it also ends by itself after ten idle minutes).
+
+  var comp = {phase: '', url: '', port: 0, token: '', timer: 0, sent: 0};
+
+  function compBye() {
+    clearTimeout(comp.timer);
+    if (comp.phase === 'ready') { try { var x = new XMLHttpRequest(); x.open('GET', 'http://127.0.0.1:' + comp.port + '/bye'); x.send(); } catch (e) {} }
+    comp.phase = '';
+  }
+
+  function compApply(it) {
+    var v = String(it && it.v || '');
+    if (!v) return;
+    if (it.f === 'name') { saveName(v); toast(tr('Nome: ', 'Name: ', 'Nombre: ') + Prefs.opt('name', '')); }
+    else if (it.f === 'note') { Prefs.set('notes', notes().concat([{t: v.slice(0, 140), at: null}]).slice(-12)); toast(tr('Nota guardada', 'Note saved', 'Nota guardada')); }
+    else if (it.f === 'news' && /^https:\/\//.test(v)) { Prefs.set('newsUrl', v.slice(0, 300)); newsAt = 0; toast(tr('Notícias atualizadas', 'News feed set', 'Noticias actualizadas')); }
+    comp.sent++;
+  }
+
+  function compTick() {
+    clearTimeout(comp.timer);
+    if (comp.phase !== 'ready') return;
+    if (!(st.zone === Z.INFO && info.kind === 'companion')) { compBye(); return; }   // the sheet was closed: stop the server
+    var x = new XMLHttpRequest(), over = false;
+    x.open('GET', 'http://127.0.0.1:' + comp.port + '/inbox');
+    x.timeout = 3000;
+    x.onload = function () {
+      if (over) return;
+      over = true;
+      var list = [];
+      try { list = JSON.parse(x.responseText); } catch (e) {}
+      list.forEach(compApply);
+      if (list.length && st.zone === Z.INFO && info.kind === 'companion') renderInfo();
+      comp.timer = setTimeout(compTick, 2000);
+    };
+    x.onerror = x.ontimeout = function () { if (!over) { over = true; comp.timer = setTimeout(compTick, 4000); } };
+    x.send();
+  }
+
+  function compStart() {
+    comp.phase = 'starting';
+    comp.sent = 0;
+    svcCall('companionStart', {}, function (r) {
+      if (!(st.zone === Z.INFO && info.kind === 'companion')) {   // closed while it was starting
+        if (r && r.returnValue) { comp.phase = 'ready'; comp.port = r.port; compBye(); } else comp.phase = '';
+        return;
+      }
+      if (r && r.returnValue) {
+        comp.phase = 'ready';
+        comp.port = r.port;
+        comp.token = r.token;
+        comp.url = 'http://' + r.ip + ':' + r.port + '/?t=' + r.token;
+        comp.timer = setTimeout(compTick, 2000);
+      } else comp.phase = 'error';
+      renderInfo();
+    });
+  }
+
+  function infoCompanion(arg) {
+    if (!comp.phase) compStart();
+    var rows = [];
+    if (comp.phase === 'error') rows.push({label: tr('Tentar de novo', 'Try again', 'Intentar de nuevo'), value: '›', icon: 'sync', run: function () { compStart(); renderInfo(); }});
+    return {title: 'Companion', icon: 'sparkles', rows: rows, visible: 3, back: arg && arg.fromSettings ? function () {
+      compBye();
+      setClass($('infosheet'), 'open', false);
+      openSettings();
+      settingsCat = 'care';
+      renderSettings();
+    } : null, build: function (box) {
+      setClass(box, 'wide', false);
+      var head = el('div', 'memhead', box);
+      if (comp.phase === 'ready') {
+        el('div', 'sub', head, tr('Escaneie com o celular (na mesma rede Wi-Fi) e escreva lá: aparece aqui.', 'Scan it with your phone (on the same Wi-Fi) and type there: it shows up here.', 'Escanéalo con el móvil (en el mismo Wi-Fi) y escribe allí: aparece aquí.'));
+        var c = document.createElement('canvas');
+        c.style.cssText = 'display:block;margin:18px auto 8px;width:300px;height:300px;image-rendering:pixelated;border-radius:12px';
+        head.appendChild(c);
+        if (!(window.QR && QR.draw(c, comp.url, 8))) c.style.display = 'none';
+        el('div', 'sub', head, comp.url.replace(/\?t=.*$/, '')).style.textAlign = 'center';
+        if (comp.sent) el('div', 'sub', head, tr('Recebidos: ', 'Received: ', 'Recibidos: ') + comp.sent).style.textAlign = 'center';
+      } else if (comp.phase === 'error') {
+        el('div', 'sub', head, tr('Não consegui abrir o Companion. A loja da TV precisa estar ativa (bash install.sh).', 'Could not start Companion. The TV\'s store service must be allowed (bash install.sh).', 'No pude abrir Companion. El servicio de la tienda de la tele tiene que tener permiso (bash install.sh).'));
+      } else {
+        el('div', 'sub', head, tr('Preparando… pode levar até 40 segundos.', 'Getting ready… this can take up to 40 seconds.', 'Preparando… puede tardar hasta 40 segundos.'));
+      }
+    }, hint: tr('Voltar fecha e desliga o Companion', 'Back closes it and turns Companion off', 'Atrás lo cierra y apaga Companion')};
+  }
+
   // MARK: - 2.5: My list. Titles kept from the picks (hold OK on one); OK on a title opens the streaming app that has it on this TV
   // (the TV gives no way to open a title inside another app, so it opens the app).
 
@@ -3877,6 +3967,7 @@
   INFO.memory = infoMemory;
   INFO.diag = infoDiag;
   INFO.watchlist = infoWatchlist;
+  INFO.companion = infoCompanion;
 
   function openInfo(kind, arg) {
     if (kind === 'memory' && TV.name === 'webos') memRefresh();
