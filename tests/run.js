@@ -162,6 +162,27 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('the pointer and the screensaver');
+    var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
+    return ok('the closed drawer does not take the pointer from the shelf (the Magic Remote could not reach the apps)', function () {
+      assert.ok(/^#drawer \{ pointer-events: none; \}/m.test(css), 'a full-screen layer left under the shelf, clear but still there, takes the pointer');
+      assert.ok(/^\.drawer-open #drawer \{ pointer-events: auto; \}/m.test(css), 'and it takes it back when it is open');
+    });
+  })
+  .then(function () {
+    var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
+    return ok('the screensaver is solid in every theme: never transparent, never a fade over the home', function () {
+      assert.ok(/^#saver \{[^}]*background: #000;[^}]*opacity: 1;[^}]*transition: none;/m.test(css), 'opaque and instant');
+      assert.ok(!/#saver\.dim/.test(css), 'night dimming is a layer inside it (.dimmer), not its opacity');
+    });
+  })
+  .then(function () {
+    var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+    return ok('a pointer that did not move cannot move the focus (a scrolling list would run away under it)', function () {
+      assert.ok(/pointerRecord/.test(home) && /pointer\.real = moved/.test(home) && /if \(!pointer\.real\) return false;/.test(home));
+    });
+  })
+  .then(function () {
     console.log('FreeTV updating itself');
     var update = require(path.join(root, 'store-service', 'update.js'));
     var base = 'https://github.com/PharmaJava/FreeTV/releases/download/v9.9.0/';

@@ -85,6 +85,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .drawer-open #top { opacity: 0; }
 #drawer { -webkit-transform: translateY(560px); transform: translateY(560px); opacity: 0; }
 .drawer-open #drawer { -webkit-transform: none; transform: none; opacity: 1; }
+/* Closed, the drawer is only moved down and made clear: it still covers the shelf and would take the pointer from it. */
+#drawer { pointer-events: none; }
+.drawer-open #drawer { pointer-events: auto; }
 
 /* MARK: - Title and tabs */
 

@@ -1086,6 +1086,10 @@
       rows.push({label: tr('Apps recentes na gaveta', 'Recent apps in the drawer', 'Apps recientes en el cajón'), toggle: Prefs.opt('drawerRecent', true) !== false,
         step: function () { Prefs.set('drawerRecent', Prefs.opt('drawerRecent', true) === false); renderDrawer(); }});
     } else if (settingsCat === 'remote') {
+      var ps = Prefs.opt('pointer', 'normal');
+      rows.push({label: tr('Sensibilidade do ponteiro (Magic Remote)', 'Pointer sensitivity (Magic Remote)', 'Sensibilidad del puntero (Magic Remote)'),
+        value: ps === 'fast' ? tr('Rápida', 'Fast', 'Rápida') : ps === 'slow' ? tr('Lenta', 'Slow', 'Lenta') : tr('Normal', 'Normal', 'Normal'),
+        step: function (d) { cycle('pointer', ['slow', 'normal', 'fast'], ps, d); }});
       rows.push({label: tr('Números 1-9 abrem a prateleira', 'Numbers 1-9 open the shelf', 'Números 1-9 abren el estante'), toggle: Prefs.opt('numKeys', true) !== false,
         step: function () { Prefs.set('numKeys', Prefs.opt('numKeys', true) === false); }});
       [[403, tr('Botão vermelho', 'Red button', 'Botón rojo')], [404, tr('Botão verde', 'Green button', 'Botón verde')], [405, tr('Botão amarelo', 'Yellow button', 'Botón amarillo')],
@@ -3142,8 +3146,39 @@
   /** The pointer focuses what it's over (the Magic Remote, or a mouse when previewing). */
   var pressTimer = 0, pressHeld = false;
 
+  // MARK: - The pointer (Magic Remote): only a pointer that really moved focuses things, and not faster than the person can follow.
+
+  var pointer = {x: -1, y: -1, real: true, lastFocus: 0};
+  function pointerRecord(e) {
+    var moved = Math.abs(e.clientX - pointer.x) >= 3 || Math.abs(e.clientY - pointer.y) >= 3;
+    pointer.real = moved;   // a list that scrolls under a parked pointer sends mouseover too, at the same place: that is not the person
+    if (moved) { pointer.x = e.clientX; pointer.y = e.clientY; }
+  }
+  document.addEventListener('mouseover', pointerRecord, true);
+  document.addEventListener('mousemove', pointerRecord, true);
+
+  /** true: focus it; false: ignore; 'later': too soon after the last one, look again in a moment (the pointer may stop here). */
+  function pointerOk() {
+    if (!pointer.real) return false;
+    var gap = {fast: 0, normal: 100, slow: 260}[Prefs.opt('pointer', 'normal')];
+    if (gap === undefined) gap = 100;
+    var now = Date.now();
+    if (now - pointer.lastFocus < gap) return 'later';
+    pointer.lastFocus = now;
+    return true;
+  }
+
   function hover(node, zone, index) {
-    node.onmouseover = function () {
+    node.onmouseover = function (ev) {
+      if (ev) {
+        var ok = pointerOk();
+        if (ok === 'later') {
+          clearTimeout(node.pointerWait);
+          node.pointerWait = setTimeout(function () { try { if (node.parentNode && node.matches(':hover')) node.onmouseover(); } catch (e) {} }, 130);
+          return;
+        }
+        if (!ok) return;
+      }
       if (st.zone === Z.DLG) return;
       if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.SUGG || zone === Z.COMM || zone === Z.TILES || zone === Z.INFO))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;

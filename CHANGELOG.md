@@ -3,6 +3,21 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.4.1 (2026-11-04)
+
+Three reports from a GitHub user (LG OLED, Magic Remote MR25GA, v2.1.0):
+
+### Fixed
+- **The Magic Remote's pointer did nothing on the app shelf.** The closed drawer is a full-screen layer that is only moved down and made
+  clear, and it lay over the shelf taking the pointer (`document.elementFromPoint` over any shelf app answered `#drawer`). It ignores the
+  pointer while it is closed (`pointer-events: none`).
+- **The pointer ran away down lists and along the cards.** A list that scrolls to keep the focused row in view moves the next row under a
+  parked pointer, which sent mouseover, which moved the focus, which scrolled again. Only a pointer that really moved (3 px) focuses
+  things now, and not faster than one change every 100 ms (a last stop is still taken). **New:** *Home Settings → Remote → Pointer
+  sensitivity* (Slow 260 ms / Normal 100 ms / Fast 0).
+- **The screensaver was semi-transparent with the Dark theme or the Pure black OLED style** (the night dimming was its opacity, and the Dark
+  theme is always night). Already fixed in 2.2.0: it is solid and the dimming is a layer inside it. Checked again with Dark + OLED.
+
 ## 2.4.0 (2026-11-03)
 
 **Where the RAM goes, and more to close.** Nothing from 2.3 was removed.
