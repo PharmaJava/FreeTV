@@ -20,7 +20,8 @@ var Client = require('ssh2').Client;
 var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
 // Other people's repositories FreeTV also reads, each one only for the app ids listed (nothing else in them is offered).
 // What comes from here always needs the person's "unofficial" confirmation; root, https and the SHA-256 hash are checked the same.
-var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']}];
+var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
+  {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']}];
 var TEMP = '/media/developer/temp';
 var ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 var URL_RE = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]{2,5})?\/[A-Za-z0-9._~!$&()*+,;=:@%\/?#-]*$/;   // no quotes, no spaces: it goes into a shell command
@@ -34,7 +35,8 @@ var CAUTION = {
   'com.pirate.refresh': 'sensitive',
   'org.webosbrew.hbchannel': 'sensitive',
   'com.rezkatv.app': 'unofficial',
-  'com.rezkatv.app.legacy': 'unofficial'
+  'com.rezkatv.app.legacy': 'unofficial',
+  'tv.stremioorigin.app': 'unofficial'
 };
 
 /** 1.2.10 -> {n: [1, 2, 10], pre: false}; 2.0.6-beta -> {n: [2, 0, 6], pre: true}. null when it is not a version. */

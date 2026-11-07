@@ -1191,7 +1191,8 @@
 
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
   // Other people's repositories, read only for these app ids (keep in step with store-service/store.js); they always need the "unofficial" confirmation.
-  var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']}];
+  var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
+    {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']}];
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
   var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0,
@@ -1206,10 +1207,11 @@
     'com.pirate.refresh': ['Renova o Modo Desenvolvedor por conta própria: o FreeTV já tem o seu painel.', 'Renews Developer Mode on its own: FreeTV already has its panel.', 'Renueva el Modo Desarrollador por su cuenta: FreeTV ya trae su panel.'],
     'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.'],
     'com.rezkatv.app': ['App de TERCEIROS, não oficial, para o HDRezka (site de filmes sem licença). O FreeTV só confere o hash: o uso é por sua conta.', 'THIRD-PARTY, unofficial app for HDRezka (an unlicensed movie site). FreeTV only checks the hash: using it is on you.', 'App de TERCEROS, no oficial, para HDRezka (un sitio de películas sin licencia). FreeTV solo comprueba el hash: usarla es cosa tuya.'],
+    'tv.stremioorigin.app': ['App de TERCEIROS, não oficial, para a sua conta e os seus addons do Stremio (com torrents). Uma só pessoa a faz, é de 31/10/2026 e ninguém a revisou: o FreeTV só confere o hash e o uso é por sua conta.', 'THIRD-PARTY, unofficial app for your Stremio account and addons (with torrents). One person makes it, it dates from 2026-10-31 and nobody has reviewed it: FreeTV only checks the hash and using it is on you.', 'App de TERCEROS, no oficial, para tu cuenta y tus addons de Stremio (con torrents). La hace una sola persona, es del 31/10/2026 y nadie la ha revisado: FreeTV solo comprueba el hash y usarla es cosa tuya.'],
     'com.rezkatv.app.legacy': ['App de TERCEIROS (RezkaTV, webOS 3 e 4), não oficial: mesmo aviso.', 'THIRD-PARTY app (RezkaTV, webOS 3 and 4), unofficial: same warning.', 'App de TERCEROS (RezkaTV, webOS 3 y 4), no oficial: mismo aviso.']
   };
   /** The flag tools/community.py wants for them (CAUTION there): the person gives it by confirming on this screen. */
-  var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive', 'com.rezkatv.app': 'unofficial', 'com.rezkatv.app.legacy': 'unofficial'};
+  var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive', 'com.rezkatv.app': 'unofficial', 'com.rezkatv.app.legacy': 'unofficial', 'tv.stremioorigin.app': 'unofficial'};
 
   function privateIp(ip) {
     var p = ip.split('.'), i;
@@ -2209,6 +2211,7 @@
   var COMM_DESC = {
     'youtube.leanback.v4': ['YouTube sem anúncios, com SponsorBlock', 'YouTube without ads, with SponsorBlock', 'YouTube sin anuncios, con SponsorBlock'],
     'twitch.adamffdev.v1': ['Twitch sem anúncios', 'Twitch without ads', 'Twitch sin anuncios'],
+    'tv.stremioorigin.app': ['Cliente não oficial do Stremio (suas contas e addons)', 'Unofficial Stremio client (your account and addons)', 'Cliente no oficial de Stremio (tu cuenta y tus addons)'],
     'org.jellyfin.webos': ['Seus filmes e séries do seu servidor Jellyfin', 'Your films and shows from your Jellyfin server', 'Tus pelis y series desde tu servidor Jellyfin'],
     'org.xbmc.kodi': ['Centro multimídia livre: vídeos, música, extensões', 'Free media centre: videos, music, add-ons', 'Centro multimedia libre: vídeos, música, complementos'],
     'com.limelight.webos': ['Jogue os jogos do seu PC na TV (GameStream/Sunshine)', 'Play your PC games on the TV (GameStream/Sunshine)', 'Juega a los juegos de tu PC en la tele (GameStream/Sunshine)'],

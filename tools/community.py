@@ -36,7 +36,8 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOGUE = 'https://repo.webosbrew.org/api/apps.json'
 # Other people's repositories FreeTV also reads, each one only for the app ids listed (keep in step with store-service/store.js).
-EXTRA = [('https://atlet99.github.io/rezkatv-public/repository.json', ('com.rezkatv.app', 'com.rezkatv.app.legacy'))]
+EXTRA = [('https://atlet99.github.io/rezkatv-public/repository.json', ('com.rezkatv.app', 'com.rezkatv.app.legacy')),
+         ('https://stremio-origin.github.io/webos/apps.json', ('tv.stremioorigin.app',))]
 WORK = os.path.join(ROOT, 'work', 'community')
 HOME_APP = 'com.gathin.tvhome'
 PORT = 8777
@@ -51,6 +52,9 @@ CAUTION = {
                             'de uso de YouTube: es tu decisión.'),
     'com.open.hidden.menu': ('sensitive', 'Abre el menú de servicio oculto de LG. Cambiar ahí ajustes puede estropear la tele y anular la '
                              'garantía. Instálala solo si sabes exactamente qué vas a tocar.'),
+    'tv.stremioorigin.app': ('unofficial', 'Cliente de TERCEROS (no es de Stremio, ni de LG, ni de FreeTV) para tu cuenta y tus addons de Stremio, con reproduccion '
+                          'de torrents incluida. Es una app nativa de una sola persona, publicada el 2026-10-31 (version 1.0.0), sin revisar y probada solo en webOS 4.4. '
+                          'FreeTV solo comprueba el hash del paquete: lo que hace y lo que ves con ella es cosa tuya.'),
     'com.rezkatv.app.legacy': ('unofficial', 'La misma app de terceros (RezkaTV) para webOS 3 y 4; mismo aviso que la normal: no es oficial y es cosa tuya.'),
     'com.pirate.refresh': ('sensitive', 'Renueva el Modo Desarrollador por su cuenta, sin pasar por LG. FreeTV ya trae un panel de renovación (beta): '
                            'no hace falta usar las dos.'),

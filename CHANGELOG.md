@@ -3,6 +3,14 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.6.2 (2026-11-07)
+
+### New
+- **Stremio Origin in the Store**, as a third-party app (the same «unofficial» confirmation as RezkaTV): an unofficial native client for the person's own
+  Stremio account and addons, from `stremio-origin.github.io/webos` (read only for `tv.stremioorigin.app`). Checked before adding it: `rootRequired`
+  false, https, and its SHA-256 equals the one of the GitHub release. It is a week-old 1.0.0 by one person, unreviewed, tested only on webOS 4.4 (this TV
+  is 6.5), and it plays torrents: the Store says so and FreeTV only checks the hash. The official Stremio of LG's store is the safe choice.
+
 ## 2.6.1 (2026-11-07)
 
 ### Fixed
