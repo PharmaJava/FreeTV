@@ -3,6 +3,14 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.6.3 (2026-11-07)
+
+### Fixed
+- **The Store works when the main catalogue cannot be read.** On a network that answers `repo.webosbrew.org` with its own certificate (seen on a real
+  TV: a self-signed one) nothing could be installed, not even from the other sources. The page and the service now keep going with the other sources
+  (Stremio Origin, RezkaTV, repositories added by hand), checked the same way (https, no root, SHA-256). Certificates are still verified: nothing is
+  bypassed. With none reachable the error is the same as before.
+
 ## 2.6.2 (2026-11-07)
 
 ### New

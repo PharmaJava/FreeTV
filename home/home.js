@@ -1429,6 +1429,7 @@
         if (err || !data || !data.packages) {
           if (tries > 1) { setTimeout(function () { load(tries - 1); }, 1500); return; }
           commFail(err);
+          loadExtra();   // the other sources do not depend on the main one
           if (!commAll.length) commState = 'error';
           else commFrom = saved ? saved.at : 0;   // the copy stays on screen
           if (!finished) { finished = true; if (done) done(); } else if (st.zone === Z.COMM && commOpen < 0) renderCommunity();
@@ -1460,6 +1461,7 @@
               commAll.push(p);
             }
           });
+          if (commState === 'error' && commAll.length) commState = 'ready';   // the main catalogue did not answer, these did
           if (commOpen < 0) { commInst = instMap(); commRebuild(); if (st.zone === Z.COMM) renderCommunity(); }
         });
       });

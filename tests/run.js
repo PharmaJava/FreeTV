@@ -173,6 +173,25 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('the store without its main catalogue');
+    return ok('when the main catalogue cannot be read the other sources still install, and with none it is an error as before', async function () {
+      var other = {id: 'tv.stremioorigin.app', manifest: {id: 'tv.stremioorigin.app', version: '1.0.0', rootRequired: false}}, calls = [];
+      var s = new Store({});
+      s.exec = async function (c, cmd) {
+        calls.push(cmd);
+        if (/repo\.webosbrew\.org/.test(cmd)) return {code: 60, out: '', err: 'curl: (60) SSL certificate problem: self signed certificate'};
+        if (/stremio-origin/.test(cmd)) return {code: 0, out: JSON.stringify({packages: [other]}), err: ''};
+        return {code: 22, out: '', err: 'x'};
+      };
+      var apps = await s.catalogue(null);
+      assert.ok(apps.some(function (a) { return a.id === 'tv.stremioorigin.app'; }), 'the other source is offered');
+      s.exec = async function () { return {code: 60, out: '', err: 'curl: (60) SSL certificate problem'}; };
+      var failed = false;
+      try { await s.catalogue(null); } catch (e) { failed = /No pude leer el catálogo/.test(e.message); }
+      assert.ok(failed, 'with nothing reachable: the same error');
+    });
+  })
+  .then(function () {
     console.log('companion');
     var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
     return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {

@@ -114,9 +114,12 @@ function q(value) {
 
 Store.prototype.catalogue = async function (conn) {
   var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(CATALOGUE));
-  if (r.code !== 0) throw fail('No pude leer el catálogo (' + (r.err.trim().split('\n').pop() || 'sin respuesta') + ').');
-  var apps;
-  try { apps = JSON.parse(r.out).packages; } catch (e) { throw fail('El catálogo no tiene el formato esperado.'); }
+  var apps, down = '';
+  if (r.code !== 0) down = 'No pude leer el catálogo (' + (r.err.trim().split('\n').pop() || 'sin respuesta') + ').';
+  else { try { apps = JSON.parse(r.out).packages; } catch (e) { down = 'El catálogo no tiene el formato esperado.'; } }
+  // The main catalogue may be unreachable (a network that answers with its own certificate for it, say): the other sources still work,
+  // checked the same way (https, root, hash). Only when none answers is it an error.
+  if (down) apps = [];
   for (var x = 0; x < EXTRA.length; x++) {
     var e = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(EXTRA[x].url));
     if (e.code !== 0) continue;   // an extra source that does not answer is just not offered
@@ -127,6 +130,7 @@ Store.prototype.catalogue = async function (conn) {
       if (EXTRA[x].ids.indexOf(id) >= 0 && !apps.some(function (a) { return a.id === id; })) apps.push(more[y]);
     }
   }
+  if (down && !apps.length) throw fail(down);
   return apps;
 };
 
