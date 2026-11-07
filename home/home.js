@@ -951,6 +951,7 @@
       rows.push({label: tr('Aba inicial', 'Start tab', 'Pestaña de inicio'), value: Prefs.startTab() === 'last' ? tr('A última usada', 'The last used', 'La última usada') : tabNames()[Prefs.startTab()],
         step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }});
       rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
+      if (TV.name === 'webos') rows.push({label: tr('Atualizar a lista de apps', 'Refresh the list of apps', 'Actualizar la lista de apps'), value: '›', step: function (d) { if (d >= 0) refreshApps(); }});
       rows.push({label: tr('Abas', 'Tabs', 'Pestañas'), value: '›', step: function (d) { if (d >= 0) openInfo('tabs'); }});
       rows.push({label: tr('Perfis', 'Profiles', 'Perfiles'), value: profileName(profileNow()), step: function (d) { if (d >= 0) openInfo('profiles'); }});
       rows.push({label: tr('Rotinas', 'Routines', 'Rutinas'), value: String(routines().length), step: function (d) { if (d >= 0) openInfo('routines'); }});
@@ -5114,6 +5115,25 @@
     checkNight();
     if (st.zone === Z.SETTINGS) renderSettings();
     updateFocus();
+  }
+
+  /** Apps installed after FreeTV was (Stremio from LG's store, say) are not in the list FreeTV was given: ask the TV for the real one. */
+  function refreshApps() {
+    function reload() {
+      loadApps(function () {
+        renderShelf();
+        renderApps();
+        updateFocus();
+        toast(tr('Lista de apps atualizada: ', 'Apps list updated: ', 'Lista de apps actualizada: ') + apps.length);
+      });
+    }
+    if (TV.appsPaired()) { reload(); return; }
+    showDialog(tr('Uma permissão', 'One permission', 'Un permiso'), [{text: tr('A TV vai perguntar se o FreeTV pode ler a lista das suas apps. Aceite no controle: é uma vez só.',
+      'The TV will ask if FreeTV may read the list of your apps. Accept it with the remote: just once.', 'La tele va a preguntar si FreeTV puede leer la lista de tus apps. Acéptalo con el mando: solo una vez.')}], [], 0);
+    TV.pairApps(function (ok) {
+      closeDialog();
+      if (ok) reload(); else toast(tr('Sem a permissão a lista não muda', 'Without the permission the list stays as it was', 'Sin el permiso la lista no cambia'));
+    });
   }
 
   function loadApps(done) {

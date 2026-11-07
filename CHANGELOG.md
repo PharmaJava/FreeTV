@@ -3,6 +3,12 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.6.1 (2026-11-07)
+
+### Fixed
+- **Apps installed after FreeTV did not show up** (Stremio from LG's store could not go on the shelf): with the installer's list present, FreeTV never
+  asked the TV for the real one. *Home Settings → Home → Refresh the list of apps* does (it needs the TV's permission to read the apps, asked once).
+
 ## 2.6.0 (2026-11-04)
 
 ### New
