@@ -1447,7 +1447,8 @@
       accept(saved.packages);
       finished = true;
       if (done) done();
-      if (Date.now() - saved.at < 10 * 60000) { loadExtra(); return; }   // fresh enough: no need to ask again now
+      loadExtra();   // the other sources never wait for the main catalogue (it may be unreachable)
+      if (Date.now() - saved.at < 10 * 60000) return;   // fresh enough: no need to ask the main one again now
     }
     load(3);
     function loadExtra() {
