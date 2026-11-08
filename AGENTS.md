@@ -137,3 +137,9 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   `http://127.0.0.1:<port>/inbox` while it is open and calls `/bye` when it closes. Tested: a listener on 0.0.0.0:8089 of the TV is reachable
   from the LAN (no firewall in the way); a phone on another subnet or a guest Wi-Fi with client isolation will not reach it.
 - New fields: add them to `FIELDS` in companion.js, to the page there, and to `compApply` in home.js (every value is checked on both sides).
+
+## 2.7: apps from GitHub
+
+- `store.js` `githubPackage` is the only place that decides what a GitHub release becomes: keep its three rules (an .ipk named id_version_arch, a published SHA-256
+  for that exact file, github.com download addresses). `GITHUB_DEFAULT` lists the projects FreeTV brings; the person's are in `state/github-repos.json`.
+  The API is read by the TV's curl (60 requests an hour without a token, so results are cached ten minutes).

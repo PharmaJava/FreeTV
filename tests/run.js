@@ -192,6 +192,35 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('apps from a GitHub link');
+    return ok('a GitHub project is offered only with its .ipk and the hash its own release publishes for that file', async function () {
+      assert.strictEqual(store.githubRepo('https://github.com/silirim/VodMax/releases/tag/v1'), 'silirim/VodMax');
+      assert.strictEqual(store.githubRepo('github.com/a/b.git'), 'a/b');
+      assert.strictEqual(store.githubRepo('a/b'), 'a/b');
+      assert.strictEqual(store.githubRepo('https://evil.example/a/b'), '');
+      var good = 'a'.repeat(64), rel = {assets: [
+        {name: 'app.demo.client_1.2.3_all.ipk', size: 10, browser_download_url: 'https://github.com/o/r/releases/download/v1.2.3/app.demo.client_1.2.3_all.ipk'},
+        {name: 'SHA256SUMS', browser_download_url: 'https://github.com/o/r/releases/download/v1.2.3/SHA256SUMS'}]};
+      function fake(sums) {
+        var s = new Store({});
+        s.exec = async function (c, cmd) {
+          if (/api\.github\.com/.test(cmd)) return {code: 0, out: JSON.stringify(rel), err: ''};
+          if (/SHA256SUMS/.test(cmd)) return {code: 0, out: sums, err: ''};
+          return {code: 22, out: '', err: ''};
+        };
+        return s;
+      }
+      var p = await fake(good + '  app.demo.client_1.2.3_all.ipk\n').githubPackage(null, 'o/r');
+      assert.strictEqual(p.id, 'app.demo.client');
+      assert.strictEqual(p.manifest.version, '1.2.3');
+      assert.strictEqual(p.manifest.ipkHash.sha256, good);
+      assert.strictEqual(p.github, true);
+      var refused = false;
+      try { await fake('b'.repeat(64) + '  another.ipk\n').githubPackage(null, 'o2/r2'); } catch (e) { refused = /no publica el hash/.test(e.message); }
+      assert.ok(refused, 'no hash for that file: refused');
+    });
+  })
+  .then(function () {
     console.log('companion');
     var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
     return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {

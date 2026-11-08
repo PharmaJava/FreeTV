@@ -3,6 +3,15 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.7.0 (2026-11-08)
+
+### New
+- **Apps from a GitHub link.** `Store.githubPackage` turns the latest release of `owner/repo` into a catalogue entry: the `.ipk` (id and version from its name),
+  its SHA-256 from a `SHA256SUMS`/`.sha256` asset of the same release (none: refused), https://github.com download addresses only, `rootRequired` false,
+  the «unofficial» confirmation always. Service methods `githubApps`, `githubAdd` (resolves before keeping), `githubRemove`; the person's links live in
+  `state/github-repos.json`. The *Extra repositories* sheet takes a GitHub link or an `apps.json` address.
+- **VodMax** (`silirim/VodMax`) comes with FreeTV as the first one (`GITHUB_DEFAULT`).
+
 ## 2.6.3 (2026-11-07)
 
 ### Fixed

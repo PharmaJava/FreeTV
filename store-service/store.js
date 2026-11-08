@@ -112,6 +112,69 @@ function q(value) {
   return "'" + value + "'";
 }
 
+// GitHub projects whose latest release carries an .ipk (named <id>_<version>_<arch>.ipk, as ares-package makes it) and a SHA-256 for it.
+// These come with FreeTV; the person adds more by pasting a link (the service keeps them). All of them need the "unofficial" confirmation.
+var GITHUB_DEFAULT = ['silirim/VodMax'];
+var REPO_RE = /^[A-Za-z0-9_.-]{1,39}\/[A-Za-z0-9_.-]{1,100}$/;
+var GH_CACHE = {};
+
+/** "https://github.com/owner/repo/...", "github.com/owner/repo" or "owner/repo" -> "owner/repo" ('' when it is none of those). */
+function githubRepo(text) {
+  text = String(text || '').trim();
+  var m = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?(?:[\/?#].*)?$/.exec(text) || /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/.exec(text);
+  return m && REPO_RE.test(m[1] + '/' + m[2]) ? m[1] + '/' + m[2] : '';
+}
+
+/**
+ * The latest release of a GitHub project as a catalogue entry. Nothing is taken on trust beyond what the release itself says: the .ipk, and
+ * a SHA-256 published in the same release for exactly that file (no hash, nothing is installed). The app id and version come from the file's
+ * name. Download addresses must be https://github.com/...; the package is then checked against that hash after downloading, like any other.
+ */
+Store.prototype.githubPackage = async function (conn, repo) {
+  if (!REPO_RE.test(repo)) throw fail('Dirección de GitHub no válida.');
+  var hit = GH_CACHE[repo];
+  if (hit && Date.now() - hit.at < 10 * 60000) return hit.pkg;
+  var head = ' -H ' + q('Accept: application/vnd.github+json') + ' -H ' + q('User-Agent: FreeTV') + ' ';
+  var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 40' + head + q('https://api.github.com/repos/' + repo + '/releases/latest'));
+  if (r.code !== 0) throw fail('No pude leer la última versión de ' + repo + ' en GitHub (' + (r.err.trim().split('\n').pop() || 'sin respuesta') + ').');
+  var rel;
+  try { rel = JSON.parse(r.out); } catch (e) { throw fail('GitHub no respondió con el formato esperado.'); }
+  var assets = (rel.assets || []).filter(function (a) { return a && typeof a.name === 'string' && typeof a.browser_download_url === 'string' && a.browser_download_url.indexOf('https://github.com/') === 0; });
+  var ipks = assets.filter(function (a) { return /\.ipk$/i.test(a.name); });
+  var ipk = ipks.filter(function (a) { return /_all\.ipk$/i.test(a.name); })[0] || ipks.filter(function (a) { return /_(arm|armv7)\.ipk$/i.test(a.name); })[0] || ipks[0];
+  if (!ipk) throw fail('La última versión de ' + repo + ' no trae un paquete .ipk.');
+  var nm = /^([A-Za-z0-9][A-Za-z0-9._-]*?)_(\d[0-9A-Za-z.+-]*)_[A-Za-z0-9]+\.ipk$/.exec(ipk.name);
+  if (!nm || !ID_RE.test(nm[1])) throw fail('El paquete «' + ipk.name + '» no se llama como <id>_<versión>_<arquitectura>.ipk: no sé qué app es.');
+  if (!URL_RE.test(ipk.browser_download_url)) throw fail('La dirección del paquete no es válida.');
+  var sums = assets.filter(function (a) { return /sha-?256/i.test(a.name) && !/\.ipk$/i.test(a.name); }), hash = '', i;
+  for (i = 0; i < sums.length && !hash; i++) {
+    var t = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 40 ' + q(sums[i].browser_download_url));
+    if (t.code !== 0) continue;
+    var lines = t.out.split('\n'), k;
+    for (k = 0; k < lines.length && !hash; k++) {
+      var m = /^([0-9a-fA-F]{64})\s+\*?(.+?)\s*$/.exec(lines[k].trim());
+      if (m && m[2].replace(/^.*\//, '') === ipk.name) hash = m[1].toLowerCase();
+    }
+    if (!hash && sums[i].name.toLowerCase().indexOf(ipk.name.toLowerCase()) === 0 && /^[0-9a-fA-F]{64}\b/.test(t.out.trim())) hash = t.out.trim().slice(0, 64).toLowerCase();
+  }
+  if (!SHA_RE.test(hash)) throw fail(repo + ' no publica el hash SHA-256 de ' + ipk.name + ' en su última versión: no lo instalo sin poder comprobarlo.');
+  var title = repo.split('/')[1];
+  var pkg = {id: nm[1], title: title, github: true, repo: 'github.com/' + repo, shortDescription: '',
+    manifest: {id: nm[1], version: nm[2], title: title, rootRequired: false, ipkUrl: ipk.browser_download_url, ipkSize: ipk.size || 0, ipkHash: {sha256: hash},
+      sourceUrl: 'https://github.com/' + repo, appDescription: ''}};
+  GH_CACHE[repo] = {at: Date.now(), pkg: pkg};
+  return pkg;
+};
+
+/** The GitHub projects (the ones FreeTV brings and the person's) as catalogue entries; those that do not answer are left out. */
+Store.prototype.githubPackages = async function (conn) {
+  var repos = GITHUB_DEFAULT.concat(this.github || []).filter(function (x, n, all) { return all.indexOf(x) === n; }), out = [], i;
+  for (i = 0; i < repos.length; i++) {
+    try { out.push(await this.githubPackage(conn, repos[i])); } catch (e) { this.log('github ' + repos[i] + ': ' + (e && e.message)); }
+  }
+  return out;
+};
+
 Store.prototype.catalogue = async function (conn) {
   var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(CATALOGUE));
   var apps, down = '';
@@ -130,6 +193,8 @@ Store.prototype.catalogue = async function (conn) {
       if (EXTRA[x].ids.indexOf(id) >= 0 && !apps.some(function (a) { return a.id === id; })) apps.push(more[y]);
     }
   }
+  var gh = await this.githubPackages(conn);
+  gh.forEach(function (p) { if (!apps.some(function (a) { return a.id === p.id; })) apps.push(p); });
   if (down && !apps.length) throw fail(down);
   return apps;
 };
@@ -150,7 +215,7 @@ Store.prototype.updates = async function (conn) {
       if (m.rootRequired || !SHA_RE.test(hash) || typeof m.ipkUrl !== 'string' || !URL_RE.test(m.ipkUrl)) break;
       if (!isNewer(m.version, dev[i].version)) break;
       list.push({id: dev[i].id, title: apps[j].title || dev[i].title, from: dev[i].version, to: String(m.version),
-                 flag: CAUTION[dev[i].id] && CAUTION[dev[i].id] !== 'official-removed' ? CAUTION[dev[i].id] : ''});
+                 flag: CAUTION[dev[i].id] && CAUTION[dev[i].id] !== 'official-removed' ? CAUTION[dev[i].id] : apps[j].github ? 'unofficial' : ''});
       break;
     }
   }
@@ -200,7 +265,7 @@ Store.prototype.run = async function (appId, flag, opts) {
     var m = app.manifest || {}, hash = ((m.ipkHash || {}).sha256 || '').toLowerCase();
     this.set({title: app.title || appId});
     if (m.rootRequired) throw fail('Esta app necesita una tele con root: FreeTV no la instala.');
-    var need = CAUTION[appId];
+    var need = CAUTION[appId] || (app.github ? 'unofficial' : '');
     if (opts.update) {
       // An update goes over an app that Developer Mode installed: that is all it can be. (YouTube AdFree's "delete the official first"
       // warning is about the first install; an installed one has already met it.)
@@ -511,4 +576,4 @@ Store.prototype.check = async function () {
   }
 };
 
-module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED, isNewer: isNewer};
+module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED, isNewer: isNewer, githubRepo: githubRepo, GITHUB_DEFAULT: GITHUB_DEFAULT};

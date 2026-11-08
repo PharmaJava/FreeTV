@@ -1210,6 +1210,11 @@
     'tv.stremioorigin.app': ['App de TERCEIROS, não oficial, para a sua conta e os seus addons do Stremio (com torrents). Uma só pessoa a faz, é de 31/10/2026 e ninguém a revisou: o FreeTV só confere o hash e o uso é por sua conta.', 'THIRD-PARTY, unofficial app for your Stremio account and addons (with torrents). One person makes it, it dates from 2026-10-31 and nobody has reviewed it: FreeTV only checks the hash and using it is on you.', 'App de TERCEROS, no oficial, para tu cuenta y tus addons de Stremio (con torrents). La hace una sola persona, es del 31/10/2026 y nadie la ha revisado: FreeTV solo comprueba el hash y usarla es cosa tuya.'],
     'com.rezkatv.app.legacy': ['App de TERCEIROS (RezkaTV, webOS 3 e 4), não oficial: mesmo aviso.', 'THIRD-PARTY app (RezkaTV, webOS 3 and 4), unofficial: same warning.', 'App de TERCEROS (RezkaTV, webOS 3 y 4), no oficial: mismo aviso.']
   };
+  var GH_WARN = ['App de TERCEIROS, direto do GitHub (a última versão do projeto). O FreeTV só confere que o pacote bate com o hash SHA-256 publicado na mesma versão e que não pede root: o que ela faz é por sua conta.',
+    'THIRD-PARTY app, straight from GitHub (the project\'s latest release). FreeTV only checks that the package matches the SHA-256 published in the same release and that it needs no root: what it does is on you.',
+    'App de TERCEROS, directa de GitHub (la última versión del proyecto). FreeTV solo comprueba que el paquete coincide con el hash SHA-256 publicado en la misma versión y que no pide root: lo que hace es cosa tuya.'];
+  var ghMine = [];   // the GitHub links the person added (the service keeps them)
+
   /** The flag tools/community.py wants for them (CAUTION there): the person gives it by confirming on this screen. */
   var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive', 'com.rezkatv.app': 'unofficial', 'com.rezkatv.app.legacy': 'unofficial', 'tv.stremioorigin.app': 'unofficial'};
 
@@ -1261,7 +1266,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'companionStart' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'companionStart' || method === 'githubApps' || method === 'githubAdd' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -1451,7 +1456,18 @@
       if (Date.now() - saved.at < 10 * 60000) return;   // fresh enough: no need to ask the main one again now
     }
     load(3);
+    function loadGithub() {
+      if (TV.name !== 'webos' || store.svc === 'off') return;
+      svcCall('githubApps', {}, function (r) {
+        if (!r || !r.returnValue || !r.packages) return;
+        ghMine = r.mine || [];
+        r.packages.forEach(function (p) { if (p && p.manifest && !commAll.some(function (o) { return o.id === p.id; })) commAll.push(p); });
+        if (commState === 'error' && commAll.length) commState = 'ready';
+        if (commOpen < 0) { commInst = instMap(); commRebuild(); if (st.zone === Z.COMM) renderCommunity(); }
+      });
+    }
     function loadExtra() {
+      loadGithub();
       var extra = EXTRA.concat((Prefs.opt('repos', []) || []).map(function (u) { return {url: u, all: true}; }));
       extra.forEach(function (src) {
         Data.getJson(src.url, function (e2, d2) {
@@ -1479,10 +1495,26 @@
         }}], 0);
       }};
     });
+    ghMine.forEach(function (repo) {   // GitHub links added by hand
+      rows.push({label: 'github.com/' + repo, value: '›', run: function () {
+        showDialog(tr('Tirar este projeto?', 'Remove this project?', '¿Quitar este proyecto?'), [{text: 'github.com/' + repo}], [{label: cancelText()}, {label: tr('Sim, tirar', 'Yes, remove', 'Sí, quitar'), run: function () {
+          svcCall('githubRemove', {repo: repo}, function () { ghMine = ghMine.filter(function (x) { return x !== repo; }); commAll = []; openInfo('repos'); });
+        }}], 0);
+      }});
+    });
     rows.push({label: tr('Adicionar um repositório…', 'Add a repository…', 'Añadir un repositorio…'), value: '›', icon: 'apps', run: function () {
-      askText(tr('Repositório', 'Repository', 'Repositorio'), tr('O endereço https do seu apps.json (formato do webOS Homebrew).', 'The https address of its apps.json (webOS Homebrew format).',
-        'La dirección https de su apps.json (formato de webOS Homebrew).'), '', function (v) {
+      askText(tr('Repositório', 'Repository', 'Repositorio'), tr('Um link do GitHub (github.com/usuario/projeto) ou o endereço https de um apps.json.', 'A GitHub link (github.com/user/project) or the https address of an apps.json.',
+        'Un enlace de GitHub (github.com/usuario/proyecto) o la dirección https de un apps.json.'), '', function (v) {
           v = trim(v);
+          if (/^(https?:\/\/)?(www\.)?github\.com\/[^\s\/]+\/[^\s\/]+/.test(v) || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(v)) {   // a GitHub project: its latest release
+            if (TV.name !== 'webos') { toast(tr('Só na LG', 'Only on LG', 'Solo en LG')); return; }
+            toast(tr('Procurando a última versão no GitHub…', 'Looking for the latest release on GitHub…', 'Buscando la última versión en GitHub…'));
+            svcCall('githubAdd', {repo: v}, function (r) {
+              if (r && r.returnValue && r.package) { commAll = []; toast(r.package.title + ' v' + r.package.manifest.version + ': ' + tr('adicionada à Loja', 'added to the Store', 'añadida a la Tienda')); openInfo('repos'); }
+              else showDialog(tr('Não deu', 'It did not work', 'No ha podido ser'), [{text: (r && r.error) || tr('A TV não respondeu a tempo.', 'The TV did not answer in time.', 'La tele no respondió a tiempo.')}], [{label: 'OK'}], 0);
+            });
+            return;
+          }
           if (!/^https:\/\/\S+$/.test(v)) { toast(tr('Precisa começar com https://', 'It must start with https://', 'Tiene que empezar por https://')); return; }
           Data.getJson(v, function (err, d) {
             if (err || !d || !d.packages) { toast(tr('Não parece um repositório', 'That does not look like a repository', 'No parece un repositorio')); return; }
@@ -1509,7 +1541,7 @@
   }
 
   function storeInstall(app) {
-    var upd = store.svc === 'ok' && !!store.updates[app.id], flag = COMM_FLAG[app.id] || '';
+    var upd = store.svc === 'ok' && !!store.updates[app.id], flag = COMM_FLAG[app.id] || (app.github ? 'unofficial' : '');
     if (upd && flag === 'official-removed') flag = '';
     store.id = app.id;
     store.flow = 'working';
@@ -2214,6 +2246,7 @@
   var COMM_DESC = {
     'youtube.leanback.v4': ['YouTube sem anúncios, com SponsorBlock', 'YouTube without ads, with SponsorBlock', 'YouTube sin anuncios, con SponsorBlock'],
     'twitch.adamffdev.v1': ['Twitch sem anúncios', 'Twitch without ads', 'Twitch sin anuncios'],
+    'app.vodmax.client': ['Centro multimídia próprio: TV ao vivo, filmes e séries (precisa do seu servidor VodMax)', 'Your own media centre: live TV, films and series (needs your VodMax server)', 'Tu centro multimedia: TV en directo, películas y series (necesita tu servidor VodMax)'],
     'tv.stremioorigin.app': ['Cliente não oficial do Stremio (suas contas e addons)', 'Unofficial Stremio client (your account and addons)', 'Cliente no oficial de Stremio (tu cuenta y tus addons)'],
     'org.jellyfin.webos': ['Seus filmes e séries do seu servidor Jellyfin', 'Your films and shows from your Jellyfin server', 'Tus pelis y series desde tu servidor Jellyfin'],
     'org.xbmc.kodi': ['Centro multimídia livre: vídeos, música, extensões', 'Free media centre: videos, music, add-ons', 'Centro multimedia libre: vídeos, música, complementos'],
@@ -2253,7 +2286,7 @@
     commActs = [];
     if (a.special) { renderUpdateAll(box); return; }
     var upd = store.svc === 'ok' ? store.updates[a.id] : null;
-    var warn = upd && COMM_FLAG[a.id] === 'official-removed' ? null : COMM_CAUTION[a.id], cmd = 'python3 tools/community.py serve <IP>';
+    var warn = upd && COMM_FLAG[a.id] === 'official-removed' ? null : COMM_CAUTION[a.id] || (a.github ? GH_WARN : null), cmd = 'python3 tools/community.py serve <IP>';
     var head = line(box, 'dhead', '');
     commIcon(a, head, 'dico');
     head.appendChild(el('b', '', null, a.title + '  ·  v' + (m.version || '?')));

@@ -25,6 +25,7 @@ function current() {
     store = Store({key: key, log: function (m) { console.log(m); }});
     store.hardenState();   // key.pem back to 640 (a reinstall makes it readable by every app)
   }
+  store.github = readJson(path.join(dir, 'github-repos.json'), []).filter(function (x) { return typeof x === 'string'; });
   return store;
 }
 
@@ -41,6 +42,42 @@ service.register('install', function (message) {
   if (!s) { message.respond({returnValue: false, error: 'FreeTV todavía no tiene permiso para instalar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
   var r = s.start(String(p.id || ''), String(p.flag || ''), p.update === true);
   message.respond(r.ok ? {returnValue: true} : {returnValue: false, error: r.error});
+});
+
+/**
+ * GitHub projects as catalogue entries. githubApps: the ones FreeTV brings and the person's. githubAdd {repo}: a link or owner/repo; it is
+ * resolved first (it must have an .ipk and its SHA-256 in its latest release) and only then kept. githubRemove {repo}.
+ */
+var GH_FILE = path.join(dir, 'github-repos.json');
+service.register('githubApps', function (message) {
+  var s = current();
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  s.connect().then(function (conn) {
+    return s.githubPackages(conn).then(function (list) {
+      try { conn.end(); } catch (e) {}
+      message.respond({returnValue: true, packages: list, mine: s.github, defaults: require('./store').GITHUB_DEFAULT});
+    });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+});
+service.register('githubAdd', function (message) {
+  var s = current(), St = require('./store'), repo = St.githubRepo((message.payload || {}).repo);
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  if (!repo) { message.respond({returnValue: false, error: 'Eso no parece un enlace de GitHub (https://github.com/usuario/proyecto).'}); return; }
+  s.connect().then(function (conn) {
+    return s.githubPackage(conn, repo).then(function (pkg) {
+      try { conn.end(); } catch (e) {}
+      var mine = s.github.filter(function (x) { return x !== repo; });
+      if (St.GITHUB_DEFAULT.indexOf(repo) < 0) mine.push(repo);
+      writeJson(GH_FILE, mine.slice(-12));
+      message.respond({returnValue: true, package: pkg});
+    }, function (e) { try { conn.end(); } catch (x) {} message.respond({returnValue: false, error: String(e && e.message || e)}); });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+});
+service.register('githubRemove', function (message) {
+  var s = current(), repo = require('./store').githubRepo((message.payload || {}).repo);
+  if (!s || !repo) { message.respond({returnValue: false, error: 'no'}); return; }
+  writeJson(GH_FILE, s.github.filter(function (x) { return x !== repo; }));
+  message.respond({returnValue: true});
 });
 
 /** Which installed apps have a newer version in the catalogue: {updates: [{id, title, from, to, flag}], installed: {id: version}}. */

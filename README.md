@@ -11,6 +11,14 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.7: apps from a GitHub link, and VodMax
+
+- **Add any app to the Store by pasting its GitHub link** (*Store → Extra repositories → Add*: `github.com/user/project`, or `user/project`). FreeTV reads the
+  project's latest release on the TV, and offers it only if the release has an `.ipk` named `<id>_<version>_<arch>.ipk` **and** publishes its SHA-256 for that
+  file (the package is checked against it after downloading). It asks for the same «unofficial» confirmation as the other third-party apps, needs no root, and
+  updates follow the project's releases. You can remove a link from the same list.
+- **VodMax** (`silirim/VodMax`, a self-hosted media centre with an LG client; it needs your own VodMax server) comes in the Store this way.
+
 ### FreeTV 2.6.3: the Store when the main catalogue does not answer
 
 - If a network breaks the connection to the webOS Homebrew catalogue (a filter or router answering with its own certificate), the Store used to fail for
@@ -398,6 +406,14 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.7: apps desde un enlace de GitHub, y VodMax
+
+- **Añade cualquier app a la Tienda pegando su enlace de GitHub** (*Tienda → Repositorios extra → Añadir*: `github.com/usuario/proyecto`, o `usuario/proyecto`).
+  FreeTV lee en la tele la última versión del proyecto y la ofrece solo si trae un `.ipk` llamado `<id>_<versión>_<arq>.ipk` **y** publica su SHA-256 para
+  ese archivo (el paquete se comprueba contra él tras descargarlo). Pide la misma confirmación «no oficial» que las demás apps de terceros, no pide root, y
+  las actualizaciones siguen las versiones del proyecto. Puedes quitar un enlace desde la misma lista.
+- **VodMax** (`silirim/VodMax`, un centro multimedia autoalojado con cliente para LG; necesita tu propio servidor VodMax) entra en la Tienda así.
 
 ### FreeTV 2.6.3: la Tienda cuando el catálogo principal no responde
 
