@@ -3741,6 +3741,15 @@
     rows.push({label: tr('Ver o relatório', 'Read the report', 'Ver el informe'), value: '›', icon: 'apps', run: function () {
       showDialog('FreeTV', diagReport().split('\n').map(function (l) { return {cls: 'code', text: l}; }), [{label: 'OK'}], 0);
     }});
+    if (TV.name === 'webos') rows.push({label: tr('Prova: onde o Stremio Origin guarda os seus dados', 'Test: where Stremio Origin keeps its data', 'Prueba: dónde guarda Stremio Origin sus datos'), value: '›', icon: 'search', run: function () {
+      toast(tr('Procurando…', 'Looking…', 'Mirando…'));
+      svcCall('appDataProbe', {id: 'tv.stremioorigin.app'}, function (r) {
+        var lines = r && r.returnValue ? r.lines : null;
+        showDialog(tr('Dados do Stremio Origin', 'Stremio Origin data', 'Datos de Stremio Origin'), !lines ? [{text: tr('Não consegui olhar (a loja precisa estar ativada).', 'I could not look (the store must be turned on).', 'No pude mirar (la tienda tiene que estar activada).')}]
+          : (lines.length ? lines.slice(0, 14).map(function (l) { return {cls: 'code', text: l}; }) : [{text: tr('Nada encontrado.', 'Nothing found.', 'No encontré nada.')}]), [{label: 'OK'}], 0);
+        if (lines) svcCall('diagSave', {text: diagReport() + '\nappDataProbe tv.stremioorigin.app:\n  ' + lines.join('\n  ')}, function () {});
+      });
+    }});
     rows.push({label: tr('Reportar um problema', 'Report a problem', 'Reportar un problema'), value: '›', icon: 'home', run: function () {
       showDialog(tr('Reportar um problema', 'Report a problem', 'Reportar un problema'), [
         {text: tr('Guarde o relatório e, no computador, cole-o numa issue do GitHub. Não leva chaves, nomes nem cidade.', 'Save the report and paste it into a GitHub issue from the computer. It has no keys, names or city.', 'Guarda el informe y pégalo en una issue de GitHub desde el ordenador. No lleva claves, nombres ni ciudad.')},

@@ -170,6 +170,8 @@ Promise.resolve()
       var report = /function diagReport\(\) \{[\s\S]*?\n  \}\n/.exec(js)[0];
       assert.ok(!/tmdbKey|userName|city|kidsPin|ssapKey|Key\b/.test(report.replace(/ssapKey/g, '')), 'nothing secret or personal in the report');
       assert.ok(/openPickMenu\(p\)/.test(js), 'holding OK on a pick opens its menu');
+      assert.ok(/service\.register\('appDataProbe'/.test(svc) && /\^\[a-z0-9\]\[a-z0-9\.\\-\]\{2,60\}\$/.test(svc), 'the probe takes only an app id');
+      assert.ok(!/cat |readFile|grep /.test(/service\.register\('appDataProbe'[\s\S]*?\n\}\);/.exec(svc)[0]), 'it lists names and permissions, never contents');
     });
   })
   .then(function () {

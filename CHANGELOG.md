@@ -3,6 +3,13 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.8.2 (2026-11-10)
+
+### New
+- **Test: where Stremio Origin keeps its data** (*Maintenance → Diagnostics*): the store service lists, read only (names and permissions, never contents),
+  where `tv.stremioorigin.app` keeps its files on the TV and whether the service's shell may read them (`appDataProbe`), and adds it to the saved report. It
+  answers whether *Continue watching* could show what was played inside a web app without the person's account.
+
 ## 2.8.1 (2026-11-10)
 
 ### Fixed

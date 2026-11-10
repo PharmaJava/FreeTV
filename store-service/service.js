@@ -181,6 +181,27 @@ service.register('companionStart', function (message) {
   }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
 });
 
+/**
+ * Looks (read only, names and permissions, never contents) for where an app keeps its data on the TV, and whether this service's shell may read it.
+ * It answers a question: can FreeTV see what a web app played (Stremio Origin's library) without the person's account? {id}: an app id.
+ */
+service.register('appDataProbe', function (message) {
+  var id = String((message.payload || {}).id || '');
+  var s = current();
+  if (!/^[a-z0-9][a-z0-9.\-]{2,60}$/.test(id)) { message.respond({returnValue: false, error: 'id no válido'}); return; }
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  var cmd = '(timeout -t 25 find / -maxdepth 9 -path "*' + id + '*" 2>/dev/null | head -60; ' +
+    'timeout -t 25 find / -maxdepth 7 \\( -iname "*localstorage*" -o -iname "*leveldb*" -o -iname "*IndexedDB*" \\) 2>/dev/null | head -30) | ' +
+    'while read f; do if [ -r "$f" ]; then r=read; else r=NO; fi; echo "$r $(ls -ld "$f" 2>/dev/null | cut -c1-90)"; done';
+  s.connect().then(function (conn) {
+    return s.exec(conn, cmd).then(function (r) {
+      try { conn.end(); } catch (e) {}
+      var lines = String(r.out || '').split('\n').filter(function (l) { return l; }).slice(0, 90).map(function (l) { return l.slice(0, 170); });
+      message.respond({returnValue: true, id: id, lines: lines});
+    });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+});
+
 /** The report FreeTV's Diagnostics sheet makes (no keys, no names): kept on the TV with this service's own facts, to read or to attach to an issue. */
 service.register('diagSave', function (message) {
   var text = String((message.payload || {}).text || '').slice(0, 30000), extra = [];
