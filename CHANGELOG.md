@@ -3,6 +3,12 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.8.1 (2026-11-10)
+
+### Fixed
+- **The RAM chip had a white band** behind it. It is transparent now, like the quotes under it, and turns into the white button only while it has the
+  focus.
+
 ## 2.8.0 (2026-11-10)
 
 **It opens at once.** Nothing from 2.7 was removed.
