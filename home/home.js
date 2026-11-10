@@ -1174,6 +1174,11 @@
         step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }});
       rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
       if (TV.name === 'webos') rows.push({label: tr('Atualizar a lista de apps', 'Refresh the list of apps', 'Actualizar la lista de apps'), value: '›', step: function (d) { if (d >= 0) refreshApps(); }});
+      if (TV.name === 'webos' && findApp(STREMIO_APP)) {
+        var po = Prefs.opt('pickOpen', 'service');
+        rows.push({label: tr('OK numa sugestão abre', 'OK on a pick opens', 'OK en una sugerencia abre'), value: po === 'stremio' ? 'Stremio Origin' : tr('O serviço onde está', 'The service that has it', 'El servicio donde está'),
+          step: function (d) { cycle('pickOpen', ['service', 'stremio'], po, d); }});
+      }
       rows.push({label: tr('Abas', 'Tabs', 'Pestañas'), value: '›', step: function (d) { if (d >= 0) openInfo('tabs'); }});
       rows.push({label: tr('Perfis', 'Profiles', 'Perfiles'), value: profileName(profileNow()), step: function (d) { if (d >= 0) openInfo('profiles'); }});
       rows.push({label: tr('Rotinas', 'Routines', 'Rutinas'), value: String(routines().length), step: function (d) { if (d >= 0) openInfo('routines'); }});
@@ -3254,6 +3259,7 @@
       case Z.CARDS:
         var p = cards[st.card];
         if (p && p.local) { openLocal(p); return; }
+        if (p && pickStremio() && p.kind) { openInStremio(p); return; }
         var app = p && Data.appFor(p.app);
         if (app) launcher(app.id, app.title)();
         return;
@@ -4101,10 +4107,24 @@
     Prefs.set('watchlist', l.slice(0, 60));
   }
 
+  /** Does OK on a pick open Stremio Origin (the person's choice, and the app is on this TV)? */
+  function pickStremio() { return Prefs.opt('pickOpen', 'service') === 'stremio' && !!findApp(STREMIO_APP); }
+
+  /** Stremio Origin cannot be opened on one title (it reads no address), so it opens with the title in front of the person to look for. */
+  function openInStremio(p) {
+    var sa = findApp(STREMIO_APP);
+    if (!sa) return;
+    showDialog(tr('Abrir no Stremio Origin', 'Open in Stremio Origin', 'Abrir en Stremio Origin'), [
+      {text: tr('O Stremio Origin ainda não abre direto num título: procure este no buscador dele.', 'Stremio Origin cannot open straight on a title yet: look this one up in its search.', 'Stremio Origin aún no abre directo en un título: búscalo en su buscador.')},
+      {cls: 'code', text: String(p.title || '') + (p.year ? ' (' + p.year + ')' : '')}],
+      [{label: tr('Abrir o Stremio Origin', 'Open Stremio Origin', 'Abrir Stremio Origin'), run: launcher(sa.id, sa.title)}, {label: cancelText()}], 0);
+  }
+
   /** Hold OK on a pick. */
   function openPickMenu(p) {
-    var app = p.app && Data.appFor(p.app), buttons = [];
+    var app = p.app && Data.appFor(p.app), buttons = [], sa = findApp(STREMIO_APP);
     if (app) buttons.push({label: tr('Abrir ', 'Open ', 'Abrir ') + app.title, run: launcher(app.id, app.title)});
+    if (sa) buttons.push({label: tr('Abrir no Stremio Origin', 'Open in Stremio Origin', 'Abrir en Stremio Origin'), run: function () { openInStremio(p); }});
     buttons.push({label: wlHas(p) ? tr('Tirar da minha lista', 'Take off my list', 'Quitar de mi lista') : tr('Pôr na minha lista', 'Put on my list', 'Añadir a mi lista'), run: function () { wlToggle(p); }});
     buttons.push({label: tr('Ver a minha lista', 'See my list', 'Ver mi lista'), run: function () { openInfo('watchlist'); }});
     buttons.push({label: cancelText()});

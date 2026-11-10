@@ -3,6 +3,13 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.11.0 (2026-11-10)
+
+### New
+- **Picks can open Stremio Origin.** *Home Settings → Home → OK on a pick opens* (the service that has it, as before / Stremio Origin; shown when the app is on the TV)
+  and *hold OK → Open in Stremio Origin*. The app reads no launch parameters or links (checked in its source), so it cannot be opened on one title:
+  FreeTV opens it after showing the title and its year to look up in its search. The year comes with TMDB's lists.
+
 ## 2.10.1 (2026-11-10)
 
 ### Fixed

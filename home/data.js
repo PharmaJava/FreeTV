@@ -581,7 +581,7 @@ var Data = (function () {
   function addPick(list, o, kind) {
     if (!o.backdrop_path) return;
     if (!Prefs.animation() && animated(o)) return;
-    list.push({id: o.id, kind: kind, title: kind === 'movie' ? o.title : o.name, backdrop: o.backdrop_path, meta: '', app: null, detailed: false});
+    list.push({id: o.id, kind: kind, title: kind === 'movie' ? o.title : o.name, year: String(o.release_date || o.first_air_date || '').slice(0, 4), backdrop: o.backdrop_path, meta: '', app: null, detailed: false});
   }
 
   function keyOf(p) { return p.kind + ':' + p.id; }
