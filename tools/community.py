@@ -49,7 +49,7 @@ CAUTION = {
                             'Eliminar; se puede volver a poner desde la LG Content Store). Si se instala con la oficial puesta, la tele dice '
                             '«Success» pero deja a la oficial sin su acceso directo y la versión nueva no se instala (nos pasó). '
                             'Cuando la hayas borrado, añade --official-removed. Quita anuncios, y eso puede ir contra las condiciones '
-                            'de uso de YouTube: es tu decisión.'),
+                            'de uso de YouTube: es tu decisión. Desde 2026 YouTube corta el vídeo tras 1 minuto en algunas cuentas (problema conocido del proyecto, sin arreglo aún).'),
     'com.open.hidden.menu': ('sensitive', 'Abre el menú de servicio oculto de LG. Cambiar ahí ajustes puede estropear la tele y anular la '
                              'garantía. Instálala solo si sabes exactamente qué vas a tocar.'),
     'tv.stremioorigin.app': ('unofficial', 'Cliente de TERCEROS (no es de Stremio, ni de LG, ni de FreeTV) para tu cuenta y tus addons de Stremio, con reproduccion '

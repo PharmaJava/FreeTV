@@ -3,6 +3,14 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.11.1 (2026-11-10)
+
+### Documented
+- **YouTube AdFree stops after about a minute on some accounts** (seen on a real TV, webOS 6.5.3, AdFree 0.5.3, a non-kids profile; the kids one plays on). The player's
+  `videoplayback` (SABR) answers carry `STREAM_PROTECTION_STATUS = 2` (attestation pending): YouTube sends the first 60 s and then nothing (`buffered [0,60]`, `currentTime`
+  stuck at 61 s). It is YouTube's server side, known upstream (`webosbrew/youtube-webos` #457, #475; the fix is their Cobalt port, not released). FreeTV cannot repair it; the Store's
+  YouTube AdFree notice now says so.
+
 ## 2.11.0 (2026-11-10)
 
 ### New

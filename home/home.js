@@ -1433,7 +1433,7 @@
 
   /** Apps that need a word of warning before installing (kept in step with tools/community.py). */
   var COMM_CAUTION = {
-    'youtube.leanback.v4': ['Substitui o YouTube oficial: apague-o você na TV antes (o computador não consegue).', 'Replaces the official YouTube: delete it yourself on the TV first (the computer cannot).', 'Reemplaza el YouTube oficial: bórralo tú en la tele antes (desde el ordenador no se puede).'],
+    'youtube.leanback.v4': ['Substitui o YouTube oficial: apague-o você na TV antes (o computador não consegue). Desde 2026 o YouTube corta o vídeo depois de 1 minuto para algumas contas (problema conhecido do projeto, ainda sem correção).', 'Replaces the official YouTube: delete it yourself on the TV first (the computer cannot). Since 2026 YouTube cuts the video after 1 minute for some accounts (a known problem of the project, not fixed yet).', 'Reemplaza el YouTube oficial: bórralo tú en la tele antes (desde el ordenador no se puede). Desde 2026 YouTube corta el vídeo tras 1 minuto en algunas cuentas (problema conocido del proyecto, aún sin arreglo).'],
     'com.open.hidden.menu': ['Abre o menu de serviço da LG: pode danificar a TV.', "Opens LG's service menu: it can break the TV.", 'Abre el menú de servicio de LG: puede estropear la tele.'],
     'com.pirate.refresh': ['Renova o Modo Desenvolvedor por conta própria: o FreeTV já tem o seu painel.', 'Renews Developer Mode on its own: FreeTV already has its panel.', 'Renueva el Modo Desarrollador por su cuenta: FreeTV ya trae su panel.'],
     'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.'],

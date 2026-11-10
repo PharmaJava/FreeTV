@@ -1,6 +1,6 @@
 {
   "id": "com.gathin.tvhome",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "vendor": "FreeTV",
   "type": "web",
   "main": "index.html",
