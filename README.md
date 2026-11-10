@@ -11,6 +11,16 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.8: it opens at once
+
+- **Faster start.** The home is drawn straight away with the apps of the last time, instead of waiting some seconds on an almost empty
+  screen for the TV to list them; it is corrected if anything changed. At night the first thing painted is dark, not a white screen.
+- **Smoother returns.** Coming back to FreeTV (the Home button, closing an app) no longer rebuilds the shelf and the drawer every time.
+- **The RAM chip is a button.** Bigger, right under the round buttons: press **▼** from any of them (or point and click) and **OK** opens
+  *Memory*, with *Free memory now* first. The Magic Remote's pointer could not click it before (a hidden label covered it): fixed.
+- **Updates from the TV.** Each new version is published by GitHub itself, so *Home Settings → Maintenance → FreeTV updates* finds it
+  without anybody running anything on a computer.
+
 ### FreeTV 2.7: apps from a GitHub link, and VodMax
 
 - **Add any app to the Store by pasting its GitHub link** (*Store → Extra repositories → Add*: `github.com/user/project`, or `user/project`). FreeTV reads the
@@ -92,7 +102,7 @@
   **SHA-256** against the release's `SHA256SUMS` and installs it over FreeTV; FreeTV opens again by itself. Your settings, **TMDB key and city
   stay** (the package of a release carries none: they live on the TV). Which repository a TV follows: `state/update-repo.txt` in the store
   service's folder (`owner/name`, default `PharmaJava/FreeTV`), so a fork's TVs can follow the fork.
-  To publish a version: `bash tools/make_release.sh --publish` (builds the package for everybody and makes the GitHub release).
+  To publish a version: change it in `home/appinfo.json` (and `tizen/config.xml`, `tools/make_splash.py`, `CHANGELOG.md`) and push to `main`: GitHub builds the package and makes the release (`.github/workflows/release.yml`). By hand: `bash tools/make_release.sh --publish`.
 - **The Store** keeps the catalogue on the TV (it opens at once and works offline, saying how old the copy is), waits longer and tries three
   times, and when it cannot connect it says **why** and offers **Try again**.
 
@@ -406,6 +416,17 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.8: abre al momento
+
+- **Arranque más rápido.** El inicio se dibuja enseguida con las apps de la última vez, en vez de esperar unos segundos en una pantalla
+  casi vacía a que la tele las liste; se corrige si algo cambió. De noche lo primero que se pinta es oscuro, no una pantalla en blanco.
+- **Volver es más suave.** Al volver a FreeTV (botón Home, cerrar una app) ya no se reconstruyen el estante y el cajón cada vez.
+- **La RAM es un botón.** Más grande, justo debajo de los botones redondos: pulsa **▼** desde cualquiera de ellos (o apunta y haz clic) y
+  **OK** abre *Memoria*, con *Liberar memoria ahora* lo primero. El puntero del Magic Remote no podía pulsarla (la tapaba una etiqueta
+  oculta): arreglado.
+- **Se actualiza desde la tele.** Cada versión nueva la publica el propio GitHub, así que *Ajustes de inicio → Mantenimiento →
+  Actualizaciones de FreeTV* la encuentra sin que nadie ejecute nada en un ordenador.
 
 ### FreeTV 2.7: apps desde un enlace de GitHub, y VodMax
 

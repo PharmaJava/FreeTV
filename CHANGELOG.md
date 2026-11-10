@@ -3,6 +3,31 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.8.0 (2026-11-10)
+
+**It opens at once.** Nothing from 2.7 was removed.
+
+### Faster
+- **The home is drawn at once when FreeTV starts.** It used to wait for the TV to answer with its list of apps and inputs (seconds on webOS 6,
+  where the list comes through the remote API): until then there was only the title on an empty screen. The list of the last time is kept
+  (`fmtv.appsCache`) and drawn straight away; the TV is still asked, and the home is drawn again only if the answer differs.
+- **No white screen first.** `index.html` sets the background of the last start (night, pure black) before the styles load (`fmtv.boot`), and the
+  text shows at once in the TV's own font while Inter (880 KB) loads (`font-display: swap`).
+- **Coming back to FreeTV is lighter.** Every return (Home button, closing an app) rebuilt the shelf and the drawer; now only when the apps or
+  inputs changed (`loadApps` tells its caller).
+
+### RAM chip
+- The RAM line is a **chip with the look of a button** (bigger, with *Free ›*). **▼ from the round buttons** reaches it (▶ past them still does),
+  ▲ goes back, and from the last card ▲ goes to it. **OK or a click opens Memory**, where *Free memory now* is the first row.
+- **Fixed: the pointer could not click it.** The hidden names of the round buttons (`.round .tip`) lay over it and took the clicks.
+
+### Releases
+- **Every version reaches the TVs by itself.** `.github/workflows/release.yml`: when `main` has a version with no release yet, GitHub builds
+  the package (`tools/make_release.sh`) and publishes the release the TVs' *FreeTV updates* look for. Nothing to run on a computer.
+
+### Fixed
+- An error 220 ms after the picks went away while a card had the focus (`cardBackdrop` of nothing).
+
 ## 2.7.0 (2026-11-08)
 
 ### New

@@ -9,6 +9,7 @@
   font-family: 'Inter';
   src: url('fonts/InterVariable.ttf') format('truetype');
   font-weight: 100 900;
+  font-display: swap;   /* the text shows at once in the TV's own font while this one (880 KB) loads */
 }
 
 html, body {
@@ -846,3 +847,21 @@ body.nosysmem #sysmem, body.kids #sysmem { display: none; }
 .membar .fill { height: 14px; border-radius: 7px; background: #3FD69B; }
 .membar .fill.warn { background: #FFB840; }
 .membar .fill.bad { background: #FF5A52; }
+
+/* MARK: - 2.8: the first paint, and the RAM chip as a button */
+
+/* index.html sets these on <html> before anything else loads, from what the last start left (fmtv.boot): no white flash at night */
+html.boot-night, html.boot-night body { background: #0B0B0D; }
+html.boot-oled, html.boot-oled body { background: #000; }
+
+/* The RAM line is a chip with the look of the round buttons above it: bigger, always visible as a button, easy to hit with the
+   Magic Remote's pointer; ▼ from the round buttons reaches it and OK (or a click) opens the Memory sheet. */
+#sysmem { top: 141px; height: 40px; line-height: 40px; font-size: 21px; padding: 0 18px; margin-right: -6px; border-radius: 20px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.55); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  -webkit-transition: background-color 0.2s, opacity 0.2s, -webkit-transform 0.2s; transition: background-color 0.2s, opacity 0.2s, transform 0.2s; }
+#sysmem:empty { display: none; }
+.night #sysmem { background: rgba(255, 255, 255, 0.12); box-shadow: none; }
+#sysmem .go { font-style: normal; font-weight: 600; margin-left: 16px; padding-left: 16px; border-left: 2px solid rgba(128, 128, 128, 0.35); }
+#sysmem.focus { -webkit-transform: scale(1.05); transform: scale(1.05); -webkit-transform-origin: 100% 50%; transform-origin: 100% 50%; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2); }
+body.lite #sysmem, body.lite #sysmem.focus { box-shadow: none; }
+.round .tip { pointer-events: none; }   /* the hidden names of the round buttons lay over the RAM chip and took the pointer's clicks */

@@ -195,7 +195,7 @@
       if (cards[st.card] && cards[st.card] !== bgShown) {
         bgShown = cards[st.card];
         clearTimeout(bgTimer);
-        bgTimer = setTimeout(function () { backdrop(bgFor(cardBackdrop(bgShown))); }, 220);
+        bgTimer = setTimeout(function () { if (bgShown) backdrop(bgFor(cardBackdrop(bgShown))); }, 220);   // (the cards may be gone by then)
       }
     }
     list = $('tiles').children;
@@ -3093,16 +3093,20 @@
         break;
       case Z.CARDS:
         if (dx) st.card = Math.max(0, Math.min(cards.length - 1, st.card + dx));
-        else if (dy < 0) { st.zone = Z.TOP; st.top = Math.max(0, VIS.indexOf(st.tab)); }
+        else if (dy < 0) { st.zone = Z.TOP; st.top = st.card > 0 && st.card === cards.length - 1 && memShown() ? TABS + 3 : Math.max(0, VIS.indexOf(st.tab)); }
         else if (shelf.length) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNodes[st.card])); }
         break;
       case Z.TOP:
         if (dx) {
           st.top = Math.max(0, Math.min(Prefs.kids() ? TABS - 1 : TABS + (memShown() ? 3 : 2), st.top + dx));
           if (st.top < TABS) selectTab(VIS[st.top]);   // as on Apple TV: focusing a tab selects it
+        } else if (dy > 0 && st.top >= TABS && st.top < TABS + 3 && memShown()) {
+          st.top = TABS + 3;   // the RAM chip is right under the round buttons
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < TABS ? 0 : cards.length - 1); }
           else st.zone = Z.SHELF;
+        } else if (dy < 0 && st.top === TABS + 3) {
+          st.top = TABS + 2;
         }
         break;
       case Z.DRAWER:
@@ -3279,8 +3283,12 @@
 
   // MARK: - Night, clock, screensaver
 
+  var bootNight = null;
   function checkNight() {
-    setClass(body, 'night', Data.isNight(Date.now()));
+    var night = Data.isNight(Date.now());
+    setClass(body, 'night', night);
+    // kept for the next start: index.html paints the right background before anything else loads (no white flash at night)
+    if (night !== bootNight) { bootNight = night; try { localStorage.setItem('fmtv.boot', JSON.stringify({night: night, oled: Prefs.opt('look', '') === 'oled'})); } catch (e) {} }
   }
 
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverSeq = 0, saverTimer = 0, SAVER_AFTER = 2 * 60000;
@@ -3968,6 +3976,8 @@
     if (!box) return;
     if (!box.onmouseover) hover(box, Z.TOP, TABS + 3);   // the pointer reaches it too (focus follows TABS)
     box.onmouseover = function () { if (memShown() && !sheetOpen() && !saverOn) { st.zone = Z.TOP; st.top = TABS + 3; updateFocus(); } };
+    // a click (the Magic Remote's pointer) opens the Memory sheet straight away, whatever had the focus
+    box.onclick = function () { if (memShown() && !sheetOpen() && !saverOn && st.zone !== Z.DLG) openInfo('memory'); };
     box.innerHTML = '';
     if (Prefs.opt('ramWidget', true) === false) return;
     var s = mem.sys;
@@ -3976,12 +3986,14 @@
       el('b', pct > 90 ? 'bad' : pct > 80 ? 'warn' : '', box, 'RAM');
       el('span', pct > 90 ? 'bad' : pct > 80 ? 'warn' : '', box, used + ' / ' + s.total + ' MB');
     }
+    setClass(box, 'has', true);
     var pm = window.performance && performance.memory;
     if (pm && pm.usedJSHeapSize) {
       if (s && s.total) box.appendChild(document.createTextNode('  ·  '));
       else el('b', '', box, 'RAM');
       box.appendChild(document.createTextNode('FreeTV ' + Math.round(pm.usedJSHeapSize / 1048576) + ' MB'));
     }
+    if (TV.name === 'webos') el('i', 'go', box, tr('Liberar', 'Free', 'Liberar') + ' ›');
   }
 
   function pollSysmem() {
@@ -5175,17 +5187,41 @@
     });
   }
 
+  // 2.8: the list of apps and inputs of the last time is kept, so the home is drawn at once when FreeTV starts (asking the TV takes
+  // seconds, and until then there was only the title on an empty screen). The TV is still asked, and the home is drawn again only if
+  // the answer differs from what is on screen: coming back to FreeTV no longer rebuilds the shelf and the drawer every time.
+  var APPS_CACHE = 'fmtv.appsCache', appsSig = '';
+
+  function appsSignature(list, ins) {
+    return JSON.stringify([list.map(function (a) { return [a.id, a.title, a.icon, a.color, a.tile || '']; }),
+      ins.map(function (x) { return [x.id, x.label, x.connected]; }), I18N.lang]);
+  }
+
+  /** Draws from the saved list; false when there is none (a first start). */
+  function appsFromCache() {
+    var c = null;
+    try { c = JSON.parse(localStorage.getItem(APPS_CACHE)); } catch (e) {}
+    if (!c || !c.apps || !c.apps.length || !c.inputs || c.lang !== I18N.lang) return false;
+    inputs = c.inputs;
+    apps = c.apps.concat(extraApps());
+    Data.setApps(apps);
+    pickShelf();
+    appsSig = appsSignature(c.apps, c.inputs);
+    return true;
+  }
+
+  /** Asks the TV for its apps and inputs; done(changed) says whether they differ from the ones already drawn. */
   function loadApps(done) {
     TV.apps(function (list) {
-      apps = list;
-      Data.setApps(apps);
-      pickShelf();
       TV.inputs(function (list2) {
+        var sig = appsSignature(list, list2), changed = sig !== appsSig;
+        appsSig = sig;
         inputs = list2;
         apps = list.concat(extraApps());   // inputs and channels the person put on the shelf
         Data.setApps(apps);
         pickShelf();
-        if (done) done();
+        if (changed) { try { localStorage.setItem(APPS_CACHE, JSON.stringify({apps: list, inputs: list2, lang: I18N.lang})); } catch (e) {} }
+        if (done) done(changed);
       });
     });
   }
@@ -5213,7 +5249,7 @@
     if (window.PalmSystem && window.PalmSystem.activate) window.PalmSystem.activate();
     var toStore = takeStoreHost(e && e.detail) || takeStoreHost(window.PalmSystem && window.PalmSystem.launchParams);   // `community.py serve`
     reset();
-    loadApps(function () { renderShelf(); renderDrawer(); Data.refresh(); if (toStore) openCommunity(); });
+    loadApps(function (changed) { if (changed) { renderShelf(); renderDrawer(); updateFocus(); } Data.refresh(); if (toStore) openCommunity(); });
   }
 
   window.addEventListener('resize', fit);
@@ -5233,7 +5269,7 @@
     usageStop();
     if (saverOn && Date.now() - hiddenAt < 5 * 60000) return;   // back from LG's clock: ours goes on
     idleAt = Date.now();
-    loadApps(function () { renderShelf(); renderDrawer(); updateFocus(); Data.refresh(); });
+    loadApps(function (changed) { if (changed) { renderShelf(); renderDrawer(); updateFocus(); } Data.refresh(); });
     askScreen();
   });
 
@@ -5261,8 +5297,10 @@
   applyLook();
   renderTop();
   var openedForStore = takeStoreHost(window.PalmSystem && window.PalmSystem.launchParams);   // started by `community.py serve`
-  loadApps(function () {
-    renderAll();
+  var drawnFromCache = appsFromCache();
+  if (drawnFromCache) { renderAll(); Data.refresh(); }   // at once, with the apps of last time
+  loadApps(function (changed) {
+    if (changed || !drawnFromCache) renderAll();
     Data.refresh();
     if (openedForStore) openCommunity();
   });

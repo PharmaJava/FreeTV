@@ -352,5 +352,30 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('the first paint');
+    return ok('the page sets its background before the styles load, and the text does not wait for the font', function () {
+      var page = fs.readFileSync(path.join(root, 'home', 'index.html'), 'utf8'), css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
+      assert.ok(page.indexOf('fmtv.boot') > 0 && page.indexOf('fmtv.boot') < page.indexOf('rel="stylesheet"'), 'the boot script comes first');
+      assert.ok(/html\.boot-night[^{]*\{[^}]*background/.test(css), 'a night background for it');
+      assert.ok(/font-display:\s*swap/.test(css), 'font-display: swap');
+    });
+  })
+  .then(function () {
+    return ok('the home is drawn from the saved list of apps, and again only when the TV answers something else', function () {
+      var js = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(/function appsFromCache\(\)/.test(js) && /if \(drawnFromCache\) \{ renderAll\(\)/.test(js), 'drawn from the cache at the start');
+      assert.ok(/if \(changed \|\| !drawnFromCache\) renderAll\(\)/.test(js), 'drawn again only on a change');
+      assert.ok(!/loadApps\(function \(\) \{ renderShelf\(\); renderDrawer\(\); updateFocus\(\); Data\.refresh\(\)/.test(js), 'coming back does not rebuild the shelf every time');
+    });
+  })
+  .then(function () {
+    return ok('the RAM chip can be clicked: nothing hidden lies over it', function () {
+      var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8'), js = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(/\.round \.tip \{[^}]*pointer-events:\s*none/.test(css), 'the round buttons\' hidden names let the pointer through');
+      assert.ok(/box\.onclick = function \(\) \{[^}]*openInfo\('memory'\)/.test(js), 'a click opens Memory');
+      assert.ok(/st\.top >= TABS && st\.top < TABS \+ 3 && memShown\(\)/.test(js), 'down from the round buttons reaches it');
+    });
+  })
+  .then(function () {
     console.log('\n' + passed + ' checks passed' + (process.exitCode ? ', some FAILED' : ''));
   });

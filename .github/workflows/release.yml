@@ -1,0 +1,54 @@
+# Publishes FreeTV's release when main has a version that has none yet: the package for everybody (no key, no city) and its
+# SHA256SUMS, which is what the TVs' "FreeTV updates" (Home Settings → Maintenance) look for and install by themselves.
+# To publish a version: change it in home/appinfo.json (and tizen/config.xml, tools/make_splash.py, CHANGELOG.md) and push.
+# By hand: Actions → release → Run workflow (it does nothing if that version already has its release).
+name: release
+on:
+  push:
+    branches: [main]
+    paths: ['home/appinfo.json', '.github/workflows/release.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("home/appinfo.json"))["version"])')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then echo "publish=false" >> "$GITHUB_OUTPUT"; echo "v$version already has its release" | tee -a "$GITHUB_STEP_SUMMARY"
+          else echo "publish=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.publish == 'true'
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        if: steps.version.outputs.publish == 'true'
+        with:
+          python-version: '3.11'
+      - name: The checks, before anything is published
+        if: steps.version.outputs.publish == 'true'
+        run: |
+          (cd store-service && npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
+          python3 tools/check_secrets.py --all
+          for f in home/*.js store-service/*.js; do node --check "$f"; done
+          node tests/run.js
+      - name: LG's packaging tool and the Home button helper's packaging scripts
+        if: steps.version.outputs.publish == 'true'
+        run: |
+          npm install --global --no-audit --no-fund '@webos-tools/cli@3.2.6'
+          FREETV_PREPARE_ONLY=1 bash install.sh 0.0.0.0
+      - name: Build the package and publish the release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash tools/make_release.sh --publish
+          echo "Published FreeTV ${{ steps.version.outputs.version }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          cat release/SHA256SUMS | tee -a "$GITHUB_STEP_SUMMARY"

@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=1920, height=1080">
 <title>FreeTV</title>
+<script>
+/* Before the styles: the background of the last start (night, pure black), so the first thing painted is not a white screen. */
+try { var fmtvBoot = JSON.parse(localStorage.getItem('fmtv.boot') || '{}'); if (fmtvBoot.night) document.documentElement.className = fmtvBoot.oled ? 'boot-night boot-oled' : 'boot-night'; } catch (e) {}
+</script>
 <link rel="stylesheet" href="home.css">
 <link rel="stylesheet" href="extras.css">
 </head>

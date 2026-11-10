@@ -143,3 +143,15 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
 - `store.js` `githubPackage` is the only place that decides what a GitHub release becomes: keep its three rules (an .ipk named id_version_arch, a published SHA-256
   for that exact file, github.com download addresses). `GITHUB_DEFAULT` lists the projects FreeTV brings; the person's are in `state/github-repos.json`.
   The API is read by the TV's curl (60 requests an hour without a token, so results are cached ten minutes).
+
+## 2.8: the first paint, the RAM chip, releases
+
+- `loadApps(done)` calls `done(changed)`: redraw the shelf and the drawer only when it is true. The last list is in `fmtv.appsCache`
+  (`appsFromCache()` draws from it at the start, before the TV answers). Anything that changes what an app looks like must be in
+  `appsSignature`.
+- `index.html`'s first script reads `fmtv.boot` (written by `checkNight`) and sets `boot-night` / `boot-oled` on `<html>`: keep it before
+  the stylesheets and free of anything that can throw.
+- The RAM chip is `#sysmem`, the top row's stop `TABS + 3`: ▼ from a round button, ▲ back; its own `onclick` opens Memory. Hidden things
+  near it must not take the pointer (`pointer-events: none`, as `.round .tip`).
+- Releases: `.github/workflows/release.yml` publishes `v<version>` when `main` has a version with no release (it runs the tests first).
+  Changing the version is all it takes; `tools/make_release.sh --publish` still works by hand.
