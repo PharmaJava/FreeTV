@@ -3,6 +3,12 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.8.3 (2026-11-10)
+
+### Fixed
+- The Stremio Origin data test listed the app's own install files (its package, not data) and cut the paths. It lists folders that are not the install
+  folder and anything named like web storage, with the whole path, and says whether the service may read them.
+
 ## 2.8.2 (2026-11-10)
 
 ### New

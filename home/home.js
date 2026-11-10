@@ -3746,7 +3746,7 @@
       svcCall('appDataProbe', {id: 'tv.stremioorigin.app'}, function (r) {
         var lines = r && r.returnValue ? r.lines : null;
         showDialog(tr('Dados do Stremio Origin', 'Stremio Origin data', 'Datos de Stremio Origin'), !lines ? [{text: tr('Não consegui olhar (a loja precisa estar ativada).', 'I could not look (the store must be turned on).', 'No pude mirar (la tienda tiene que estar activada).')}]
-          : (lines.length ? lines.slice(0, 14).map(function (l) { return {cls: 'code', text: l}; }) : [{text: tr('Nada encontrado.', 'Nothing found.', 'No encontré nada.')}]), [{label: 'OK'}], 0);
+          : (lines.length ? lines.slice(0, 11).map(function (l) { return {cls: 'code', text: l.replace('/media/developer/apps/usr/palm/applications/', '…/')}; }) : [{text: tr('Nada encontrado.', 'Nothing found.', 'No encontré nada.')}]), [{label: 'OK'}], 0);
         if (lines) svcCall('diagSave', {text: diagReport() + '\nappDataProbe tv.stremioorigin.app:\n  ' + lines.join('\n  ')}, function () {});
       });
     }});

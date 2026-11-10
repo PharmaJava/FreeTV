@@ -190,13 +190,15 @@ service.register('appDataProbe', function (message) {
   var s = current();
   if (!/^[a-z0-9][a-z0-9.\-]{2,60}$/.test(id)) { message.respond({returnValue: false, error: 'id no válido'}); return; }
   if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
-  var cmd = '(timeout -t 25 find / -maxdepth 9 -path "*' + id + '*" 2>/dev/null | head -60; ' +
-    'timeout -t 25 find / -maxdepth 7 \\( -iname "*localstorage*" -o -iname "*leveldb*" -o -iname "*IndexedDB*" \\) 2>/dev/null | head -30) | ' +
-    'while read f; do if [ -r "$f" ]; then r=read; else r=NO; fi; echo "$r $(ls -ld "$f" 2>/dev/null | cut -c1-90)"; done';
+  // Folders only (the app's own install folder left out: its files are not data), then anything named like web storage, with the path whole.
+  var cmd = '(timeout -t 25 find / -maxdepth 9 -type d -path "*' + id + '*" 2>/dev/null; ' +
+    'timeout -t 25 find / -maxdepth 8 \\( -iname "*localstorage*" -o -iname "*leveldb*" -o -iname "*IndexedDB*" -o -iname "*Local Storage*" \\) 2>/dev/null) | ' +
+    'while read f; do case "$f" in /media/developer/apps/usr/palm/applications/' + id + '*) continue;; esac; if [ -r "$f" ]; then r=R; else r=-; fi; echo "$r $f"; done | head -60; ' +
+    'echo "--"; ls -ld /var/palm/jail /var/palm/data /home/root/.config 2>&1 | cut -c1-60';
   s.connect().then(function (conn) {
     return s.exec(conn, cmd).then(function (r) {
       try { conn.end(); } catch (e) {}
-      var lines = String(r.out || '').split('\n').filter(function (l) { return l; }).slice(0, 90).map(function (l) { return l.slice(0, 170); });
+      var lines = String(r.out || '').split('\n').filter(function (l) { return l; }).slice(0, 70).map(function (l) { return l.slice(0, 200); });
       message.respond({returnValue: true, id: id, lines: lines});
     });
   }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
