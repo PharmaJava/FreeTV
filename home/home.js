@@ -514,11 +514,12 @@
     // What was watched in Stremio (its own library, once the person signed in) takes the place of the bare "Stremio Origin was opened".
     sti.forEach(function (it) {
       if (!stApp) return;
-      var parts = [];   // short: the card is narrow (an episode, or how far a film is, and when)
+      var parts = [];   // short: the card is narrow (the episode, how much is left, or when)
       if (it.ep) parts.push(it.ep);
-      else if (it.pct) parts.push(it.pct + '%');
-      parts.push(agoText(it.at));
-      out.push({local: 'stremio', id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: parts.join(' · '), app: stApp});
+      if (it.left) parts.push(it.left >= 60 ? Math.floor(it.left / 60) + ' h ' + pad2(it.left % 60) + ' min' : it.left + ' min');
+      if (it.left) parts[parts.length - 1] += ' ' + tr('restantes', 'left', 'restan');
+      else parts.push(agoText(it.at));
+      out.push({local: 'stremio', id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: parts.join(' · '), app: stApp, pct: it.pct || 0});
       times.push(it.at);
     });
     for (var i = 0; i < list.length && out.length < 24; i++) {
@@ -626,7 +627,7 @@
     return Data.picks(TAB_KIND[st.tab]);
   }
 
-  function cardSig(p) { return [p.local || '', p.id, p.title, p.thumb || '', p.backdrop || '', p.meta || '', p.service || ''].join('|'); }
+  function cardSig(p) { return [p.local || '', p.id, p.title, p.thumb || '', p.backdrop || '', p.meta || '', p.service || '', p.pct || ''].join('|'); }
 
   function cardBackdrop(p) {
     if (p.local) return p.thumb || '';
@@ -657,6 +658,7 @@
           else img.style.backgroundColor = p.color || '#5B5F6B';
           el('div', 'word', img, p.local === 'plus' ? '+' : p.title);
         }
+        if (p.pct) el('div', 'bar', el('div', 'progress', card)).style.width = p.pct + '%';   // how far a title is (Stremio)
         el('div', 'name', card, p.title);
         if (p.meta) el('div', 'meta', card, p.meta);
         hover(card, Z.CARDS, c);

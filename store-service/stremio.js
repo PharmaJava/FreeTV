@@ -7,7 +7,7 @@
  *                                       password goes to Stremio once and is not kept, logged or written anywhere
  *   logout(dir)                         forgets the key
  *   loggedIn(dir)                       is there a key?
- *   list(dir, done)                     done(err, {items: [{id, name, type, poster, at, pct, ep}], expired})   newest first
+ *   list(dir, done)                     done(err, {items: [{id, name, type, poster, at, pct, ep, left}], expired})   newest first
  *
  * Nothing else leaves the TV and nothing is sent but what Stremio's own apps send. Plain Node 8: https and JSON.
  */
@@ -68,7 +68,7 @@ function login(dir, email, password, done) {
 
 function time(s) { var t = typeof s === 'number' ? s : Date.parse(s || ''); return t > 0 ? t : 0; }
 
-/** The library items that are being watched, newest first: [{id, name, type, poster, at, pct, ep}] (at most 12). */
+/** The library items that are being watched, newest first: [{id, name, type, poster, at, pct, ep, left}] (at most 12). */
 function pick(list) {
   var out = [];
   (list instanceof Array ? list : []).forEach(function (x) {
@@ -80,8 +80,9 @@ function pick(list) {
     if (pct >= 95) return;   // finished
     var ep = '', m = /:(\d+):(\d+)$/.exec(String(s.video_id || ''));
     if (m && x.type === 'series') ep = 'T' + (+m[1]) + ' · E' + (+m[2]);
+    var left = dur > offset ? Math.max(1, Math.round((dur - offset) / 60000)) : 0;   // minutes still to watch
     out.push({id: String(x._id).slice(0, 40), name: String(x.name).slice(0, 80), type: x.type,
-      poster: /^https:\/\//.test(x.poster || '') ? String(x.poster).slice(0, 300) : '', at: at, pct: pct, ep: ep});
+      poster: /^https:\/\//.test(x.poster || '') ? String(x.poster).slice(0, 300) : '', at: at, pct: pct, ep: ep, left: left});
   });
   out.sort(function (a, b) { return b.at - a.at; });
   return out.slice(0, 12);

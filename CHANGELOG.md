@@ -3,6 +3,10 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.9.1 (2026-11-10)
+
+- **A progress bar and the minutes left** on each Stremio title in Continue watching (`left`: duration minus where it stopped).
+
 ## 2.9.0 (2026-11-10)
 
 **Continue watching knows what you watched in Stremio.** Nothing from 2.8 was removed.

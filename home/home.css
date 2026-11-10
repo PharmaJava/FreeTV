@@ -864,3 +864,8 @@ html.boot-oled, html.boot-oled body { background: #000; }
 #sysmem.focus { -webkit-transform: scale(1.05); transform: scale(1.05); -webkit-transform-origin: 100% 50%; transform-origin: 100% 50%; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2); }
 body.lite #sysmem, body.lite #sysmem.focus { box-shadow: none; }
 .round .tip { pointer-events: none; }   /* the hidden names of the round buttons lay over the RAM chip and took the pointer's clicks */
+
+/* MARK: - 2.9.1: how far a title is (Continue watching, from Stremio): a thin bar along the bottom of its picture */
+.card .progress { position: absolute; left: 22px; right: 22px; top: 302px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.35); overflow: hidden; }
+.card .progress .bar { height: 8px; border-radius: 4px; background: #FF4D79; }
+body.smallcards .card .progress { top: 242px; }

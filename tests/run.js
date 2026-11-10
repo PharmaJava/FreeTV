@@ -376,6 +376,7 @@ Promise.resolve()
       assert.deepStrictEqual(items.map(function (x) { return x.id; }), ['tt2', 'tt1', 'tt7'], 'only what was started and not finished, newest first');
       assert.strictEqual(items[0].ep, 'T2 · E5');
       assert.strictEqual(items[0].pct, 38);
+      assert.strictEqual(items[0].left, 25, 'minutes left: (2400000 - 900000) ms');
       assert.strictEqual(items[2].poster, '', 'a poster that is not https is dropped');
     }).then(function () {
       return ok('signing in keeps only the session key (mode 640), never the password, and a wrong password keeps nothing', function () {
