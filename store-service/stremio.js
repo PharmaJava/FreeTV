@@ -72,7 +72,9 @@ function time(s) { var t = typeof s === 'number' ? s : Date.parse(s || ''); retu
 function pick(list) {
   var out = [];
   (list instanceof Array ? list : []).forEach(function (x) {
-    if (!x || x.removed || x.temp || !x._id || !x.name) return;
+    // Stremio's own rule: a title is in Continue watching when it is not removed, or when it is only "temp" (watched without being added to the library:
+    // what most people watch). Dropping temp ones hid nearly everything.
+    if (!x || (x.removed && !x.temp) || !x._id || !x.name) return;
     if (x.type !== 'movie' && x.type !== 'series') return;
     var s = x.state || {}, offset = +s.timeOffset || 0, at = time(s.lastWatched) || time(x._mtime);
     if (offset <= 0 || !at) return;   // not started (or only saved in the library)

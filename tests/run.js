@@ -425,6 +425,7 @@ Promise.resolve()
       assert.strictEqual(items[0].pct, 38);
       assert.strictEqual(items[0].left, 25, 'minutes left: (2400000 - 900000) ms');
       assert.strictEqual(items[2].poster, '', 'a poster that is not https is dropped');
+      assert.strictEqual(z.pick([{_id: 'tt9', name: 'Watched without adding', type: 'movie', temp: true, removed: true, state: {timeOffset: 1000, duration: 9000, lastWatched: '2026-11-10T20:00:00Z'}}]).length, 1, 'a temp title (watched, not in the library) is in Continue watching, as in Stremio');
     }).then(function () {
       return ok('signing in keeps only the session key (mode 640), never the password, and a wrong password keeps nothing', function () {
         return new Promise(function (resolve) {

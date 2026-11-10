@@ -3,6 +3,12 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.10.1 (2026-11-10)
+
+### Fixed
+- **Stremio Continue watching showed one title when two had been started.** Titles watched without adding them to the library are `temp` (and `removed`) in Stremio's
+  data, and the filter threw them away; Stremio's own rule keeps them (`!removed || temp`). Checked against a real library: 3 items, 2 started, 1 of them temp.
+
 ## 2.10.0 (2026-11-10)
 
 ### New
