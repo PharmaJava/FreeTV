@@ -514,12 +514,16 @@
     // What was watched in Stremio (its own library, once the person signed in) takes the place of the bare "Stremio Origin was opened".
     sti.forEach(function (it) {
       if (!stApp) return;
-      var parts = [];   // short: the card is narrow (the episode, how much is left, or when)
-      if (it.ep) parts.push(it.ep);
-      if (it.left) parts.push(it.left >= 60 ? Math.floor(it.left / 60) + ' h ' + pad2(it.left % 60) + ' min' : it.left + ' min');
-      if (it.left) parts[parts.length - 1] += ' ' + tr('restantes', 'left', 'restan');
-      else parts.push(agoText(it.at));
-      out.push({local: 'stremio', id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: parts.join(' · '), app: stApp, pct: it.pct || 0});
+      out.push({local: 'stremio', id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: watchMeta(it), app: stApp, pct: it.pct || 0});
+      times.push(it.at);
+    });
+    // The same from the person's own Jellyfin and Plex (their servers' resume lists): the app is the one that plays it.
+    var mApps = {};
+    mediaItems().forEach(function (it) {
+      var mapp = mediaApp(it.src);
+      if (!mapp) return;
+      mApps[mapp.id] = true;
+      out.push({local: 'media', id: it.src + ':' + it.id, title: it.name, thumb: it.poster || mapp.icon || '', color: mapp.color || '#5B5F6B', meta: watchMeta(it), app: mapp, pct: it.pct || 0});
       times.push(it.at);
     });
     for (var i = 0; i < list.length && out.length < 24; i++) {
@@ -529,7 +533,7 @@
         for (j = 0; j < chans.length; j++) if ('chan:' + chans[j].key === r.id) card = channelCard(chans[j], 'YouTube · ' + meta);
       } else {
         var app = findApp(r.id.slice(4));
-        if (app && !(stApp && app.id === STREMIO_APP)) card = {local: 'app', id: r.id, title: app.title, thumb: app.icon || '', color: app.color || '', meta: meta, app: app};
+        if (app && !(stApp && app.id === STREMIO_APP) && !mApps[app.id]) card = {local: 'app', id: r.id, title: app.title, thumb: app.icon || '', color: app.color || '', meta: meta, app: app};
       }
       if (card) { out.push(card); times.push(r.at || 0); }
     }
@@ -542,6 +546,135 @@
   }
 
   // MARK: - 2.9: what was watched in Stremio, in Continue watching (the person's own library, asked of Stremio by the store service)
+
+  /** The short line under a started title: the episode, how much is left (or when it was). */
+  function watchMeta(it) {
+    var parts = [];   // short: the card is narrow
+    if (it.ep) parts.push(it.ep);
+    if (it.left) parts.push(it.left >= 60 ? Math.floor(it.left / 60) + ' h ' + pad2(it.left % 60) + ' min' : it.left + ' min');
+    if (it.left) parts[parts.length - 1] += ' ' + tr('restantes', 'left', 'restan');
+    else parts.push(agoText(it.at));
+    return parts.join(' · ');
+  }
+
+  // MARK: - 2.10: Jellyfin and Plex in Continue watching. Their own servers say what was started and how far (the store service asks them with a token).
+
+  var mediaBusy = false;
+  var MEDIA_NAME = {jellyfin: 'Jellyfin', plex: 'Plex'};
+
+  function mediaOn(kind) { return Prefs.opt(kind, false) === true && TV.name === 'webos'; }
+  function mediaAny() { return mediaOn('jellyfin') || mediaOn('plex'); }
+
+  function mediaItems() {
+    if (!mediaAny()) return [];
+    var c = cache('media');
+    return c && c.items instanceof Array ? c.items.filter(function (i) { return mediaOn(i.src); }) : [];
+  }
+
+  /** The app that plays what came from that server (Jellyfin's, or whichever Plex the TV has). */
+  function mediaApp(src) {
+    if (src === 'jellyfin') return findApp('org.jellyfin.webos');
+    for (var i = 0; i < apps.length; i++) if (/^(plex$|com\.plexapp\.|com\.beb\.plxnative)/i.test(apps[i].id) || /^plex/i.test(apps[i].title)) return apps[i];
+    return null;
+  }
+
+  function mediaRefresh(force) {
+    if (!mediaAny() || mediaBusy || document.hidden) return;
+    var c = cache('media');
+    if (!force && c && Date.now() - (c.at || 0) < 45000 && Date.now() >= (c.at || 0)) return;
+    mediaBusy = true;
+    svcCall('mediaList', {}, function (r) {
+      mediaBusy = false;
+      if (!r || !r.returnValue) return;
+      ['jellyfin', 'plex'].forEach(function (k) {
+        if (r.expired && r.expired[k] && mediaOn(k)) {
+          Prefs.set(k, false);
+          toast(tr('A sessão do ' + MEDIA_NAME[k] + ' acabou: entre de novo em Ajustes → Manutenção', 'The ' + MEDIA_NAME[k] + ' session ended: sign in again in Settings → Maintenance', 'La sesión de ' + MEDIA_NAME[k] + ' caducó: entra otra vez en Ajustes → Mantenimiento'));
+        }
+      });
+      var old = JSON.stringify((cache('media') || {}).items || []);
+      cache('media', {at: Date.now(), items: r.items || []});
+      if (JSON.stringify(r.items || []) !== old && st.tab === 1) renderCards();
+    });
+  }
+
+  function mediaDone(kind) {
+    Prefs.set(kind, true);
+    cache('media', null);
+    toast(tr('Pronto: o Continuar assistindo mostra o ' + MEDIA_NAME[kind], 'Done: Continue watching shows ' + MEDIA_NAME[kind], 'Listo: Continuar viendo muestra ' + MEDIA_NAME[kind]));
+    mediaRefresh(true);
+    if (st.zone === Z.SETTINGS) renderSettings();
+  }
+
+  function jellyfinLogin() {
+    showDialog(tr('Jellyfin no Continuar assistindo', 'Jellyfin in Continue watching', 'Jellyfin en Continuar viendo'), [
+      {text: tr('O FreeTV pergunta ao SEU servidor Jellyfin o que você estava vendo. A senha vai ao servidor uma vez e não fica guardada: só fica nesta TV uma chave de acesso, que você apaga em Ajustes → Manutenção → Jellyfin.',
+        'FreeTV asks YOUR Jellyfin server what you were watching. Your password goes to the server once and is not kept: only an access token stays on this TV, and you delete it in Settings → Maintenance → Jellyfin.',
+        'FreeTV le pregunta a TU servidor Jellyfin qué estabas viendo. La contraseña va al servidor una vez y no se guarda: en esta tele solo queda una clave de acceso, que borras en Ajustes → Mantenimiento → Jellyfin.')}],
+      [{label: tr('Continuar', 'Continue', 'Continuar'), run: function () {
+        askText(tr('Servidor Jellyfin', 'Jellyfin server', 'Servidor Jellyfin'), tr('O endereço, por exemplo 192.168.1.50:8096', 'The address, for example 192.168.1.50:8096', 'La dirección, por ejemplo 192.168.1.50:8096'), '', function (server) {
+          server = trim(server);
+          if (!server) return;
+          askText(tr('Usuário do Jellyfin', 'Jellyfin user', 'Usuario de Jellyfin'), tr('Escreva com o teclado da TV.', 'Type it with the TV\'s keyboard.', 'Escríbelo con el teclado de la tele.'), '', function (user) {
+            user = trim(user);
+            if (!user) return;
+            askText(tr('Senha do Jellyfin', 'Jellyfin password', 'Contraseña de Jellyfin'), tr('Não é guardada.', 'It is not kept.', 'No se guarda.'), '', function (password) {
+              toast(tr('Entrando no Jellyfin…', 'Signing in to Jellyfin…', 'Entrando en Jellyfin…'));
+              svcCall('mediaLoginJellyfin', {server: server, user: user, password: password || ''}, function (r) {
+                password = '';
+                if (r && r.returnValue) mediaDone('jellyfin');
+                else toast(tr('Não entrou: ', 'It did not sign in: ', 'No entró: ') + (r && r.error === 'refused' ? tr('usuário ou senha errados', 'wrong user or password', 'usuario o contraseña incorrectos') : r && r.error ? r.error : tr('sem resposta (a loja precisa estar ativada)', 'no answer (the store must be turned on)', 'sin respuesta (la tienda tiene que estar activada)')));
+              });
+            }, '', 'password');
+          }, '', '');
+        }, '', '192.168.1.50:8096');
+      }}, {label: cancelText()}], 0);
+  }
+
+  function plexLogin() {
+    toast(tr('Pedindo o código ao Plex…', 'Asking Plex for a code…', 'Pidiéndole el código a Plex…'));
+    svcCall('plexStart', {}, function (r) {
+      if (!r || !r.returnValue) { toast(tr('O Plex não respondeu: ', 'Plex did not answer: ', 'Plex no respondió: ') + (r && r.error ? r.error : tr('a loja precisa estar ativada', 'the store must be turned on', 'la tienda tiene que estar activada'))); return; }
+      var stop = false, until = Date.now() + 180000;
+      showDialog(tr('Plex no Continuar assistindo', 'Plex in Continue watching', 'Plex en Continuar viendo'), [
+        {text: tr('No celular ou no computador, abra plex.tv/link (com a sua conta do Plex) e escreva este código. Nenhuma senha passa por aqui.', 'On your phone or computer open plex.tv/link (signed in to your Plex account) and type this code. No password goes through here.',
+          'En el móvil o el ordenador abre plex.tv/link (con tu cuenta de Plex) y escribe este código. Ninguna contraseña pasa por aquí.')},
+        {cls: 'code', text: r.code}], [{label: cancelText(), run: function () { stop = true; }}], 0);
+      (function poll() {
+        if (stop || Date.now() > until) return;
+        setTimeout(function () {
+          if (stop) return;
+          svcCall('plexPoll', {id: r.id}, function (q) {
+            if (stop) return;
+            if (q && q.returnValue && q.linked) { stop = true; closeDialog(); mediaDone('plex'); return; }
+            if (q && !q.returnValue && q.error && /Plex Media Server|keep/.test(q.error)) { stop = true; closeDialog(); toast(q.error); return; }
+            poll();
+          });
+        }, 3000);
+      }());
+    });
+  }
+
+  function mediaLogout(kind) {
+    svcCall('mediaLogout', {kind: kind}, function () {
+      Prefs.set(kind, false);
+      cache('media', null);
+      toast(tr('Sessão do ' + MEDIA_NAME[kind] + ' apagada desta TV', MEDIA_NAME[kind] + ' session deleted from this TV', 'Sesión de ' + MEDIA_NAME[kind] + ' borrada de esta tele'));
+      if (st.tab === 1) renderCards();
+      if (st.zone === Z.SETTINGS) renderSettings();
+    });
+  }
+
+  /** The Settings row for one of them: sign in, or refresh / sign out. */
+  function mediaRow(kind) {
+    return {label: tr(MEDIA_NAME[kind] + ' no Continuar assistindo', MEDIA_NAME[kind] + ' in Continue watching', MEDIA_NAME[kind] + ' en Continuar viendo'), value: mediaOn(kind) ? tr('Sessão iniciada', 'Signed in', 'Sesión iniciada') : tr('Entrar', 'Sign in', 'Iniciar sesión'),
+      step: function (d) {
+        if (d < 0) return;
+        if (!mediaOn(kind)) { if (kind === 'plex') plexLogin(); else jellyfinLogin(); return; }
+        showDialog(MEDIA_NAME[kind], [], [{label: tr('Atualizar agora', 'Refresh now', 'Actualizar ahora'), run: function () { mediaRefresh(true); toast(tr('Atualizando…', 'Refreshing…', 'Actualizando…')); }},
+          {label: tr('Sair do ' + MEDIA_NAME[kind], 'Sign out of ' + MEDIA_NAME[kind], 'Cerrar sesión de ' + MEDIA_NAME[kind]), run: function () { mediaLogout(kind); }}, {label: cancelText()}], 0);
+      }};
+  }
 
   var STREMIO_APP = 'tv.stremioorigin.app', stremioBusy = false;
 
@@ -623,7 +756,7 @@
 
   function tabItems() {
     if (st.tab === 0) return channelItems();
-    if (st.tab === 1) { stremioRefresh(false); return recentItems(); }
+    if (st.tab === 1) { stremioRefresh(false); mediaRefresh(false); return recentItems(); }
     return Data.picks(TAB_KIND[st.tab]);
   }
 
@@ -1208,6 +1341,7 @@
       if (TV.name === 'webos') rows.push({label: tr('Stremio no Continuar assistindo', 'Stremio in Continue watching', 'Stremio en Continuar viendo'), value: stremioOn() ? tr('Sessão iniciada', 'Signed in', 'Sesión iniciada') : tr('Entrar', 'Sign in', 'Iniciar sesión'),
         step: function (d) { if (d < 0) return; if (!stremioOn()) { stremioLogin(); return; } showDialog('Stremio', [], [{label: tr('Atualizar agora', 'Refresh now', 'Actualizar ahora'), run: function () { stremioRefresh(true); toast(tr('Atualizando…', 'Refreshing…', 'Actualizando…')); }},
           {label: tr('Sair do Stremio', 'Sign out of Stremio', 'Cerrar sesión de Stremio'), run: stremioLogout}, {label: cancelText()}], 0); }});
+      if (TV.name === 'webos') { rows.push(mediaRow('jellyfin')); rows.push(mediaRow('plex')); }
       rows.push({label: tr('Minha lista', 'My list', 'Mi lista'), value: wlist().length ? String(wlist().length) : '›', step: function (d) { if (d >= 0) openInfo('watchlist', {fromSettings: true}); }});
       if (TV.name === 'webos') {
         rows.push({label: tr('Memória RAM: ver e liberar', 'Memory: see it and free it', 'Memoria RAM: ver y liberar'), value: mem.sys && mem.sys.total ? (mem.sys.total - mem.sys.avail) + ' / ' + mem.sys.total + ' MB' : '›',
@@ -2870,7 +3004,7 @@
   function openLocal(p) {
     if (p.local === 'channel') openChannel(p.chan);
     else if (p.local === 'app') launcher(p.app.id, p.title)();
-    else if (p.local === 'stremio') launcher(p.app.id, p.app.title)();   // Stremio Origin has no address for one title: it opens, and it knows where you were
+    else if (p.local === 'stremio' || p.local === 'media') launcher(p.app.id, p.app.title)();   // Stremio Origin has no address for one title: it opens, and it knows where you were
     else if (p.local === 'plus') openAddChannel();
   }
 
@@ -3815,6 +3949,7 @@
     L.push('store service: ' + store.svc + ', free space ' + (store.freeMb || '?') + ' MB, apps with updates ' + store.updList.length);
     L.push('FreeTV updates: mode ' + updMode() + ', latest on GitHub ' + (latestVer || '?'));
     L.push('apps known to FreeTV: ' + apps.length);
+    L.push('Jellyfin / Plex in Continue watching: ' + (mediaOn('jellyfin') ? 'Jellyfin on' : 'Jellyfin off') + ', ' + (mediaOn('plex') ? 'Plex on' : 'Plex off') + ', ' + mediaItems().length + ' titles');
     L.push('Stremio in Continue watching: ' + (stremioOn() ? 'signed in, ' + stremioItems().length + ' titles' : 'off'));
     var keys = ['theme', 'accent', 'perf', 'perfAuto', 'ramWidget', 'ramAuto', 'ramLg', 'updMode', 'pointer'], o = [];
     keys.forEach(function (k) { var v = Prefs.opt(k, null); if (v !== null && v !== undefined && typeof v !== 'object') o.push(k + '=' + v); });
@@ -5370,7 +5505,7 @@
     }
     watchLgSaver();
     usageStop();
-    setTimeout(function () { stremioRefresh(true); }, 1500);   // back from Stremio: what was just watched is there
+    setTimeout(function () { stremioRefresh(true); mediaRefresh(true); }, 1500);   // back from Stremio, Jellyfin or Plex: what was just watched is there
     if (saverOn && Date.now() - hiddenAt < 5 * 60000) return;   // back from LG's clock: ours goes on
     idleAt = Date.now();
     loadApps(function (changed) { if (changed) { renderShelf(); renderDrawer(); updateFocus(); } Data.refresh(); });
@@ -5480,7 +5615,7 @@
   }, 30000);
   var ticks = 0;
   setTimeout(refreshTickers, 8000);
-  setTimeout(function () { stremioRefresh(false); }, 12000);
+  setTimeout(function () { stremioRefresh(false); mediaRefresh(false); }, 12000);
   setTimeout(pollSysmem, 3000);
   setTimeout(updAuto, 60000);
   setInterval(updAuto, 3 * 3600000);

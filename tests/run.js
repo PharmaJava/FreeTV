@@ -223,6 +223,53 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('Jellyfin and Plex in Continue watching');
+    var ms = require(path.join(root, 'store-service', 'mediaservers.js')), os2 = require('os');
+    var mdir = fs.mkdtempSync(path.join(os2.tmpdir(), 'freetv-media-'));
+    return ok('Jellyfin and Plex give started titles with the minutes left, and only tokens are kept (never the password)', async function () {
+      var jf = ms.jfPick([
+        {Id: 'a1', Type: 'Episode', Name: 'Pilot', SeriesName: 'Show', SeriesId: 's1', SeriesPrimaryImageTag: 'tg', ParentIndexNumber: 2, IndexNumber: 5, RunTimeTicks: 30000000000, UserData: {PlaybackPositionTicks: 12000000000, LastPlayedDate: '2026-11-09T10:00:00Z'}},
+        {Id: 'a2', Type: 'Movie', Name: 'Done', RunTimeTicks: 1000000000, UserData: {PlaybackPositionTicks: 990000000}},
+        {Id: 'a3', Type: 'Movie', Name: 'Fresh', RunTimeTicks: 1000000000, UserData: {PlaybackPositionTicks: 0}},
+        {Id: 'a4', Type: 'Movie', Name: 'Film', ImageTags: {Primary: 'pt'}, RunTimeTicks: 6000000000, UserData: {PlaybackPositionTicks: 3000000000, LastPlayedDate: '2026-11-10T10:00:00Z'}}], 'http://nas:8096');
+      assert.strictEqual(jf.length, 2, 'finished and not started are left out');
+      assert.strictEqual(jf[0].name, 'Film');
+      assert.strictEqual(jf[1].ep, 'T2 · E5');
+      assert.strictEqual(jf[1].pct, 40);
+      assert.strictEqual(jf[1].left, 30, '30 minutes left');
+      assert.ok(/^http:\/\/nas:8096\/Items\/s1\/Images\/Primary/.test(jf[1].poster), 'an episode shows its series poster');
+      var px = ms.plexPick([
+        {ratingKey: '9', type: 'episode', title: 'E', grandparentTitle: 'Plex Show', parentIndex: 1, index: 3, viewOffset: 600000, duration: 2400000, lastViewedAt: 1790000000, grandparentThumb: '/library/metadata/1/thumb/1'},
+        {ratingKey: '8', type: 'episode', title: 'Up next', grandparentTitle: 'X', duration: 100000}], {uri: 'http://nas:32400', serverToken: 'T'});
+      assert.strictEqual(px.length, 1, 'an unstarted up-next episode is not "continue"');
+      assert.strictEqual(px[0].left, 30);
+      assert.strictEqual(px[0].pct, 25);
+      var srv = ms.plexServer([{name: 'Cloud', provides: 'player', connections: []}, {name: 'Home', provides: 'server', accessToken: 'S', connections: [{uri: 'https://x.plex.direct:32400', protocol: 'https', local: false}, {uri: 'http://192.168.1.5:32400', protocol: 'http', local: true}]}], 'A');
+      assert.strictEqual(srv.uri, 'http://192.168.1.5:32400');
+      assert.strictEqual(srv.serverToken, 'S');
+      assert.strictEqual(ms.jfServer('192.168.1.5:8096'), 'http://192.168.1.5:8096');
+      assert.strictEqual(ms.jfServer('x y'), '');
+      var calls = [];
+      ms.setRequest(function (method, url, headers, body, done) {
+        calls.push({url: url, body: body});
+        if (body && body.Pw === 'good') done(null, {status: 200, json: {AccessToken: 'TOKEN123', User: {Id: 'u1'}}});
+        else done(null, {status: 401, json: null});
+      });
+      var bad = await new Promise(function (r) { ms.jellyfinLogin(mdir, 'nas:8096', 'me', 'wrong', function (e) { r(e); }); });
+      assert.ok(bad && bad.message === 'refused');
+      assert.ok(!fs.existsSync(path.join(mdir, 'jellyfin.json')), 'a wrong password keeps nothing');
+      var okk = await new Promise(function (r) { ms.jellyfinLogin(mdir, 'nas:8096', 'me', 'good', function (e) { r(e); }); });
+      assert.strictEqual(okk, null);
+      var kept = fs.readFileSync(path.join(mdir, 'jellyfin.json'), 'utf8');
+      assert.ok(/TOKEN123/.test(kept) && !/good/.test(kept), 'the token is kept, the password is not');
+      ms.logout(mdir, 'jellyfin');
+      assert.ok(!fs.existsSync(path.join(mdir, 'jellyfin.json')), 'signing out forgets it');
+      var js = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(/svcCall\('mediaLoginJellyfin'/.test(js) && /password = '';/.test(js), 'the page clears the password');
+      assert.ok(/local: 'media'/.test(js) && /watchMeta\(it\)/.test(js), 'Continue watching merges them');
+    });
+  })
+  .then(function () {
     console.log('companion');
     var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
     return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {

@@ -223,6 +223,36 @@ service.register('stremioList', function (message) {
   });
 });
 
+/**
+ * Jellyfin and Plex in Continue watching (see mediaservers.js): sign in (Jellyfin: the person's own server, user and password, once; Plex: a code typed
+ * at plex.tv/link), the resume list of both, sign out. Only tokens are kept.
+ */
+service.register('mediaLoginJellyfin', function (message) {
+  var p = message.payload || {};
+  require('./mediaservers').jellyfinLogin(dir, p.server, p.user, p.password, function (err) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true});
+  });
+});
+service.register('plexStart', function (message) {
+  require('./mediaservers').plexStart(dir, function (err, r) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, id: r.id, code: r.code});
+  });
+});
+service.register('plexPoll', function (message) {
+  require('./mediaservers').plexPoll(dir, (message.payload || {}).id, function (err, r) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, linked: !!r.linked, name: r.name || ''});
+  });
+});
+service.register('mediaLogout', function (message) {
+  require('./mediaservers').logout(dir, String((message.payload || {}).kind || ''));
+  message.respond({returnValue: true});
+});
+service.register('mediaList', function (message) {
+  require('./mediaservers').list(dir, function (err, r) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, items: r.items, expired: r.expired});
+  });
+});
+
 /** The report FreeTV's Diagnostics sheet makes (no keys, no names): kept on the TV with this service's own facts, to read or to attach to an issue. */
 service.register('diagSave', function (message) {
   var text = String((message.payload || {}).text || '').slice(0, 30000), extra = [];

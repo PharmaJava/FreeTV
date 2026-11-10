@@ -155,3 +155,8 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   near it must not take the pointer (`pointer-events: none`, as `.round .tip`).
 - Releases: `.github/workflows/release.yml` publishes `v<version>` when `main` has a version with no release (it runs the tests first).
   Changing the version is all it takes; `tools/make_release.sh --publish` still works by hand.
+
+## 2.10: Jellyfin and Plex in Continue watching
+
+- `mediaservers.js` has one `request` (http or https, JSON, 20 s) that tests replace with `setRequest`. `watchMeta(it)` in home.js writes the line under every started title
+  (Stremio, Jellyfin, Plex), and `mediaItems()`/`mediaApp(src)` merge them in `recentItems()`. Netflix, Prime and other closed services have no API for this: not built.

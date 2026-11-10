@@ -11,6 +11,15 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.10: Jellyfin and Plex in Continue watching
+
+- **Continue watching with progress for Jellyfin and Plex** (LG). *Home Settings → Maintenance → Jellyfin / Plex in Continue watching*:
+  - **Jellyfin:** your own server's address, user and password, typed once with the TV's keyboard. The password goes to your server and is not kept; only an access token is.
+  - **Plex:** no password at all: the TV shows a four-letter code, and you type it at plex.tv/link on your phone or computer.
+  - Each title you started shows its poster, the episode, a **progress bar and the minutes left**, mixed with what you opened from FreeTV and Stremio. OK opens
+    the app that plays it (Jellyfin or Plex); neither app lets another app open one title, so it opens where you can resume.
+  - *Sign out* in the same row forgets the token.
+
 ### FreeTV 2.8: it opens at once
 
 - **Faster start.** The home is drawn straight away with the apps of the last time, instead of waiting some seconds on an almost empty
@@ -416,6 +425,15 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.10: Jellyfin y Plex en Continuar viendo
+
+- **Continuar viendo con progreso para Jellyfin y Plex** (LG). *Ajustes de inicio → Mantenimiento → Jellyfin / Plex en Continuar viendo*:
+  - **Jellyfin:** la dirección de tu propio servidor, usuario y contraseña, escritos una vez con el teclado de la tele. La contraseña va a tu servidor y no se guarda; solo queda una clave de acceso.
+  - **Plex:** sin contraseña: la tele muestra un código de cuatro letras y lo escribes en plex.tv/link desde el móvil o el ordenador.
+  - Cada título empezado sale con su póster, el episodio, una **barra de progreso y los minutos que quedan**, mezclado con lo que abriste desde FreeTV y Stremio. OK abre la
+    app que lo reproduce (Jellyfin o Plex); ninguna deja que otra app abra un título concreto, así que se abre donde puedes seguir.
+  - *Cerrar sesión* en la misma fila olvida la clave.
 
 ### FreeTV 2.8: abre al momento
 

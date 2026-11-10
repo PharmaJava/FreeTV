@@ -3,6 +3,15 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.10.0 (2026-11-10)
+
+### New
+- **Jellyfin and Plex in Continue watching** (LG), `store-service/mediaservers.js`. Jellyfin: the person's own server (`Users/AuthenticateByName` once, then the
+  `Items/Resume` list); Plex: the plex.tv PIN login (a four-letter code typed at plex.tv/link, no password involved), the account's first Plex Media Server
+  (a local http address when it has one) and its `hubs/continueWatching` (`library/onDeck` on older servers). Only tokens are kept (`state/jellyfin.json`,
+  `state/plex.json`, mode 640). Each started title shows its poster, episode, a progress bar and the minutes left; OK opens the app that plays it. Plex
+  posters carry the server token in their address, kept only in the TV page's own cache.
+
 ## 2.9.1 (2026-11-10)
 
 - **A progress bar and the minutes left** on each Stremio title in Continue watching (`left`: duration minus where it stopped).
