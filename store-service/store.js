@@ -21,7 +21,10 @@ var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
 // Other people's repositories FreeTV also reads, each one only for the app ids listed (nothing else in them is offered).
 // What comes from here always needs the person's "unofficial" confirmation; root, https and the SHA-256 hash are checked the same.
 var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
-  {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']}];
+  {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']},
+  // YouTube Cobalt AdFree has the real app id youtube.leanback.v4 (like the catalogue's AdFree, and only one of them can be installed): it is listed
+  // beside it under its own name (`as`) and installed with the real id.
+  {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
 var TEMP = '/media/developer/temp';
 var ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 var URL_RE = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]{2,5})?\/[A-Za-z0-9._~!$&()*+,;=:@%\/?#-]*$/;   // no quotes, no spaces: it goes into a shell command
@@ -190,7 +193,10 @@ Store.prototype.catalogue = async function (conn) {
     try { more = JSON.parse(e.out).packages; } catch (err) { continue; }
     for (var y = 0; y < more.length; y++) {
       var id = more[y] && more[y].id;
-      if (EXTRA[x].ids.indexOf(id) >= 0 && !apps.some(function (a) { return a.id === id; })) apps.push(more[y]);
+      if (EXTRA[x].ids.indexOf(id) < 0) continue;
+      var pkg = more[y], listed = EXTRA[x].as || id;
+      if (EXTRA[x].as) { pkg = Object.assign({}, more[y], {id: EXTRA[x].as, realId: id}); }   // listed under its own name, installed with its real id
+      if (!apps.some(function (a) { return a.id === listed; })) apps.push(pkg);
     }
   }
   var gh = await this.githubPackages(conn);
@@ -265,12 +271,13 @@ Store.prototype.run = async function (appId, flag, opts) {
     var m = app.manifest || {}, hash = ((m.ipkHash || {}).sha256 || '').toLowerCase();
     this.set({title: app.title || appId});
     if (m.rootRequired) throw fail('Esta app necesita una tele con root: FreeTV no la instala.');
-    var need = CAUTION[appId] || (app.github ? 'unofficial' : '');
+    var realId = app.realId || appId;   // a listing name (youtube.leanback.v4.cobalt) and the id the package really has
+    var need = CAUTION[appId] || CAUTION[realId] || (app.github ? 'unofficial' : '');
     if (opts.update) {
       // An update goes over an app that Developer Mode installed: that is all it can be. (YouTube AdFree's "delete the official first"
       // warning is about the first install; an installed one has already met it.)
       var dev = await this.devApps(conn);
-      if (!dev || !dev.some(function (d) { return d.id === appId; })) throw fail('Esta app no está instalada desde el Modo Desarrollador: no hay nada que actualizar.');
+      if (!dev || !dev.some(function (d) { return d.id === realId; })) throw fail('Esta app no está instalada desde el Modo Desarrollador: no hay nada que actualizar.');
       if (need === 'official-removed') need = '';
     }
     if (need && need !== flag) throw fail('Esta app necesita que confirmes su aviso en la tele.');
@@ -294,7 +301,7 @@ Store.prototype.run = async function (appId, flag, opts) {
     if (got !== hash) throw fail('El hash NO coincide con el del catálogo: lo he borrado y no instalo nada.');
 
     this.set({phase: 'installing'});
-    var payload = JSON.stringify({id: appId, ipkUrl: file, subscribe: true}), state = '', bad = '', lines = '';
+    var payload = JSON.stringify({id: realId, ipkUrl: file, subscribe: true}), state = '', bad = '', lines = '';
     // (the TV's BusyBox is old: `timeout -t SECONDS command`)
     await this.exec(conn, 'timeout -t 600 luna-send-pub -i luna://com.webos.appInstallService/dev/install ' + q(payload), function (text) {
       lines += text;
@@ -317,8 +324,8 @@ Store.prototype.run = async function (appId, flag, opts) {
 
     // «Success» has been said for installs that did not happen (YouTube AdFree over the official one): look for the app.
     var ids = await this.installedIds(conn);
-    if (ids && ids.indexOf(appId) < 0) {
-      throw fail('La tele dijo que sí, pero «' + appId + '» no aparece entre sus apps. Si sustituye a una de LG, borra la original en la tele y vuelve a probar.');
+    if (ids && ids.indexOf(realId) < 0) {
+      throw fail('La tele dijo que sí, pero «' + realId + '» no aparece entre sus apps. Si sustituye a una de LG, borra la original en la tele y vuelve a probar.');
     }
     this.set({phase: 'done', message: ''});
   } catch (e) {

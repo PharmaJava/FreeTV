@@ -1423,7 +1423,8 @@
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
   // Other people's repositories, read only for these app ids (keep in step with store-service/store.js); they always need the "unofficial" confirmation.
   var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
-    {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']}];
+    {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']},
+    {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
   var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0,
@@ -1434,6 +1435,7 @@
   /** Apps that need a word of warning before installing (kept in step with tools/community.py). */
   var COMM_CAUTION = {
     'youtube.leanback.v4': ['Substitui o YouTube oficial: apague-o você na TV antes (o computador não consegue). Desde 2026 o YouTube corta o vídeo depois de 1 minuto para algumas contas (problema conhecido do projeto, ainda sem correção).', 'Replaces the official YouTube: delete it yourself on the TV first (the computer cannot). Since 2026 YouTube cuts the video after 1 minute for some accounts (a known problem of the project, not fixed yet).', 'Reemplaza el YouTube oficial: bórralo tú en la tele antes (desde el ordenador no se puede). Desde 2026 YouTube corta el vídeo tras 1 minuto en algunas cuentas (problema conocido del proyecto, aún sin arreglo).'],
+    'youtube.leanback.v4.cobalt': ['YouTube Cobalt AdFree: app de TERCEIROS (de uma só pessoa), baseada no mesmo motor do YouTube oficial, sem anúncios. É uma ALTERNATIVA à AdFree da lista: só uma das duas pode estar instalada (têm o mesmo identificador) e esta substitui a outra e o YouTube oficial: apague o oficial você na TV antes. O FreeTV só confere o hash; o uso é por sua conta.', 'YouTube Cobalt AdFree: THIRD-PARTY app (by one person), built on the same engine as the official YouTube, without ads. It is an ALTERNATIVE to the AdFree in the list: only one of the two can be installed (they share an identifier), and this one replaces the other and the official YouTube: delete the official one yourself on the TV first. FreeTV only checks the hash; using it is on you.', 'YouTube Cobalt AdFree: app de TERCEROS (de una sola persona), basada en el mismo motor que el YouTube oficial, sin anuncios. Es una ALTERNATIVA a la AdFree de la lista: solo puede haber una de las dos instalada (comparten identificador) y esta reemplaza a la otra y al YouTube oficial: bórralo tú en la tele antes. FreeTV solo comprueba el hash; usarla es cosa tuya.'],
     'com.open.hidden.menu': ['Abre o menu de serviço da LG: pode danificar a TV.', "Opens LG's service menu: it can break the TV.", 'Abre el menú de servicio de LG: puede estropear la tele.'],
     'com.pirate.refresh': ['Renova o Modo Desenvolvedor por conta própria: o FreeTV já tem o seu painel.', 'Renews Developer Mode on its own: FreeTV already has its panel.', 'Renueva el Modo Desarrollador por su cuenta: FreeTV ya trae su panel.'],
     'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.'],
@@ -1447,7 +1449,7 @@
   var ghMine = [];   // the GitHub links the person added (the service keeps them)
 
   /** The flag tools/community.py wants for them (CAUTION there): the person gives it by confirming on this screen. */
-  var COMM_FLAG = {'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive', 'com.rezkatv.app': 'unofficial', 'com.rezkatv.app.legacy': 'unofficial', 'tv.stremioorigin.app': 'unofficial'};
+  var COMM_FLAG = {'youtube.leanback.v4.cobalt': 'official-removed', 'youtube.leanback.v4': 'official-removed', 'com.open.hidden.menu': 'sensitive', 'com.pirate.refresh': 'sensitive', 'org.webosbrew.hbchannel': 'sensitive', 'com.rezkatv.app': 'unofficial', 'com.rezkatv.app.legacy': 'unofficial', 'tv.stremioorigin.app': 'unofficial'};
 
   function privateIp(ip) {
     var p = ip.split('.'), i;
@@ -1535,9 +1537,14 @@
 
   /** {id: version} of the apps Developer Mode installed: from the store service when it is there, else from the list FreeTV remembers. */
   function instMap() {
-    if (store.instKnown) return store.installed;
     var m = {};
-    try { (JSON.parse(localStorage.getItem('fmtv.devApps')) || []).forEach(function (a) { if (a && a.id) m[a.id] = a.version || ''; }); } catch (e) {}
+    if (store.instKnown) { for (var k in store.installed) if (Object.prototype.hasOwnProperty.call(store.installed, k)) m[k] = store.installed[k]; }
+    else { try { (JSON.parse(localStorage.getItem('fmtv.devApps')) || []).forEach(function (a) { if (a && a.id) m[a.id] = a.version || ''; }); } catch (e) {} }
+    // Two listings can share one real app id (YouTube AdFree and YouTube Cobalt AdFree): the installed one is the listing that has that version.
+    commAll.forEach(function (e) {
+      if (!e.realId || m[e.realId] === undefined) return;
+      if (String(m[e.realId]) === String((e.manifest || {}).version)) { m[e.id] = m[e.realId]; delete m[e.realId]; }
+    });
     return m;
   }
 
@@ -1589,7 +1596,7 @@
   // 2.1: search, filters, order, what is new since the last visit, a wish list, extra repositories.
   var commAll = [], commQuery = '', commNotes = {}, commSpecial = {id: '*updates', special: true, manifest: {}, title: ''};
   var commCtls = [{id: '*search', ctl: 1, manifest: {}, title: ''}, {id: '*filter', ctl: 2, manifest: {}, title: ''}, {id: '*sort', ctl: 3, manifest: {}, title: ''}];
-  var FEATURED = ['youtube.leanback.v4', 'twitch.adamffdev.v1', 'org.jellyfin.webos', 'org.xbmc.kodi', 'com.limelight.webos', 'com.beb.plxnative', 'com.retroarch.webos', 'com.immich.webos'];
+  var FEATURED = ['youtube.leanback.v4', 'youtube.leanback.v4.cobalt', 'twitch.adamffdev.v1', 'org.jellyfin.webos', 'org.xbmc.kodi', 'com.limelight.webos', 'com.beb.plxnative', 'com.retroarch.webos', 'com.immich.webos'];
   var COMM_FILTERS = ['all', 'featured', 'new', 'games', 'media', 'tools', 'noroot', 'installed', 'wish'], COMM_SORTS = ['rec', 'new', 'az'];
   var GAME_RE = /game|pinball|doom|ninja|2048|openttd|retro|emulat|steam link|moonlight|gamestream|punktfunk/i;
   var MEDIA_RE = /jellyfin|plex|kodi|youtube|twitch|crunchy|music|player|iptv|video|stream|photo|immich|bili|subsonic|fin\b|movie|cinema|media|radio|spotify/i;
@@ -1704,7 +1711,9 @@
         Data.getJson(src.url, function (e2, d2) {
           if (e2 || !d2 || !d2.packages) return;   // an extra source that does not answer is just not offered
           d2.packages.forEach(function (p) {
-            if (p && p.manifest && (src.all || src.ids.indexOf(p.id) >= 0) && !commAll.some(function (o) { return o.id === p.id; })) {
+            if (p && p.manifest && (src.all || src.ids.indexOf(p.id) >= 0)) {
+              if (src.as) { p.realId = p.id; p.id = src.as; }   // listed under its own name, installed with its real id
+              if (commAll.some(function (o) { return o.id === p.id; })) return;
               if (src.all) p.repo = src.url.replace(/^https:\/\//, '').split('/')[0];
               commAll.push(p);
             }
@@ -2475,6 +2484,7 @@
 
   // One line about the apps people look for most, in their language (the catalogue's are in English, and some have none).
   var COMM_DESC = {
+    'youtube.leanback.v4.cobalt': ['YouTube sem anúncios, baseado no motor do YouTube oficial (alternativa à AdFree)', 'YouTube without ads, built on the official YouTube\'s engine (alternative to the AdFree)', 'YouTube sin anuncios, basado en el motor del YouTube oficial (alternativa a la AdFree)'],
     'youtube.leanback.v4': ['YouTube sem anúncios, com SponsorBlock', 'YouTube without ads, with SponsorBlock', 'YouTube sin anuncios, con SponsorBlock'],
     'twitch.adamffdev.v1': ['Twitch sem anúncios', 'Twitch without ads', 'Twitch sin anuncios'],
     'app.vodmax.client': ['Centro multimídia próprio: TV ao vivo, filmes e séries (precisa do seu servidor VodMax)', 'Your own media centre: live TV, films and series (needs your VodMax server)', 'Tu centro multimedia: TV en directo, películas y series (necesita tu servidor VodMax)'],
@@ -2601,7 +2611,7 @@
         Prefs.set('wish', wished ? wish().filter(function (x) { return x !== a.id; }) : wish().concat([a.id]));
         renderCommunity();
       });
-      if (instMap()[a.id] !== undefined && !PROTECTED.test(a.id)) action(box, tr('Desinstalar', 'Uninstall', 'Desinstalar'), function () { confirmRemove({id: a.id, title: a.title}); });
+      if (instMap()[a.id] !== undefined && !PROTECTED.test(a.id)) action(box, tr('Desinstalar', 'Uninstall', 'Desinstalar'), function () { confirmRemove({id: a.realId || a.id, title: a.title}); });
     }
     if (commAct >= commActs.length) commAct = 0;
     el('div', 'hint', box, tr('Voltar para a lista', 'Back to the list', 'Atrás vuelve a la lista'));

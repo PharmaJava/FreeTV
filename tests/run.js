@@ -279,6 +279,28 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('two listings for one app id');
+    return ok('the Cobalt YouTube is listed beside the catalogue one, under its own name, and installs with the real id', async function () {
+      var cat = {packages: [{id: 'youtube.leanback.v4', title: 'old', manifest: {version: '0.5.3'}}]};
+      var s = new Store({});
+      var cobalt = {id: 'youtube.leanback.v4', title: 'Cobalt', manifest: {id: 'youtube.leanback.v4', version: '2.0.1', rootRequired: false, ipkUrl: 'https://github.com/RF1705/x/releases/download/v/y.ipk', ipkHash: {sha256: 'a'.repeat(64)}}};
+      s.exec = async function (c, cmd) {
+        if (/repo\.webosbrew\.org/.test(cmd)) return {code: 0, out: JSON.stringify(cat), err: ''};
+        if (/RF1705/.test(cmd)) return {code: 0, out: JSON.stringify({packages: [cobalt, {id: 'youtube.leanback.v4.beta', title: 'beta', manifest: {}}]}), err: ''};
+        return {code: 22, out: '', err: ''};
+      };
+      var apps = await s.catalogue(null);
+      var plain = apps.filter(function (a) { return a.id === 'youtube.leanback.v4'; }), alt = apps.filter(function (a) { return a.id === 'youtube.leanback.v4.cobalt'; });
+      assert.strictEqual(plain.length, 1, 'the catalogue entry stays');
+      assert.strictEqual(plain[0].title, 'old');
+      assert.strictEqual(alt.length, 1, 'the Cobalt one is listed too');
+      assert.strictEqual(alt[0].realId, 'youtube.leanback.v4');
+      assert.ok(!apps.some(function (a) { return a.id === 'youtube.leanback.v4.beta'; }), 'only the listed id is taken');
+      var js = fs.readFileSync(path.join(root, 'store-service', 'store.js'), 'utf8');
+      assert.ok(/JSON\.stringify\(\{id: realId, ipkUrl: file/.test(js), 'the TV installs it under its real id');
+    });
+  })
+  .then(function () {
     console.log('companion');
     var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
     return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {

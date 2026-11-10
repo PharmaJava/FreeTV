@@ -3,6 +3,14 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.11.2 (2026-11-10)
+
+### New
+- **YouTube Cobalt AdFree in the Store, beside the AdFree** (`RF1705/youtube-webos-cobalt-adfree`, v2.0.1, built on Cobalt, the engine of LG's own YouTube): the person chooses. Both have the real
+  app id `youtube.leanback.v4`, so only one can be installed: the new one is listed as `youtube.leanback.v4.cobalt` (`realId` keeps the real one, which is what the TV installs and what Uninstall
+  removes), and the page shows as installed the listing whose version is the installed one. A third-party app by one person: the Store's notice says so, and keeps the root, https and SHA-256
+  checks and the «official removed» confirmation. `tools/community.py` (the computer-side installer) does not offer it.
+
 ## 2.11.1 (2026-11-10)
 
 ### Documented
