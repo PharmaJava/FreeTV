@@ -509,20 +509,107 @@
 
   /** "Continue watching": what was opened from FreeTV, newest first. (The TV does not tell an app what other apps played.) */
   function recentItems() {
-    var list = Prefs.recent(), out = [];
-    for (var i = 0; i < list.length && out.length < 12; i++) {
-      var r = list[i], meta = agoText(r.at || 0), j;
+    var list = Prefs.recent(), out = [], times = [];
+    var sti = stremioItems(), stApp = sti.length ? findApp(STREMIO_APP) : null;
+    // What was watched in Stremio (its own library, once the person signed in) takes the place of the bare "Stremio Origin was opened".
+    sti.forEach(function (it) {
+      if (!stApp) return;
+      var parts = [];   // short: the card is narrow (an episode, or how far a film is, and when)
+      if (it.ep) parts.push(it.ep);
+      else if (it.pct) parts.push(it.pct + '%');
+      parts.push(agoText(it.at));
+      out.push({local: 'stremio', id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: parts.join(' · '), app: stApp});
+      times.push(it.at);
+    });
+    for (var i = 0; i < list.length && out.length < 24; i++) {
+      var r = list[i], meta = agoText(r.at || 0), j, card = null;
       if (r.id.indexOf('chan:') === 0) {
         var chans = allChannels();
-        for (j = 0; j < chans.length; j++) if ('chan:' + chans[j].key === r.id) out.push(channelCard(chans[j], 'YouTube · ' + meta));
+        for (j = 0; j < chans.length; j++) if ('chan:' + chans[j].key === r.id) card = channelCard(chans[j], 'YouTube · ' + meta);
       } else {
         var app = findApp(r.id.slice(4));
-        if (app) out.push({local: 'app', id: r.id, title: app.title, thumb: app.icon || '', color: app.color || '', meta: meta, app: app});
+        if (app && !(stApp && app.id === STREMIO_APP)) card = {local: 'app', id: r.id, title: app.title, thumb: app.icon || '', color: app.color || '', meta: meta, app: app};
       }
+      if (card) { out.push(card); times.push(r.at || 0); }
     }
+    // newest first, the two lists together
+    var order = out.map(function (c, n) { return n; }).sort(function (a, b) { return times[b] - times[a] || a - b; });
+    out = order.map(function (n) { return out[n]; }).slice(0, 12);
     if (!out.length) out.push({local: 'hint', id: 'hint', title: tr('Ainda nada', 'Nothing yet', 'Todavía nada'),
       meta: tr('O que você abrir daqui aparece aqui.', 'What you open from here shows up here.', 'Lo que abras desde aquí aparece aquí.')});
     return out;
+  }
+
+  // MARK: - 2.9: what was watched in Stremio, in Continue watching (the person's own library, asked of Stremio by the store service)
+
+  var STREMIO_APP = 'tv.stremioorigin.app', stremioBusy = false;
+
+  function stremioOn() { return Prefs.opt('stremio', false) === true && TV.name === 'webos'; }
+
+  function stremioItems() {
+    if (!stremioOn()) return [];
+    var c = cache('stremio');
+    return c && c.items instanceof Array ? c.items : [];
+  }
+
+  /** Asks again (at most every 45 seconds, and only while someone looks): Continue watching follows what was just watched. */
+  function stremioRefresh(force) {
+    if (!stremioOn() || stremioBusy || document.hidden) return;
+    var c = cache('stremio');
+    if (!force && c && Date.now() - (c.at || 0) < 45000 && Date.now() >= (c.at || 0)) return;
+    stremioBusy = true;
+    svcCall('stremioList', {}, function (r) {
+      stremioBusy = false;
+      if (!r) return;
+      if (r.returnValue && r.expired) {
+        Prefs.set('stremio', false);
+        toast(tr('A sessão do Stremio acabou: entre de novo em Ajustes → Manutenção', 'The Stremio session ended: sign in again in Settings → Maintenance', 'La sesión de Stremio caducó: entra otra vez en Ajustes → Mantenimiento'));
+        return;
+      }
+      if (!r.returnValue) return;
+      var old = JSON.stringify((cache('stremio') || {}).items || []);
+      cache('stremio', {at: Date.now(), items: r.items || []});
+      if (JSON.stringify(r.items || []) !== old && st.tab === 1) renderCards();
+    });
+  }
+
+  function stremioLogin() {
+    showDialog(tr('Stremio no Continuar assistindo', 'Stremio in Continue watching', 'Stremio en Continuar viendo'), [
+      {text: tr('O FreeTV vai ao Stremio (api.strem.io) com a sua conta para ver o que você estava vendo. A senha vai ao Stremio uma vez e não fica guardada: só fica nesta TV uma chave de sessão, que você apaga em Ajustes → Manutenção → Stremio.',
+        'FreeTV asks Stremio (api.strem.io) with your account what you were watching. Your password goes to Stremio once and is not kept: only a session key stays on this TV, and you delete it in Settings → Maintenance → Stremio.',
+        'FreeTV le pregunta a Stremio (api.strem.io), con tu cuenta, qué estabas viendo. La contraseña va a Stremio una vez y no se guarda: en esta tele solo queda una clave de sesión, que borras en Ajustes → Mantenimiento → Stremio.')}],
+      [{label: tr('Continuar', 'Continue', 'Continuar'), run: function () {
+        askText(tr('Email do Stremio', 'Stremio email', 'Email de Stremio'), tr('Escreva com o teclado da TV.', 'Type it with the TV\'s keyboard.', 'Escríbelo con el teclado de la tele.'), '', function (email) {
+          email = trim(email);
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast(tr('Esse email não parece certo', 'That email does not look right', 'Ese email no parece correcto')); return; }
+          askText(tr('Senha do Stremio', 'Stremio password', 'Contraseña de Stremio'), tr('Não é guardada. (Contas criadas com Facebook não servem.)', 'It is not kept. (Accounts made with Facebook do not work.)', 'No se guarda. (Las cuentas creadas con Facebook no sirven.)'), '', function (password) {
+            if (!password) return;
+            toast(tr('Entrando no Stremio…', 'Signing in to Stremio…', 'Entrando en Stremio…'));
+            svcCall('stremioLogin', {email: email, password: password}, function (r) {
+              password = '';
+              if (r && r.returnValue) {
+                Prefs.set('stremio', true);
+                cache('stremio', null);
+                toast(tr('Pronto: o Continuar assistindo mostra o Stremio', 'Done: Continue watching shows Stremio', 'Listo: Continuar viendo muestra Stremio'));
+                stremioRefresh(true);
+                if (st.zone === Z.SETTINGS) renderSettings();
+              } else {
+                toast(tr('Não entrou: ', 'It did not sign in: ', 'No entró: ') + (r && r.error ? r.error : tr('sem resposta (a loja precisa estar ativada)', 'no answer (the store must be turned on)', 'sin respuesta (la tienda tiene que estar activada)')));
+              }
+            });
+          }, '', 'password');
+        }, '', 'name@example.com');
+      }}, {label: cancelText()}], 0);
+  }
+
+  function stremioLogout() {
+    svcCall('stremioLogout', {}, function () {
+      Prefs.set('stremio', false);
+      cache('stremio', null);
+      toast(tr('Sessão do Stremio apagada desta TV', 'Stremio session deleted from this TV', 'Sesión de Stremio borrada de esta tele'));
+      if (st.tab === 1) renderCards();
+      if (st.zone === Z.SETTINGS) renderSettings();
+    });
   }
 
   /** Remembers what was opened (an app or a shortcut), for the Continue watching tab. */
@@ -535,7 +622,7 @@
 
   function tabItems() {
     if (st.tab === 0) return channelItems();
-    if (st.tab === 1) return recentItems();
+    if (st.tab === 1) { stremioRefresh(false); return recentItems(); }
     return Data.picks(TAB_KIND[st.tab]);
   }
 
@@ -1116,6 +1203,9 @@
       }
       rows.push({label: tr('Tempo de uso', 'Time of use', 'Tiempo de uso'), value: '›', step: function (d) { if (d >= 0) openInfo('usage'); }});
       if (TV.name === 'webos') rows.push({label: tr('Companion: escrever pelo celular', 'Companion: type from your phone', 'Companion: escribir desde el móvil'), value: '›', step: function (d) { if (d >= 0) openInfo('companion', {fromSettings: true}); }});
+      if (TV.name === 'webos') rows.push({label: tr('Stremio no Continuar assistindo', 'Stremio in Continue watching', 'Stremio en Continuar viendo'), value: stremioOn() ? tr('Sessão iniciada', 'Signed in', 'Sesión iniciada') : tr('Entrar', 'Sign in', 'Iniciar sesión'),
+        step: function (d) { if (d < 0) return; if (!stremioOn()) { stremioLogin(); return; } showDialog('Stremio', [], [{label: tr('Atualizar agora', 'Refresh now', 'Actualizar ahora'), run: function () { stremioRefresh(true); toast(tr('Atualizando…', 'Refreshing…', 'Actualizando…')); }},
+          {label: tr('Sair do Stremio', 'Sign out of Stremio', 'Cerrar sesión de Stremio'), run: stremioLogout}, {label: cancelText()}], 0); }});
       rows.push({label: tr('Minha lista', 'My list', 'Mi lista'), value: wlist().length ? String(wlist().length) : '›', step: function (d) { if (d >= 0) openInfo('watchlist', {fromSettings: true}); }});
       if (TV.name === 'webos') {
         rows.push({label: tr('Memória RAM: ver e liberar', 'Memory: see it and free it', 'Memoria RAM: ver y liberar'), value: mem.sys && mem.sys.total ? (mem.sys.total - mem.sys.avail) + ' / ' + mem.sys.total + ' MB' : '›',
@@ -1266,7 +1356,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'companionStart' || method === 'githubApps' || method === 'githubAdd' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'stremioList' || method === 'stremioLogin' || method === 'companionStart' || method === 'githubApps' || method === 'githubAdd' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -2778,6 +2868,7 @@
   function openLocal(p) {
     if (p.local === 'channel') openChannel(p.chan);
     else if (p.local === 'app') launcher(p.app.id, p.title)();
+    else if (p.local === 'stremio') launcher(p.app.id, p.app.title)();   // Stremio Origin has no address for one title: it opens, and it knows where you were
     else if (p.local === 'plus') openAddChannel();
   }
 
@@ -3722,6 +3813,7 @@
     L.push('store service: ' + store.svc + ', free space ' + (store.freeMb || '?') + ' MB, apps with updates ' + store.updList.length);
     L.push('FreeTV updates: mode ' + updMode() + ', latest on GitHub ' + (latestVer || '?'));
     L.push('apps known to FreeTV: ' + apps.length);
+    L.push('Stremio in Continue watching: ' + (stremioOn() ? 'signed in, ' + stremioItems().length + ' titles' : 'off'));
     var keys = ['theme', 'accent', 'perf', 'perfAuto', 'ramWidget', 'ramAuto', 'ramLg', 'updMode', 'pointer'], o = [];
     keys.forEach(function (k) { var v = Prefs.opt(k, null); if (v !== null && v !== undefined && typeof v !== 'object') o.push(k + '=' + v); });
     L.push('options: ' + (o.join(', ') || 'default'));
@@ -4106,12 +4198,12 @@
   }
 
   /** A line of text typed with the TV's keyboard (a name, a symbol, an address…); done(text) when Enter or Save is pressed. */
-  function askText(title, text, value, done, placeholder) {
+  function askText(title, text, value, done, placeholder, kind) {
     showDialog.icon = 'search';
     var input = document.createElement('input');
     showDialog(title, [{text: text}], [{label: tr('Guardar', 'Save', 'Guardar'), run: function () { done(input.value); }}, {label: cancelText()}], 0);
     var box = $('dialog').firstChild;
-    input.type = 'text';
+    input.type = kind === 'password' ? 'password' : 'text';
     input.className = 'chaninput';
     input.value = value || '';
     if (placeholder) input.setAttribute('placeholder', placeholder);
@@ -5276,6 +5368,7 @@
     }
     watchLgSaver();
     usageStop();
+    setTimeout(function () { stremioRefresh(true); }, 1500);   // back from Stremio: what was just watched is there
     if (saverOn && Date.now() - hiddenAt < 5 * 60000) return;   // back from LG's clock: ours goes on
     idleAt = Date.now();
     loadApps(function (changed) { if (changed) { renderShelf(); renderDrawer(); updateFocus(); } Data.refresh(); });
@@ -5385,6 +5478,7 @@
   }, 30000);
   var ticks = 0;
   setTimeout(refreshTickers, 8000);
+  setTimeout(function () { stremioRefresh(false); }, 12000);
   setTimeout(pollSysmem, 3000);
   setTimeout(updAuto, 60000);
   setInterval(updAuto, 3 * 3600000);
@@ -5395,5 +5489,5 @@
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast,
-    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, openInfo: openInfo, runAction: runAction, openCommunity: openCommunity, apps: function () { return others; }};
+    grab: grab, drop: drop, shelf: function () { return shelf; }, settingsChanged: function () { if (st.zone === Z.SETTINGS) renderSettings(); }, openApps: openApps, openTiles: openTiles, openSearch: openSearch, openInfo: openInfo, runAction: runAction, openCommunity: openCommunity, stremioLogin: stremioLogin, apps: function () { return others; }};
 })();

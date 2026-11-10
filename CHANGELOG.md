@@ -3,6 +3,20 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.9.0 (2026-11-10)
+
+**Continue watching knows what you watched in Stremio.** Nothing from 2.8 was removed.
+
+### New
+- **Stremio in Continue watching** (LG): sign in once (*Home Settings → Maintenance → Stremio in Continue watching*: email and password typed with the
+  TV's keyboard, a notice first). The store service asks Stremio's own API (`api.strem.io`) for the person's library (`store-service/stremio.js`) and
+  Continue watching shows each title that was started and not finished, newest first, with its poster, the episode or how far a film is, and when,
+  mixed with what was opened from FreeTV. OK opens Stremio Origin (it has no address for one title). It asks again when the tab is shown and when
+  FreeTV comes back to the front, at most every 45 seconds. Only the **session key** is kept (`state/stremio.json`, mode 640); the password goes to
+  Stremio once, and is not stored, logged or kept by the page. *Sign out* in the same row forgets the key; an expired session says so.
+  Why not read Stremio Origin's own data: the 2.8.2-2.8.3 test showed the TV keeps none that the Developer Mode shell can see.
+- Diagnostics says whether Stremio is on (no key, no email).
+
 ## 2.8.3 (2026-11-10)
 
 ### Fixed

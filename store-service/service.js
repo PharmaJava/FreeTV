@@ -204,6 +204,25 @@ service.register('appDataProbe', function (message) {
   }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
 });
 
+/** Stremio (Continue watching): sign in once (only the session key is kept), the library, sign out. See stremio.js. */
+service.register('stremioLogin', function (message) {
+  var p = message.payload || {};
+  require('./stremio').login(dir, p.email, p.password, function (err) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true});
+  });
+});
+service.register('stremioLogout', function (message) {
+  require('./stremio').logout(dir);
+  message.respond({returnValue: true});
+});
+service.register('stremioList', function (message) {
+  var z = require('./stremio');
+  if (!z.loggedIn(dir)) { message.respond({returnValue: true, items: [], expired: true}); return; }
+  z.list(dir, function (err, r) {
+    message.respond(err ? {returnValue: false, error: String(err.message || err)} : {returnValue: true, items: r.items, expired: r.expired});
+  });
+});
+
 /** The report FreeTV's Diagnostics sheet makes (no keys, no names): kept on the TV with this service's own facts, to read or to attach to an issue. */
 service.register('diagSave', function (message) {
   var text = String((message.payload || {}).text || '').slice(0, 30000), extra = [];

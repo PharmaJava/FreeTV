@@ -354,6 +354,73 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('Stremio in Continue watching');
+    var z = require(path.join(root, 'store-service', 'stremio.js')), os = require('os');
+    var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'freetv-stremio-')), sent = [];
+    var lib = [
+      {_id: 'tt1', name: 'Film A', type: 'movie', poster: 'https://img/a.jpg', state: {timeOffset: 600000, duration: 6000000, lastWatched: '2026-11-10T20:00:00Z'}, _mtime: '2026-11-10T20:00:00Z'},
+      {_id: 'tt2', name: 'Show B', type: 'series', poster: 'https://img/b.jpg', state: {timeOffset: 900000, duration: 2400000, lastWatched: '2026-11-10T21:00:00Z', video_id: 'tt2:2:5'}, _mtime: '2026-11-10T21:00:00Z'},
+      {_id: 'tt3', name: 'Saved only', type: 'movie', state: {timeOffset: 0}, _mtime: '2026-11-10T22:00:00Z'},
+      {_id: 'tt4', name: 'Finished', type: 'movie', state: {timeOffset: 5900000, duration: 6000000, lastWatched: '2026-11-10T19:00:00Z'}},
+      {_id: 'tt5', name: 'Removed', type: 'movie', removed: true, state: {timeOffset: 1000, duration: 9000, lastWatched: '2026-11-10T23:00:00Z'}},
+      {_id: 'tt6', name: 'Channel', type: 'tv', state: {timeOffset: 1000, duration: 9000, lastWatched: '2026-11-10T23:00:00Z'}},
+      {_id: 'tt7', name: 'Bad poster', type: 'movie', poster: 'javascript:alert(1)', state: {timeOffset: 1000, duration: 9000, lastWatched: '2026-11-09T10:00:00Z'}}];
+    z.setPost(function (method, body, done) {
+      sent.push([method, body]);
+      if (method === 'login') {
+        if (body.password === 'good') done(null, {result: {authKey: 'KEY123', user: {}}}); else done(null, {error: {message: 'Wrong passphrase', code: 2}});
+      } else if (body.authKey === 'KEY123') done(null, {result: lib}); else done(null, {error: {message: 'Session does not exist', code: 1}});
+    });
+    return ok('the Stremio library is read as the Continue watching list: started, not finished, newest first, with an episode and a percentage', function () {
+      var items = z.pick(lib);
+      assert.deepStrictEqual(items.map(function (x) { return x.id; }), ['tt2', 'tt1', 'tt7'], 'only what was started and not finished, newest first');
+      assert.strictEqual(items[0].ep, 'T2 · E5');
+      assert.strictEqual(items[0].pct, 38);
+      assert.strictEqual(items[2].poster, '', 'a poster that is not https is dropped');
+    }).then(function () {
+      return ok('signing in keeps only the session key (mode 640), never the password, and a wrong password keeps nothing', function () {
+        return new Promise(function (resolve) {
+          z.login(dir, 'a@b.co', 'bad', function (err) {
+            assert.ok(err && /Wrong passphrase/.test(err.message) && !z.loggedIn(dir), 'refused');
+            z.login(dir, 'a@b.co', 'good', function (err2) {
+              assert.ok(!err2 && z.loggedIn(dir));
+              var f = path.join(dir, 'stremio.json'), text = fs.readFileSync(f, 'utf8');
+              assert.ok(text.indexOf('KEY123') > 0 && text.indexOf('good') < 0 && text.indexOf('a@b.co') < 0, 'the key only');
+              assert.strictEqual((fs.statSync(f).mode & 0o777).toString(8), '640');
+              resolve();
+            });
+          });
+        });
+      });
+    }).then(function () {
+      return ok('an expired session is forgotten and said so; the email and password are checked before anything is sent', function () {
+        return new Promise(function (resolve) {
+          z.list(dir, function (err, r) {
+            assert.ok(!err && r.items.length === 3 && !r.expired);
+            fs.writeFileSync(path.join(dir, 'stremio.json'), JSON.stringify({authKey: 'OLD'}));
+            z.list(dir, function (err2, r2) {
+              assert.ok(!err2 && r2.expired && !z.loggedIn(dir), 'expired: forgotten');
+              var before = sent.length;
+              z.login(dir, 'not an email', 'x', function (e1) {
+                z.login(dir, 'a@b.co', '', function (e2) {
+                  assert.ok(e1 && e2 && sent.length === before, 'nothing sent');
+                  resolve();
+                });
+              });
+            });
+          });
+        });
+      });
+    }).then(function () {
+      return ok('the page keeps no password and Continue watching merges Stremio with what was opened', function () {
+        var js = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+        assert.ok(/svcCall\('stremioLogin', \{email: email, password: password\}/.test(js) && /password = '';/.test(js), 'the password goes to the service and is dropped');
+        assert.ok(!/localStorage\.setItem\([^)]*password/i.test(js) && !/Prefs\.set\('[^']*',\s*password/.test(js), 'it is never stored by the page');
+        assert.ok(/local: 'stremio'/.test(js) && /p\.local === 'stremio'/.test(js), 'a card for each title, opening Stremio');
+      });
+    });
+  })
+  .then(function () {
     console.log('the first paint');
     return ok('the page sets its background before the styles load, and the text does not wait for the font', function () {
       var page = fs.readFileSync(path.join(root, 'home', 'index.html'), 'utf8'), css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
