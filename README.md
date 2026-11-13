@@ -11,6 +11,11 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.14: picks open in Stremio Claude
+
+- OK on a film or series of the home's picks opens **its own page in Stremio Claude** (and Continue watching's Stremio titles too). FreeTV also gives Stremio Claude its TMDB key, on the same TV,
+  so its titles and plots come in your language.
+
 ### FreeTV 2.13: Stremio Claude, our fixed Stremio, in the Store
 
 - The Store's Stremio is now **Stremio Claude** ([PharmaJava/webos](https://github.com/PharmaJava/webos)), our fork of Stremio Origin: it no longer closes in the middle of a film
@@ -442,6 +447,11 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.14: las sugerencias se abren en Stremio Claude
+
+- OK en una película o serie de las sugerencias del inicio abre **su ficha en Stremio Claude** (y también los títulos de Stremio en Continuar viendo). FreeTV además le pasa a Stremio Claude su clave
+  de TMDB, en la misma tele, para que títulos y sinopsis salgan en tu idioma.
 
 ### FreeTV 2.13: Stremio Claude, nuestro Stremio corregido, en la Tienda
 

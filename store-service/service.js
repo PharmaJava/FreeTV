@@ -180,6 +180,31 @@ service.register('guardStart', function (message) {
   }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
 });
 
+/**
+ * Stremio Claude (our fork, tv.stremioorigin.app) opens a title when it finds data/open.json (it looks once a second, open or closed): stremioOpen
+ * {type: movie|series, id: tt…} leaves that note; the page then opens the app. stremioKey {key}: FreeTV's own TMDB key, given to the app on the
+ * same TV (data/tmdb.key) so its titles and plots come in the TV's language; only when it has none. Both through the TV's SSH (the folder is the app's).
+ */
+var SO_DATA = '/media/developer/apps/usr/palm/applications/tv.stremioorigin.app/data';
+function soWrite(cmd, message) {
+  var s = current();
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  s.connect().then(function (conn) {
+    return s.exec(conn, cmd).then(function (r) { try { conn.end(); } catch (e) {} message.respond(/ok/.test(r.out || '') ? {returnValue: true} : {returnValue: false, error: (r.err || r.out || 'no').trim().slice(0, 200)}); });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+}
+service.register('stremioOpen', function (message) {
+  var p = message.payload || {}, type = String(p.type || ''), id = String(p.id || '');
+  if (!/^(movie|series)$/.test(type) || !/^tt\d{5,10}$/.test(id)) { message.respond({returnValue: false, error: 'no válido'}); return; }
+  var body = JSON.stringify({type: type, id: id, at: Math.floor(Date.now() / 1000)});   // only letters, digits and quotes: safe in single quotes
+  soWrite('[ -d ' + SO_DATA + " ] && printf '%s' '" + body + "' > " + SO_DATA + '/open.json && chmod 664 ' + SO_DATA + '/open.json && echo ok', message);
+});
+service.register('stremioKey', function (message) {
+  var key = String((message.payload || {}).key || '').trim();
+  if (!/^[A-Za-z0-9._-]{16,400}$/.test(key)) { message.respond({returnValue: false, error: 'no válida'}); return; }
+  soWrite('[ -d ' + SO_DATA + ' ] && { [ -s ' + SO_DATA + "/tmdb.key ] || { printf '%s' '" + key + "' > " + SO_DATA + '/tmdb.key && chmod 664 ' + SO_DATA + '/tmdb.key; }; } && echo ok', message);
+});
+
 service.register('companionStart', function (message) {
   var s = current(), crypto = require('crypto'), os = require('os');
   if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }

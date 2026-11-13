@@ -702,6 +702,8 @@ var Data = (function () {
     onChange: function (fn) { listeners.push(fn); },
     setApps: function (apps) { installed = apps; },
     appFor: appFor,
+    /** The IMDb id of a TMDB title (Stremio's ids), done('tt…' or ''). */
+    imdbOf: function (kind, id, done) { if (!KEY) { done(''); return; } tmdb('/' + (kind === 'tv' ? 'tv' : 'movie') + '/' + id + '/external_ids', function (err, o) { done(!err && o && /^tt\d{5,10}$/.test(o.imdb_id || '') ? o.imdb_id : ''); }); },
     /** The streaming services installed on this TV: [{key, label, on}], for the "Recommend from" switches. */
     services: function () {
       var out = [];

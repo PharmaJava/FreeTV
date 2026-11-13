@@ -514,7 +514,7 @@
     // What was watched in Stremio (its own library, once the person signed in) takes the place of the bare "Stremio Origin was opened".
     sti.forEach(function (it) {
       if (!stApp) return;
-      out.push({local: 'stremio', id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: watchMeta(it), app: stApp, pct: it.pct || 0});
+      out.push({local: 'stremio', sid: it.id, stype: it.type, id: 'stremio:' + it.id, title: it.name, thumb: it.poster || stApp.icon || '', color: stApp.color || '#5B5F6B', meta: watchMeta(it), app: stApp, pct: it.pct || 0});
       times.push(it.at);
     });
     // The same from the person's own Jellyfin and Plex (their servers' resume lists): the app is the one that plays it.
@@ -1175,7 +1175,7 @@
       rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
       if (TV.name === 'webos') rows.push({label: tr('Atualizar a lista de apps', 'Refresh the list of apps', 'Actualizar la lista de apps'), value: '›', step: function (d) { if (d >= 0) refreshApps(); }});
       if (TV.name === 'webos' && findApp(STREMIO_APP)) {
-        var po = Prefs.opt('pickOpen', 'service');
+        var po = Prefs.opt('pickOpen', 'stremio');
         rows.push({label: tr('OK numa sugestão abre', 'OK on a pick opens', 'OK en una sugerencia abre'), value: po === 'stremio' ? 'Stremio Claude' : tr('O serviço onde está', 'The service that has it', 'El servicio donde está'),
           step: function (d) { cycle('pickOpen', ['service', 'stremio'], po, d); }});
       }
@@ -1500,7 +1500,7 @@
 
   /** One call to the store service on this TV (store-service/, packed with this app): it installs through the TV's own Developer Mode. */
   function svcCall(method, payload, done) {
-    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'stremioList' || method === 'stremioLogin' || method === 'companionStart' || method === 'githubApps' || method === 'githubAdd' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
+    var bridge = null, over = false, timer = setTimeout(function () { finish(null); }, method === 'status' || method === 'channels' || method === 'stremioList' || method === 'stremioLogin' || method === 'companionStart' || method === 'stremioOpen' || method === 'githubApps' || method === 'githubAdd' || method === 'updateCheck' || method === 'updateInstall' ? 70000 : method === 'remove' ? 130000 : 20000);
     function finish(r) {
       if (over) return;
       over = true;
@@ -3022,6 +3022,7 @@
   function openLocal(p) {
     if (p.local === 'channel') openChannel(p.chan);
     else if (p.local === 'app') launcher(p.app.id, p.title)();
+    else if (p.local === 'stremio' && /^tt\d{5,10}$/.test(p.sid || '')) stremioOpen(p.stype === 'series' ? 'series' : 'movie', p.sid, function () { launcher(p.app.id, p.app.title)(); });   // its own page in Stremio Claude
     else if (p.local === 'stremio' || p.local === 'media') launcher(p.app.id, p.app.title)();   // Stremio Origin has no address for one title: it opens, and it knows where you were
     else if (p.local === 'plus') openAddChannel();
   }
@@ -4121,16 +4122,42 @@
   }
 
   /** Does OK on a pick open Stremio Origin (the person's choice, and the app is on this TV)? */
-  function pickStremio() { return Prefs.opt('pickOpen', 'service') === 'stremio' && !!findApp(STREMIO_APP); }
+  function pickStremio() { return Prefs.opt('pickOpen', 'stremio') === 'stremio' && !!findApp(STREMIO_APP); }
 
   /** Stremio Origin cannot be opened on one title (it reads no address), so it opens with the title in front of the person to look for. */
   function openInStremio(p) {
     var sa = findApp(STREMIO_APP);
     if (!sa) return;
-    showDialog(tr('Abrir no Stremio Claude', 'Open in Stremio Claude', 'Abrir en Stremio Claude'), [
-      {text: tr('O Stremio Claude ainda não abre direto num título: procure este no buscador dele.', 'Stremio Claude cannot open straight on a title yet: look this one up in its search.', 'Stremio Claude aún no abre directo en un título: búscalo en su buscador.')},
-      {cls: 'code', text: String(p.title || '') + (p.year ? ' (' + p.year + ')' : '')}],
-      [{label: tr('Abrir o Stremio Claude', 'Open Stremio Claude', 'Abrir Stremio Claude'), run: launcher(sa.id, sa.title)}, {label: cancelText()}], 0);
+    // Stremio Claude opens a title from a note FreeTV leaves it (its id on IMDb, which TMDB gives); without one: the app, and the title to look up
+    function fallback() {
+      showDialog(tr('Abrir no Stremio Claude', 'Open in Stremio Claude', 'Abrir en Stremio Claude'), [
+        {text: tr('Não consegui pedir este título direto: procure-o no buscador.', 'Could not ask for this title directly: look it up in its search.', 'No pude pedir este título directamente: búscalo en su buscador.')},
+        {cls: 'code', text: String(p.title || '') + (p.year ? ' (' + p.year + ')' : '')}],
+        [{label: tr('Abrir o Stremio Claude', 'Open Stremio Claude', 'Abrir Stremio Claude'), run: launcher(sa.id, sa.title)}, {label: cancelText()}], 0);
+    }
+    toast(tr('Abrindo no Stremio Claude…', 'Opening in Stremio Claude…', 'Abriendo en Stremio Claude…'));
+    function go(imdb) {
+      if (!imdb) { fallback(); return; }
+      p.imdb = imdb;
+      stremioOpen(p.kind === 'tv' ? 'series' : 'movie', imdb, fallback);
+    }
+    if (p.imdb) go(p.imdb); else Data.imdbOf(p.kind, p.id, go);
+  }
+
+  /** Leaves Stremio Claude the note to open {type, id} and opens it; failed() when the note could not be left. */
+  function stremioOpen(type, id, failed) {
+    var sa = findApp(STREMIO_APP);
+    if (!sa || !/^tt\d{5,10}$/.test(id)) { if (failed) failed(); return; }
+    svcCall('stremioOpen', {type: type, id: id}, function (r) {
+      if (r && r.returnValue) launcher(sa.id, sa.title)(); else if (failed) failed();
+    });
+  }
+
+  /** FreeTV's own TMDB key (a personal build has one), given once to Stremio Claude on this TV: its titles and plots in the TV's language. */
+  function stremioShareKey() {
+    var k = String((window.CONFIG && CONFIG.tmdbKey) || '').trim();
+    if (TV.name !== 'webos' || !k || Prefs.opt('stremioKeyShared', false) === true || !findApp(STREMIO_APP)) return;
+    svcCall('stremioKey', {key: k}, function (r) { if (r && r.returnValue) Prefs.set('stremioKeyShared', true); });
   }
 
   /** Hold OK on a pick. */
@@ -5648,7 +5675,7 @@
   }, 30000);
   var ticks = 0;
   setTimeout(refreshTickers, 8000);
-  setTimeout(function () { stremioRefresh(false); mediaRefresh(false); }, 12000);
+  setTimeout(function () { stremioRefresh(false); mediaRefresh(false); stremioShareKey(); }, 12000);
   setTimeout(pollSysmem, 3000);
   setTimeout(updAuto, 60000);
   setInterval(updAuto, 3 * 3600000);

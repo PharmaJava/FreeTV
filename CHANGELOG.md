@@ -3,6 +3,15 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.14.0 (2026-11-13)
+
+### New
+- **Picks open on their own page in Stremio Claude** (on by default when it is installed; *Home Settings → Home → OK on a pick opens*). FreeTV asks TMDB for the title's IMDb id
+  (`Data.imdbOf`), the store service leaves Stremio Claude a note (`stremioOpen`: `data/open.json`, movie or series and an IMDb id only, fresh for two minutes) and the app,
+  from 1.0.4, opens that page whether it was closed or open. **Continue watching's Stremio titles** open their page the same way. Without an IMDb id: the app and the title to look up.
+- **FreeTV gives its TMDB key to Stremio Claude on the same TV** (`stremioKey`, only when the app has none): the public Stremio Claude carries no key, and without one its titles
+  and plots stay in English.
+
 ## 2.13.0 (2026-11-13)
 
 ### Changed
