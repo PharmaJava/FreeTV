@@ -11,6 +11,12 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.13: Stremio Claude, our fixed Stremio, in the Store
+
+- The Store's Stremio is now **Stremio Claude** ([PharmaJava/webos](https://github.com/PharmaJava/webos)), our fork of Stremio Origin: it no longer closes in the middle of a film
+  (a torrent engine bug), its subtitles stay in time, the TV's screensaver does not cover a film, the pointer hides, and Back leaves the video at once. It installs over Stremio Origin
+  keeping your account and addons, and updates from that repository.
+
 ### FreeTV 2.12: no LG screensaver in the middle of a Stremio Origin video
 
 - With Stremio Origin 1.0.0, LG's screensaver came up in the middle of a video and the app then closed. FreeTV now starts a tiny guard when it opens Stremio Origin: it sends LG's screensaver away
@@ -436,6 +442,12 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.13: Stremio Claude, nuestro Stremio corregido, en la Tienda
+
+- El Stremio de la Tienda es ahora **Stremio Claude** ([PharmaJava/webos](https://github.com/PharmaJava/webos)), nuestra versión de Stremio Origin: ya no se cierra en mitad de una
+  película (un fallo del motor de torrents), los subtítulos no se desfasan, el salvapantallas de la tele no tapa la película, el puntero se esconde y Atrás sale del vídeo a la primera.
+  Se instala encima de Stremio Origin conservando tu cuenta y tus addons, y se actualiza desde ese repositorio.
 
 ### FreeTV 2.12: Stremio Origin sin salvapantallas de LG en mitad del vídeo
 

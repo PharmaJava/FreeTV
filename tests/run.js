@@ -177,16 +177,16 @@ Promise.resolve()
   .then(function () {
     console.log('the store without its main catalogue');
     return ok('when the main catalogue cannot be read the other sources still install, and with none it is an error as before', async function () {
-      var other = {id: 'tv.stremioorigin.app', manifest: {id: 'tv.stremioorigin.app', version: '1.0.0', rootRequired: false}}, calls = [];
+      var other = {id: 'com.rezkatv.app', manifest: {id: 'com.rezkatv.app', version: '1.0.0', rootRequired: false}}, calls = [];
       var s = new Store({});
       s.exec = async function (c, cmd) {
         calls.push(cmd);
         if (/repo\.webosbrew\.org/.test(cmd)) return {code: 60, out: '', err: 'curl: (60) SSL certificate problem: self signed certificate'};
-        if (/stremio-origin/.test(cmd)) return {code: 0, out: JSON.stringify({packages: [other]}), err: ''};
+        if (/rezkatv/.test(cmd)) return {code: 0, out: JSON.stringify({packages: [other]}), err: ''};
         return {code: 22, out: '', err: 'x'};
       };
       var apps = await s.catalogue(null);
-      assert.ok(apps.some(function (a) { return a.id === 'tv.stremioorigin.app'; }), 'the other source is offered');
+      assert.ok(apps.some(function (a) { return a.id === 'com.rezkatv.app'; }), 'the other source is offered');
       s.exec = async function () { return {code: 60, out: '', err: 'curl: (60) SSL certificate problem'}; };
       var failed = false;
       try { await s.catalogue(null); } catch (e) { failed = /No pude leer el catálogo/.test(e.message); }
@@ -318,6 +318,27 @@ Promise.resolve()
       assert.ok(/8 \* 3600000/.test(src) && /180000/.test(src), 'it ends by itself');
       assert.ok(/m\.id === 'register' && m\.type === 'error'\) \{[^}]*process\.exit\(0\)/.test(src), 'a refused key ends it: no prompt from the background');
       assert.ok(!/writeFile[^\n]*KEY|writeJson[^\n]*key/.test(src + svc.slice(svc.indexOf("'guardStart'"), svc.indexOf("'companionStart'"))), 'the key is written nowhere');
+    });
+  })
+  .then(function () {
+    console.log('Stremio Claude from our repository');
+    return ok('the Store offers Stremio Claude from PharmaJava/webos releases, by that name, and no longer reads stremio-origin\'s feed', async function () {
+      var rel = {assets: [
+        {name: 'tv.stremioorigin.app_1.0.1_arm.ipk', size: 5379900, browser_download_url: 'https://github.com/PharmaJava/webos/releases/download/v1.0.1/tv.stremioorigin.app_1.0.1_arm.ipk'},
+        {name: 'SHA256SUMS', browser_download_url: 'https://github.com/PharmaJava/webos/releases/download/v1.0.1/SHA256SUMS'}]};
+      var s = new Store({}), asked = [];
+      s.exec = async function (c, cmd) {
+        asked.push(cmd);
+        if (/api\.github\.com\/repos\/PharmaJava\/webos/.test(cmd)) return {code: 0, out: JSON.stringify(rel), err: ''};
+        if (/PharmaJava\/webos\/releases\/download\/v1\.0\.1\/SHA256SUMS/.test(cmd)) return {code: 0, out: 'b'.repeat(64) + '  tv.stremioorigin.app_1.0.1_arm.ipk\n', err: ''};
+        return {code: 22, out: '', err: ''};
+      };
+      var p = await s.githubPackage(null, 'PharmaJava/webos');
+      assert.strictEqual(p.id, 'tv.stremioorigin.app');
+      assert.strictEqual(p.title, 'Stremio Claude');
+      assert.strictEqual(p.manifest.version, '1.0.1');
+      var src = fs.readFileSync(path.join(root, 'store-service', 'store.js'), 'utf8') + fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(!/stremio-origin\.github\.io/.test(src), 'stremio-origin\'s feed is not read');
     });
   })
   .then(function () {

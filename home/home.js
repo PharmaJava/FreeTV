@@ -1176,7 +1176,7 @@
       if (TV.name === 'webos') rows.push({label: tr('Atualizar a lista de apps', 'Refresh the list of apps', 'Actualizar la lista de apps'), value: '›', step: function (d) { if (d >= 0) refreshApps(); }});
       if (TV.name === 'webos' && findApp(STREMIO_APP)) {
         var po = Prefs.opt('pickOpen', 'service');
-        rows.push({label: tr('OK numa sugestão abre', 'OK on a pick opens', 'OK en una sugerencia abre'), value: po === 'stremio' ? 'Stremio Origin' : tr('O serviço onde está', 'The service that has it', 'El servicio donde está'),
+        rows.push({label: tr('OK numa sugestão abre', 'OK on a pick opens', 'OK en una sugerencia abre'), value: po === 'stremio' ? 'Stremio Claude' : tr('O serviço onde está', 'The service that has it', 'El servicio donde está'),
           step: function (d) { cycle('pickOpen', ['service', 'stremio'], po, d); }});
       }
       rows.push({label: tr('Abas', 'Tabs', 'Pestañas'), value: '›', step: function (d) { if (d >= 0) openInfo('tabs'); }});
@@ -1346,7 +1346,7 @@
       if (TV.name === 'webos') rows.push({label: tr('Stremio no Continuar assistindo', 'Stremio in Continue watching', 'Stremio en Continuar viendo'), value: stremioOn() ? tr('Sessão iniciada', 'Signed in', 'Sesión iniciada') : tr('Entrar', 'Sign in', 'Iniciar sesión'),
         step: function (d) { if (d < 0) return; if (!stremioOn()) { stremioLogin(); return; } showDialog('Stremio', [], [{label: tr('Atualizar agora', 'Refresh now', 'Actualizar ahora'), run: function () { stremioRefresh(true); toast(tr('Atualizando…', 'Refreshing…', 'Actualizando…')); }},
           {label: tr('Sair do Stremio', 'Sign out of Stremio', 'Cerrar sesión de Stremio'), run: stremioLogout}, {label: cancelText()}], 0); }});
-      if (TV.name === 'webos' && findApp(STREMIO_APP)) rows.push({label: tr('Stremio Origin: sem protetor de tela da LG durante o vídeo', 'Stremio Origin: no LG screensaver during a video', 'Stremio Origin: sin salvapantallas de LG durante el vídeo'),
+      if (TV.name === 'webos' && findApp(STREMIO_APP)) rows.push({label: tr('Stremio Claude: sem protetor de tela da LG durante o vídeo', 'Stremio Claude: no LG screensaver during a video', 'Stremio Claude: sin salvapantallas de LG durante el vídeo'),
         toggle: Prefs.opt('stremioAwake', true) !== false, step: function () { Prefs.set('stremioAwake', Prefs.opt('stremioAwake', true) === false); }});
       if (TV.name === 'webos') { rows.push(mediaRow('jellyfin')); rows.push(mediaRow('plex')); }
       rows.push({label: tr('Minha lista', 'My list', 'Mi lista'), value: wlist().length ? String(wlist().length) : '›', step: function (d) { if (d >= 0) openInfo('watchlist', {fromSettings: true}); }});
@@ -1425,7 +1425,6 @@
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
   // Other people's repositories, read only for these app ids (keep in step with store-service/store.js); they always need the "unofficial" confirmation.
   var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
-    {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']},
     {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
@@ -1442,7 +1441,7 @@
     'com.pirate.refresh': ['Renova o Modo Desenvolvedor por conta própria: o FreeTV já tem o seu painel.', 'Renews Developer Mode on its own: FreeTV already has its panel.', 'Renueva el Modo Desarrollador por su cuenta: FreeTV ya trae su panel.'],
     'org.webosbrew.hbchannel': ['Só serve por inteiro numa TV com root.', 'Only fully useful on a rooted TV.', 'Solo sirve entera en una tele con root.'],
     'com.rezkatv.app': ['App de TERCEIROS, não oficial, para o HDRezka (site de filmes sem licença). O FreeTV só confere o hash: o uso é por sua conta.', 'THIRD-PARTY, unofficial app for HDRezka (an unlicensed movie site). FreeTV only checks the hash: using it is on you.', 'App de TERCEROS, no oficial, para HDRezka (un sitio de películas sin licencia). FreeTV solo comprueba el hash: usarla es cosa tuya.'],
-    'tv.stremioorigin.app': ['App de TERCEIROS, não oficial, para a sua conta e os seus addons do Stremio (com torrents). Uma só pessoa a faz, é de 31/10/2026 e ninguém a revisou: o FreeTV só confere o hash e o uso é por sua conta.', 'THIRD-PARTY, unofficial app for your Stremio account and addons (with torrents). One person makes it, it dates from 2026-10-31 and nobody has reviewed it: FreeTV only checks the hash and using it is on you.', 'App de TERCEROS, no oficial, para tu cuenta y tus addons de Stremio (con torrents). La hace una sola persona, es del 31/10/2026 y nadie la ha revisado: FreeTV solo comprueba el hash y usarla es cosa tuya.'],
+    'tv.stremioorigin.app': ['Stremio Claude: app de TERCEIROS, não oficial, para a sua conta e os seus addons do Stremio (com torrents). É a nossa versão corrigida do Stremio Claude, do repositório PharmaJava/webos, e se atualiza de lá. O FreeTV só confere o hash: o uso é por sua conta.', 'Stremio Claude: THIRD-PARTY, unofficial app for your Stremio account and addons (with torrents). It is our fixed build of Stremio Claude, from the PharmaJava/webos repository, and it updates from there. FreeTV only checks the hash: using it is on you.', 'Stremio Claude: app de TERCEROS, no oficial, para tu cuenta y tus addons de Stremio (con torrents). Es nuestra versión corregida de Stremio Claude, del repositorio PharmaJava/webos, y se actualiza desde ahí. FreeTV solo comprueba el hash: usarla es cosa tuya.'],
     'com.rezkatv.app.legacy': ['App de TERCEIROS (RezkaTV, webOS 3 e 4), não oficial: mesmo aviso.', 'THIRD-PARTY app (RezkaTV, webOS 3 and 4), unofficial: same warning.', 'App de TERCEROS (RezkaTV, webOS 3 y 4), no oficial: mismo aviso.']
   };
   var GH_WARN = ['App de TERCEIROS, direto do GitHub (a última versão do projeto). O FreeTV só confere que o pacote bate com o hash SHA-256 publicado na mesma versão e que não pede root: o que ela faz é por sua conta.',
@@ -2490,7 +2489,7 @@
     'youtube.leanback.v4': ['YouTube sem anúncios, com SponsorBlock', 'YouTube without ads, with SponsorBlock', 'YouTube sin anuncios, con SponsorBlock'],
     'twitch.adamffdev.v1': ['Twitch sem anúncios', 'Twitch without ads', 'Twitch sin anuncios'],
     'app.vodmax.client': ['Centro multimídia próprio: TV ao vivo, filmes e séries (precisa do seu servidor VodMax)', 'Your own media centre: live TV, films and series (needs your VodMax server)', 'Tu centro multimedia: TV en directo, películas y series (necesita tu servidor VodMax)'],
-    'tv.stremioorigin.app': ['Cliente não oficial do Stremio (suas contas e addons)', 'Unofficial Stremio client (your account and addons)', 'Cliente no oficial de Stremio (tu cuenta y tus addons)'],
+    'tv.stremioorigin.app': ['Stremio Claude: cliente não oficial do Stremio (sua conta e addons), corrigido', 'Stremio Claude: unofficial Stremio client (your account and addons), fixed', 'Stremio Claude: cliente no oficial de Stremio (tu cuenta y tus addons), corregido'],
     'org.jellyfin.webos': ['Seus filmes e séries do seu servidor Jellyfin', 'Your films and shows from your Jellyfin server', 'Tus pelis y series desde tu servidor Jellyfin'],
     'org.xbmc.kodi': ['Centro multimídia livre: vídeos, música, extensões', 'Free media centre: videos, music, add-ons', 'Centro multimedia libre: vídeos, música, complementos'],
     'com.limelight.webos': ['Jogue os jogos do seu PC na TV (GameStream/Sunshine)', 'Play your PC games on the TV (GameStream/Sunshine)', 'Juega a los juegos de tu PC en la tele (GameStream/Sunshine)'],
@@ -3990,11 +3989,11 @@
     rows.push({label: tr('Ver o relatório', 'Read the report', 'Ver el informe'), value: '›', icon: 'apps', run: function () {
       showDialog('FreeTV', diagReport().split('\n').map(function (l) { return {cls: 'code', text: l}; }), [{label: 'OK'}], 0);
     }});
-    if (TV.name === 'webos') rows.push({label: tr('Prova: onde o Stremio Origin guarda os seus dados', 'Test: where Stremio Origin keeps its data', 'Prueba: dónde guarda Stremio Origin sus datos'), value: '›', icon: 'search', run: function () {
+    if (TV.name === 'webos') rows.push({label: tr('Prova: onde o Stremio Claude guarda os seus dados', 'Test: where Stremio Claude keeps its data', 'Prueba: dónde guarda Stremio Claude sus datos'), value: '›', icon: 'search', run: function () {
       toast(tr('Procurando…', 'Looking…', 'Mirando…'));
       svcCall('appDataProbe', {id: 'tv.stremioorigin.app'}, function (r) {
         var lines = r && r.returnValue ? r.lines : null;
-        showDialog(tr('Dados do Stremio Origin', 'Stremio Origin data', 'Datos de Stremio Origin'), !lines ? [{text: tr('Não consegui olhar (a loja precisa estar ativada).', 'I could not look (the store must be turned on).', 'No pude mirar (la tienda tiene que estar activada).')}]
+        showDialog(tr('Dados do Stremio Claude', 'Stremio Claude data', 'Datos de Stremio Claude'), !lines ? [{text: tr('Não consegui olhar (a loja precisa estar ativada).', 'I could not look (the store must be turned on).', 'No pude mirar (la tienda tiene que estar activada).')}]
           : (lines.length ? lines.slice(0, 11).map(function (l) { return {cls: 'code', text: l.replace('/media/developer/apps/usr/palm/applications/', '…/')}; }) : [{text: tr('Nada encontrado.', 'Nothing found.', 'No encontré nada.')}]), [{label: 'OK'}], 0);
         if (lines) svcCall('diagSave', {text: diagReport() + '\nappDataProbe tv.stremioorigin.app:\n  ' + lines.join('\n  ')}, function () {});
       });
@@ -4128,17 +4127,17 @@
   function openInStremio(p) {
     var sa = findApp(STREMIO_APP);
     if (!sa) return;
-    showDialog(tr('Abrir no Stremio Origin', 'Open in Stremio Origin', 'Abrir en Stremio Origin'), [
-      {text: tr('O Stremio Origin ainda não abre direto num título: procure este no buscador dele.', 'Stremio Origin cannot open straight on a title yet: look this one up in its search.', 'Stremio Origin aún no abre directo en un título: búscalo en su buscador.')},
+    showDialog(tr('Abrir no Stremio Claude', 'Open in Stremio Claude', 'Abrir en Stremio Claude'), [
+      {text: tr('O Stremio Claude ainda não abre direto num título: procure este no buscador dele.', 'Stremio Claude cannot open straight on a title yet: look this one up in its search.', 'Stremio Claude aún no abre directo en un título: búscalo en su buscador.')},
       {cls: 'code', text: String(p.title || '') + (p.year ? ' (' + p.year + ')' : '')}],
-      [{label: tr('Abrir o Stremio Origin', 'Open Stremio Origin', 'Abrir Stremio Origin'), run: launcher(sa.id, sa.title)}, {label: cancelText()}], 0);
+      [{label: tr('Abrir o Stremio Claude', 'Open Stremio Claude', 'Abrir Stremio Claude'), run: launcher(sa.id, sa.title)}, {label: cancelText()}], 0);
   }
 
   /** Hold OK on a pick. */
   function openPickMenu(p) {
     var app = p.app && Data.appFor(p.app), buttons = [], sa = findApp(STREMIO_APP);
     if (app) buttons.push({label: tr('Abrir ', 'Open ', 'Abrir ') + app.title, run: launcher(app.id, app.title)});
-    if (sa) buttons.push({label: tr('Abrir no Stremio Origin', 'Open in Stremio Origin', 'Abrir en Stremio Origin'), run: function () { openInStremio(p); }});
+    if (sa) buttons.push({label: tr('Abrir no Stremio Claude', 'Open in Stremio Claude', 'Abrir en Stremio Claude'), run: function () { openInStremio(p); }});
     buttons.push({label: wlHas(p) ? tr('Tirar da minha lista', 'Take off my list', 'Quitar de mi lista') : tr('Pôr na minha lista', 'Put on my list', 'Añadir a mi lista'), run: function () { wlToggle(p); }});
     buttons.push({label: tr('Ver a minha lista', 'See my list', 'Ver mi lista'), run: function () { openInfo('watchlist'); }});
     buttons.push({label: cancelText()});

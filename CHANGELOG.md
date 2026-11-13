@@ -3,6 +3,16 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.13.0 (2026-11-13)
+
+### Changed
+- **The Store's Stremio is now Stremio Claude, from `PharmaJava/webos`** (our fork of Stremio Origin; same app id, so it installs over Stremio Origin and keeps its account,
+  addons and settings). It comes through the GitHub source (`GITHUB_DEFAULT`, named by `GITHUB_TITLES`), with the «unofficial» confirmation, root, https and SHA-256 checks; the
+  app's own updater also reads that repository's releases, so a TV it is installed on follows them. stremio-origin's feed is no longer read. Stremio Claude 1.0.1 fixes, found on a
+  real TV: a libtorrent bug (`peer_connection::reject_piece` erasing with a stale end) that closed the app every few minutes during a torrent; the subtitle sync taking two unsure
+  answers from one release as two opinions (+45 s on a film); the TV's screensaver over a film and a pointer that never really hid (upstream PRs #15 and #14); Back hiding the
+  controls instead of leaving the video.
+
 ## 2.12.0 (2026-11-13)
 
 ### Fixed

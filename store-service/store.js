@@ -21,7 +21,6 @@ var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
 // Other people's repositories FreeTV also reads, each one only for the app ids listed (nothing else in them is offered).
 // What comes from here always needs the person's "unofficial" confirmation; root, https and the SHA-256 hash are checked the same.
 var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
-  {url: 'https://stremio-origin.github.io/webos/apps.json', ids: ['tv.stremioorigin.app']},
   // YouTube Cobalt AdFree has the real app id youtube.leanback.v4 (like the catalogue's AdFree, and only one of them can be installed): it is listed
   // beside it under its own name (`as`) and installed with the real id.
   {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
@@ -117,7 +116,9 @@ function q(value) {
 
 // GitHub projects whose latest release carries an .ipk (named <id>_<version>_<arch>.ipk, as ares-package makes it) and a SHA-256 for it.
 // These come with FreeTV; the person adds more by pasting a link (the service keeps them). All of them need the "unofficial" confirmation.
-var GITHUB_DEFAULT = ['silirim/VodMax'];
+var GITHUB_DEFAULT = ['PharmaJava/webos', 'silirim/VodMax'];
+// Names for the ones whose repository is not called like the app (the release's package says the id, not the name)
+var GITHUB_TITLES = {'PharmaJava/webos': 'Stremio Claude'};
 var REPO_RE = /^[A-Za-z0-9_.-]{1,39}\/[A-Za-z0-9_.-]{1,100}$/;
 var GH_CACHE = {};
 
@@ -161,7 +162,7 @@ Store.prototype.githubPackage = async function (conn, repo) {
     if (!hash && sums[i].name.toLowerCase().indexOf(ipk.name.toLowerCase()) === 0 && /^[0-9a-fA-F]{64}\b/.test(t.out.trim())) hash = t.out.trim().slice(0, 64).toLowerCase();
   }
   if (!SHA_RE.test(hash)) throw fail(repo + ' no publica el hash SHA-256 de ' + ipk.name + ' en su última versión: no lo instalo sin poder comprobarlo.');
-  var title = repo.split('/')[1];
+  var title = GITHUB_TITLES[repo] || repo.split('/')[1];
   var pkg = {id: nm[1], title: title, github: true, repo: 'github.com/' + repo, shortDescription: '',
     manifest: {id: nm[1], version: nm[2], title: title, rootRequired: false, ipkUrl: ipk.browser_download_url, ipkSize: ipk.size || 0, ipkHash: {sha256: hash},
       sourceUrl: 'https://github.com/' + repo, appDescription: ''}};
