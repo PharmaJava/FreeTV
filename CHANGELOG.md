@@ -3,6 +3,17 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.12.0 (2026-11-13)
+
+### Fixed
+- **LG's screensaver came up over Stremio Origin's videos, and the app then closed.** Seen in the app's own log on a real TV (webOS 6.5.3, Stremio Origin 1.0.0): every two or three minutes of
+  playback the app lost the screen (`[life] to the back`) and then crashed (signal 6 / 11), so it had to be opened again. The app does not keep the TV's screensaver away (its issue #44, fixed in
+  its next release, not out yet). FreeTV's page cannot help while another app is in front (the TV freezes it: no timers, no sockets), so a process of its own does: `store-service/screenguard.js`,
+  started by the service's `guardStart` when FreeTV opens Stremio Origin. It asks the TV's power state every 2.5 s and answers the screensaver's announcement with `turnOnScreen`, **only while the
+  app's log says a video moved in the last 75 seconds** (paused or in the menus, LG's screensaver comes as usual: the panel's care). It ends when the app has been gone three minutes or after eight
+  hours, uses the key the TV already gave FreeTV for the screen (passed in its environment, written nowhere), never prompts, and has no libraries (a small WebSocket client).
+  *Home Settings → Maintenance → Stremio Origin: no LG screensaver during a video* turns it off.
+
 ## 2.11.2 (2026-11-10)
 
 ### New

@@ -301,6 +301,26 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('the screen guard');
+    return ok('LG\'s screensaver is sent away only while a video moved in the last 75 seconds, and the guard never prompts or keeps a key', function () {
+      var g = require(path.join(root, 'store-service', 'screenguard.js')), now = Date.parse('2026-11-11T22:57:30Z');
+      assert.strictEqual(g.playing('2026-11-11T22:57:20.078Z [video] ev {"currentTime":{"currentTime":1}}\n', now), true, 'playing');
+      assert.strictEqual(g.playing('2026-11-11T22:50:20.078Z [video] ev {"currentTime":{"currentTime":1}}\n', now), false, 'paused for minutes: LG\'s screensaver may come');
+      assert.strictEqual(g.playing('2026-11-11T22:57:20.078Z [frame] 300 drawn\n', now), false, 'the menus are not a video');
+      assert.ok(g.saverComing({processing: 'Request Screen Saver'}) && g.saverComing({state: 'Screen Saver'}) && !g.saverComing({state: 'Active'}));
+      var r = g.parse(Buffer.concat([Buffer.from([0x81, 5]), Buffer.from('hello'), Buffer.from([0x81, 126, 0, 200]), Buffer.alloc(200, 97), Buffer.from([0x81, 9])]));
+      assert.strictEqual(r.frames.length, 2);
+      assert.strictEqual(r.frames[1].text.length, 200);
+      assert.strictEqual(r.rest.length, 2, 'half a frame waits for the rest');
+      var f = g.frame('{"a":1}');
+      assert.strictEqual(f[1] & 0x80, 0x80, 'what the client sends is masked');
+      var src = fs.readFileSync(path.join(root, 'store-service', 'screenguard.js'), 'utf8'), svc = fs.readFileSync(path.join(root, 'store-service', 'service.js'), 'utf8');
+      assert.ok(/8 \* 3600000/.test(src) && /180000/.test(src), 'it ends by itself');
+      assert.ok(/m\.id === 'register' && m\.type === 'error'\) \{[^}]*process\.exit\(0\)/.test(src), 'a refused key ends it: no prompt from the background');
+      assert.ok(!/writeFile[^\n]*KEY|writeJson[^\n]*key/.test(src + svc.slice(svc.indexOf("'guardStart'"), svc.indexOf("'companionStart'"))), 'the key is written nowhere');
+    });
+  })
+  .then(function () {
     console.log('companion');
     var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
     return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {

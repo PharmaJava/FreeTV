@@ -558,6 +558,8 @@ var TV = (function () {
 
     /** Whether holdScreen can keep LG's screensaver away (the TV has allowed it). */
     canHoldScreen: function () { return webos && !!powerKey(); },
+    /** The key the TV gave FreeTV for the screen (for the screen guard that runs while another app is in front). */
+    screenKey: function () { return webos ? powerKey() || '' : ''; },
 
     /** Installed apps, as the TV's launcher lists them: [{id, title, icon, color}]; on LG, Live TV is one more; on Samsung with
         TizenBrew, its YouTube AdFree and Twitch AdFree modules ("tizenbrew:npm/<package>"). Both get FreeTV's Store icon. */

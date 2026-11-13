@@ -163,6 +163,23 @@ service.register('prefsLoad', function (message) {
  * Companion: starts store-service/companion.js apart from this service (it ends by itself) and says where the phone must go.
  * Started through the TV's own SSH like the other jobs, so it lives and dies on its own and this service can exit as usual.
  */
+/**
+ * Screen guard (screenguard.js): started when FreeTV opens Stremio Origin, apart from this service like the Companion. {key}: the remote-control
+ * key FreeTV's page already has for the screen (asked once on the TV); it goes to the guard in its environment and is written nowhere.
+ */
+service.register('guardStart', function (message) {
+  var s = current(), key = String((message.payload || {}).key || '');
+  if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }
+  if (!/^[A-Za-z0-9]{8,80}$/.test(key)) { message.respond({returnValue: false, error: 'sin clave'}); return; }
+  var file = path.join(__dirname, 'screenguard.js'), log = '/media/developer/temp/fmtv-screenguard.log';
+  s.connect().then(function (conn) {
+    return s.exec(conn, '/bin/mkdir -p /media/developer/temp; FMTV_PKEY=' + key + ' nohup node ' + JSON.stringify(file) + ' > ' + log + ' 2>&1 < /dev/null & sleep 1; echo started').then(function (r) {
+      try { conn.end(); } catch (e) {}
+      message.respond({returnValue: /started/.test(r.out || '')});
+    });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e)}); });
+});
+
 service.register('companionStart', function (message) {
   var s = current(), crypto = require('crypto'), os = require('os');
   if (!s) { message.respond({returnValue: false, error: 'sin permiso'}); return; }

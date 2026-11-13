@@ -1346,6 +1346,8 @@
       if (TV.name === 'webos') rows.push({label: tr('Stremio no Continuar assistindo', 'Stremio in Continue watching', 'Stremio en Continuar viendo'), value: stremioOn() ? tr('Sessão iniciada', 'Signed in', 'Sesión iniciada') : tr('Entrar', 'Sign in', 'Iniciar sesión'),
         step: function (d) { if (d < 0) return; if (!stremioOn()) { stremioLogin(); return; } showDialog('Stremio', [], [{label: tr('Atualizar agora', 'Refresh now', 'Actualizar ahora'), run: function () { stremioRefresh(true); toast(tr('Atualizando…', 'Refreshing…', 'Actualizando…')); }},
           {label: tr('Sair do Stremio', 'Sign out of Stremio', 'Cerrar sesión de Stremio'), run: stremioLogout}, {label: cancelText()}], 0); }});
+      if (TV.name === 'webos' && findApp(STREMIO_APP)) rows.push({label: tr('Stremio Origin: sem protetor de tela da LG durante o vídeo', 'Stremio Origin: no LG screensaver during a video', 'Stremio Origin: sin salvapantallas de LG durante el vídeo'),
+        toggle: Prefs.opt('stremioAwake', true) !== false, step: function () { Prefs.set('stremioAwake', Prefs.opt('stremioAwake', true) === false); }});
       if (TV.name === 'webos') { rows.push(mediaRow('jellyfin')); rows.push(mediaRow('plex')); }
       rows.push({label: tr('Minha lista', 'My list', 'Mi lista'), value: wlist().length ? String(wlist().length) : '›', step: function (d) { if (d >= 0) openInfo('watchlist', {fromSettings: true}); }});
       if (TV.name === 'webos') {
@@ -2820,6 +2822,8 @@
       if (id.indexOf('com.gathin.') !== 0) usageStart(id);
       if (id.indexOf('tizenbrew:') === 0) { remember('app:' + id, name || id); openBrewApp(id.slice(10), name || id); return; }
       if (id.indexOf('com.gathin.') !== 0 && id !== 'com.local.nativehome') remember('app:' + id, name || id);
+      // Stremio Origin 1.0.0 does not keep LG's screensaver away from its videos (and dies when covered): a small guard does, while it plays.
+      if (id === STREMIO_APP && TV.name === 'webos' && Prefs.opt('stremioAwake', true) !== false && TV.canHoldScreen()) svcCall('guardStart', {key: TV.screenKey()}, function () {});
       TV.launch(id, null, function (ok) {
         if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + (name || id));
       });

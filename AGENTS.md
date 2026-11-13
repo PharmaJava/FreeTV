@@ -160,3 +160,10 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
 
 - `mediaservers.js` has one `request` (http or https, JSON, 20 s) that tests replace with `setRequest`. `watchMeta(it)` in home.js writes the line under every started title
   (Stremio, Jellyfin, Plex), and `mediaItems()`/`mediaApp(src)` merge them in `recentItems()`. Netflix, Prime and other closed services have no API for this: not built.
+
+## 2.12: the screen guard
+
+- A web app in the background is frozen on webOS 6 (checked: no timers, XHR or sockets while `document.hidden`), so anything that must happen while another app is in front needs a process of its own,
+  started by the store service over the TV's SSH (`companion.js`, `screenguard.js`). The Developer Mode shell is denied `tvpower` on the Luna bus: the guard uses the remote control API (SSAP) with the
+  page's power key. It knows a video is playing from Stremio Origin's own log (`data/applog.log`, a `[video] ev {"currentTime"` line every 30 s); if a later version of the app changes that, the guard
+  just stops acting.
