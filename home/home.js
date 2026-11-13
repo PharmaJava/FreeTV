@@ -1174,11 +1174,6 @@
         step: function (d) { cycle('startTab', [0, 1, 2, 3, 4, 'last'], Prefs.startTab(), d); }});
       rows.push({label: tr('Prateleira', 'Shelf', 'Estante'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
       if (TV.name === 'webos') rows.push({label: tr('Atualizar a lista de apps', 'Refresh the list of apps', 'Actualizar la lista de apps'), value: '›', step: function (d) { if (d >= 0) refreshApps(); }});
-      if (TV.name === 'webos' && findApp(STREMIO_APP)) {
-        var po = Prefs.opt('pickOpen', 'stremio');
-        rows.push({label: tr('OK numa sugestão abre', 'OK on a pick opens', 'OK en una sugerencia abre'), value: po === 'stremio' ? 'Stremio Claude' : tr('O serviço onde está', 'The service that has it', 'El servicio donde está'),
-          step: function (d) { cycle('pickOpen', ['service', 'stremio'], po, d); }});
-      }
       rows.push({label: tr('Abas', 'Tabs', 'Pestañas'), value: '›', step: function (d) { if (d >= 0) openInfo('tabs'); }});
       rows.push({label: tr('Perfis', 'Profiles', 'Perfiles'), value: profileName(profileNow()), step: function (d) { if (d >= 0) openInfo('profiles'); }});
       rows.push({label: tr('Rotinas', 'Routines', 'Rutinas'), value: String(routines().length), step: function (d) { if (d >= 0) openInfo('routines'); }});
@@ -4122,7 +4117,8 @@
   }
 
   /** Does OK on a pick open Stremio Origin (the person's choice, and the app is on this TV)? */
-  function pickStremio() { return Prefs.opt('pickOpen', 'stremio') === 'stremio' && !!findApp(STREMIO_APP); }
+  /** Explore, Films and Series open in Stremio Claude whenever it is on the TV (holding OK still offers the service that has the title). */
+  function pickStremio() { return !!findApp(STREMIO_APP); }
 
   /** Stremio Origin cannot be opened on one title (it reads no address), so it opens with the title in front of the person to look for. */
   function openInStremio(p) {

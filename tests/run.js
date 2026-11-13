@@ -274,7 +274,8 @@ Promise.resolve()
     return ok('a pick can open Stremio Origin with its title and year in front of the person (the app reads no title address)', function () {
       var js = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8'), data = fs.readFileSync(path.join(root, 'home', 'data.js'), 'utf8');
       assert.ok(/pickStremio\(\) && p\.kind\) \{ openInStremio\(p\)/.test(js), 'OK on a pick goes there when chosen');
-      assert.ok(/function pickStremio\(\) \{ return Prefs\.opt\('pickOpen', 'stremio'\) === 'stremio' && !!findApp\(STREMIO_APP\)/.test(js), 'on by default, and only with the app on the TV');
+      assert.ok(/function pickStremio\(\) \{ return !!findApp\(STREMIO_APP\); \}/.test(js), 'always, when the app is on the TV');
+      assert.ok(!/cycle\('pickOpen'/.test(js), 'no setting can send them elsewhere');
       var svc = fs.readFileSync(path.join(root, 'store-service', 'service.js'), 'utf8');
       assert.ok(/!\/\^\(movie\|series\)\$\/\.test\(type\) \|\| !\/\^tt\\d\{5,10\}\$\/\.test\(id\)/.test(svc), 'the note takes only movie/series and an IMDb id');
       assert.ok(/tmdb\.key \] \|\|/.test(svc), 'the key is given only when the app has none');

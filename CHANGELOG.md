@@ -3,6 +3,12 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.14.1 (2026-11-13)
+
+### Changed
+- **Explore, Films and Series always open in Stremio Claude** when it is on the TV: the *OK on a pick opens* setting is gone (a choice saved earlier kept sending a pick to Netflix).
+  Holding OK on a pick still offers the service that has it.
+
 ## 2.14.0 (2026-11-13)
 
 ### New
