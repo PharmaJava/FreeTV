@@ -6,7 +6,9 @@ name: release
 on:
   push:
     branches: [main]
-    paths: ['home/appinfo.json', '.github/workflows/release.yml']
+    # tests/run.js too: a version whose release stopped on a failing check is published once the check is fixed (a version that
+    # already has its release is left alone)
+    paths: ['home/appinfo.json', 'tests/run.js', '.github/workflows/release.yml']
   workflow_dispatch:
 permissions:
   contents: write
