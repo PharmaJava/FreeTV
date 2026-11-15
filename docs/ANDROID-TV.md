@@ -55,3 +55,10 @@ adb install -r FreeMyTV.apk
 ## Créditos
 
 Todo el código de `android/` es de [Free My TV](https://freemytv.io) (MIT, `licenses/Free-My-TV-MIT.txt`).
+
+## Versiones publicadas (para quien mantiene el repositorio)
+
+GitHub compila el APK en cada cambio (`.github/workflows/android.yml`) y, desde `main`, publica la versión `android-tv-v<versión>` con el
+APK y su `SHA256SUMS`, firmada con la clave del secreto `FREETV_ANDROID_KEYSTORE` (contraseña `freemytv`). Sin ese secreto no publica nada:
+Android solo actualiza una app firmada siempre con la misma clave. Guarda una copia de la clave fuera de GitHub; si se pierde, las teles
+tendrían que desinstalar FreeTV para instalar una versión firmada con otra.
