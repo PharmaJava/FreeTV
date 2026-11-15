@@ -113,9 +113,41 @@ final class WebHome {
         });
         web.loadUrl("file:///android_asset/freetv/index.html");
         refreshCatalog(false);
+        watchPackages(true);
     }
 
     View view() { return web; }
+
+    static final String PLAY = "com.android.vending";
+
+    /** Google Play Store where the TV's launcher has no entry for it (Google TV): its own page for apps, else its search. */
+    private boolean openPlay() {
+        String[] tries = {"market://search?q=&c=apps", "https://play.google.com/store/apps"};
+        for (String u : tries) {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(u)).setPackage(PLAY).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try { activity.startActivity(i); return true; } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+    /** Apps installed, removed or updated (from the Store, Google Play or by hand): the page reads the list again at once. */
+    private final android.content.BroadcastReceiver packages = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(Context c, Intent i) { js("window.FreeTVHostEvent && FreeTVHostEvent('apps')"); }
+    };
+
+    private void watchPackages(boolean on) {
+        try {
+            if (on) {
+                android.content.IntentFilter f = new android.content.IntentFilter();
+                f.addAction(Intent.ACTION_PACKAGE_ADDED);
+                f.addAction(Intent.ACTION_PACKAGE_REMOVED);
+                f.addAction(Intent.ACTION_PACKAGE_REPLACED);
+                f.addAction(Intent.ACTION_PACKAGE_CHANGED);
+                f.addDataScheme("package");
+                activity.registerReceiver(packages, f);
+            } else activity.unregisterReceiver(packages);
+        } catch (Exception e) { AppLog.w("packages: " + e.getMessage()); }
+    }
 
     /**
      * config.js with the installer's settings laid over the built-in ones (Prefs.freetvConfig): what the LG installer writes into
@@ -146,7 +178,7 @@ final class WebHome {
     /** The Home button while the home is already in front. */
     void home() { js("window.FreeTVHostEvent && FreeTVHostEvent('home')"); }
 
-    void destroy() { web.destroy(); }
+    void destroy() { watchPackages(false); web.destroy(); }
 
     /** Keys the WebView would not pass to the page as LG's remote sends them: Back, OK and the colour keys. */
     boolean onKey(KeyEvent e) {
@@ -411,7 +443,14 @@ final class WebHome {
             JSONArray out = new JSONArray();
             PackageManager pm = activity.getPackageManager();
             String self = activity.getPackageName();
-            for (String[] app : HomeApps.launchable(activity)) {
+            java.util.List<String[]> all = new java.util.ArrayList<>(HomeApps.launchable(activity));
+            // Google Play Store: on Google TV it is not an app of the launcher's list, but it is on the TV (FreeTV opens it all the same)
+            boolean play = false;
+            for (String[] app : all) if (PLAY.equals(app[0])) play = true;
+            if (!play) {
+                try { pm.getApplicationInfo(PLAY, 0); all.add(new String[] {PLAY, "Google Play Store"}); } catch (PackageManager.NameNotFoundException ignored) {}
+            }
+            for (String[] app : all) {
                 if (app[0].equals(self)) continue;
                 try {
                     JSONObject o = new JSONObject();
@@ -443,6 +482,7 @@ final class WebHome {
 
         /** Opens an app (its package), "live", "input:<id>" or "settings"; true when Android took it. */
         @JavascriptInterface public boolean launch(String id, String uri) {
+            if (PLAY.equals(id) && HomeApps.launchIntent(activity.getPackageManager(), PLAY) == null) return openPlay();
             final HomeApps.Item it;
             if ("settings".equals(id)) it = HomeApps.action(HomeApps.ANDROID_SETTINGS, "settings", "", "settings");
             else if ("live".equals(id)) it = HomeApps.action(HomeApps.LIVE_TV, "live", "", "tv");

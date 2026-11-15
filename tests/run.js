@@ -350,6 +350,9 @@ Promise.resolve()
       var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
       assert.ok(/if \(id === 'freetv\.store' && TV\.name === 'android'\) \{ openInfo\('astore'\); return; \}/.test(home), 'Android opens its own Store');
       assert.ok(/if \(id === 'freetv\.store'\) \{ openCommunity\(true\); return; \}/.test(home), 'LG and Samsung keep theirs');
+      assert.ok(/document\.addEventListener\('freetvhost', function \(e\) \{\n    if \(TV\.name !== 'android'\) return;/.test(home), 'an app installed or removed on Android TV reloads the list (Android only)');
+      assert.ok(/ACTION_PACKAGE_ADDED/.test(java) && /FreeTVHostEvent\('apps'\)/.test(java), 'the app watches installs and tells the page');
+      assert.ok(/PLAY = "com\.android\.vending"/.test(java) && /openPlay\(\)/.test(java), 'Google Play is listed and opened even where the launcher hides it');
     });
   })
   .then(function () {

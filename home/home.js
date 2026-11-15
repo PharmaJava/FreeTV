@@ -77,6 +77,7 @@
     ['twitch', /^tizenbrew:npm\/@jjg0\/twizen$/, /^twitch adfree$/i, ['#9146FF', '#4B1FA8']],   // Samsung, through TizenBrew
     ['live', /^com\.webos\.app\.livetv$/, /tv em direto|live tv|tv en directo/i, ['#2A8CFF', '#0A3FA8']],
     ['store', /^freetv\.store$/, /^(loja|store|tienda)$/i, ['#FF6B8A', '#E0245E']],
+    ['play', /^com\.android\.vending$/, /^google play/i, ['#1C1C1E', '#09090A']],   // Android TV only (pickShelf)
     ['hulu', /^hulu/, /hulu/i, ['#1CE783', '#0B8F4E']],
     ['paramount', /paramount|cbs/, /paramount/i, ['#0064FF', '#002A86']],
     ['peacock', /peacock/, /peacock/i, ['#1C1C1E', '#000000']],
@@ -172,7 +173,7 @@
     } else {
       for (var s = 0; s < SHELF.length && out.length < MAX_SHELF; s++) {
         if (SHELF[s][0] === 'youtube' && adfree) continue;   // YouTube AdFree is there instead (Samsung with TizenBrew)
-        if (SHELF[s][0] === 'stremio' && TV.name !== 'android') continue;   // Android TV only: LG's and Samsung's shelves stay as they were
+        if ((SHELF[s][0] === 'stremio' || SHELF[s][0] === 'play') && TV.name !== 'android') continue;   // Android TV only: LG's and Samsung's shelves stay as they were
         for (var a = 0; a < apps.length; a++) {
           if ((SHELF[s][1].test(apps[a].id) || SHELF[s][2].test(apps[a].title)) && out.indexOf(apps[a]) < 0) { out.push(apps[a]); break; }
         }
@@ -5643,6 +5644,18 @@
   }
 
   window.addEventListener('resize', fit);
+  // Android TV: an app installed, removed or updated (the Store, Google Play, by hand) or FreeTV back in front: the list again at once.
+  // Home pressed while FreeTV is in front: back to the start, as on LG.
+  document.addEventListener('freetvhost', function (e) {
+    if (TV.name !== 'android') return;
+    if (e.detail === 'home') { reopened(); return; }
+    if (e.detail === 'apps' || e.detail === 'resume') {
+      loadApps(function (changed) {
+        if (changed) { renderShelf(); renderDrawer(); updateFocus(); }
+        if (st.zone === Z.INFO && info.kind === 'astore') renderInfo();
+      });
+    }
+  });
   document.addEventListener('webOSRelaunch', reopened);   // LG: opened again while running
   window.addEventListener('appcontrol', reopened);        // Samsung: the same
   var hiddenAt = 0, hiddenTimer = 0;

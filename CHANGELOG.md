@@ -3,6 +3,15 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.15.3 (2026-11-15)
+
+### Android TV only (LG and Samsung unchanged)
+- **Installed apps show up at once.** `WebHome` listens to Android's package broadcasts (added, removed, replaced, changed) and the page reads the list
+  again (`freetvhost` event in home.js): an app installed from the Store, Google Play or by hand is in All Apps (and can go on the shelf) without restarting
+  FreeTV; the Store's sheet updates too. Pressing Home with FreeTV in front goes back to the start, as on LG.
+- **Google Play Store is always there.** On Google TV it is not in the launcher's list: FreeTV adds it (with its icon) and opens it through a Play link
+  when the TV has no launcher entry for it. It is on the default Android TV shelf, and Free My TV's home mode never turns it off (it is protected).
+
 ## 2.15.2 (2026-11-15)
 
 ### Android TV only (LG and Samsung unchanged)

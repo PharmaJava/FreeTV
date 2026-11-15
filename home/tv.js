@@ -508,6 +508,14 @@ var TV = (function () {
   // The Android app hands the page the keys its WebView would not (Back, OK, the colour keys) with LG's codes
   // (WebHome.onKey): they become key events home.js reads as on LG.
   if (android) {
+    // The app tells the page what happened on the TV ('apps': an app was installed, removed or updated; 'resume'; 'home': Home pressed
+    // with FreeTV in front): a 'freetvhost' event for home.js.
+    window.FreeTVHostEvent = function (kind) {
+      var ev;
+      try { ev = document.createEvent('Event'); ev.initEvent('freetvhost', true, true); } catch (e) { return; }
+      ev.detail = kind;
+      document.dispatchEvent(ev);
+    };
     window.FreeTVHostKey = function (type, code) {
       var ev;
       try { ev = document.createEvent('Event'); ev.initEvent(type, true, true); } catch (e) { return; }
