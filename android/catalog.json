@@ -1,1 +1,73 @@
-{"about": "FreeTV's Store on Android TV. Made by tools/android_catalog.py from catalog-sources.json: do not edit by hand.", "apps": []}
+{
+ "about": "FreeTV's Store on Android TV. Made by tools/android_catalog.py from catalog-sources.json: do not edit by hand.",
+ "apps": [
+  {
+   "desc": [
+    "A sua conta e os seus addons do Stremio, com torrents (a nossa versão do Stremio Origin)",
+    "Your Stremio account and addons, with torrents (our build of Stremio Origin)",
+    "Tu cuenta y tus addons de Stremio, con torrents (nuestra versión de Stremio Origin)"
+   ],
+   "id": "tv.stremioorigin.app",
+   "minSdk": 24,
+   "repo": "PharmaJava/webos",
+   "sha256": "076e928744e39718686ad94839482cd5fc188e42d09f9d165957144b66f7c328",
+   "size": 9781130,
+   "tag": "android-tv-v1.0.6",
+   "title": "Stremio Claude",
+   "url": "https://github.com/PharmaJava/webos/releases/download/android-tv-v1.0.6/StremioOrigin-AndroidTV-1.0.6.apk",
+   "version": "1.0.6",
+   "versionCode": 10006
+  },
+  {
+   "desc": [
+    "Jogue os jogos do seu PC na TV (GameStream/Sunshine)",
+    "Play your PC games on the TV (GameStream/Sunshine)",
+    "Juega a los juegos de tu PC en la tele (GameStream/Sunshine)"
+   ],
+   "id": "com.limelight",
+   "minSdk": 21,
+   "repo": "moonlight-stream/moonlight-android",
+   "sha256": "a871f6190365386ef3ac5722a016d4da015ee1555631ec257f6e5dc3f4a45fe0",
+   "size": 11137885,
+   "tag": "v12.2",
+   "title": "Moonlight",
+   "url": "https://github.com/moonlight-stream/moonlight-android/releases/download/v12.2/app-nonRoot-release.apk",
+   "version": "12.2",
+   "versionCode": 315
+  },
+  {
+   "desc": [
+    "Leitor de vídeos do USB, da rede (SMB, UPnP) e do NAS",
+    "Video player for USB, the network (SMB, UPnP) and your NAS",
+    "Reproductor de vídeos del USB, la red (SMB, UPnP) y tu NAS"
+   ],
+   "id": "org.courville.nova",
+   "minSdk": 23,
+   "repo": "nova-video-player/aos-AVP",
+   "sha256": "9fb146566d8fb70ec5ed03ea180aa10abf294eea7a52a4eafc17634eb20e7143",
+   "size": 32683439,
+   "tag": "v6.6.5",
+   "title": "Nova Video Player",
+   "url": "https://github.com/nova-video-player/aos-AVP/releases/download/v6.6.5/org.courville.nova-2674922-6.6.5-20261111.1224-armeabi-v7a-release.apk",
+   "version": "6.6.5-20261111.1224",
+   "versionCode": 2674922
+  },
+  {
+   "desc": [
+    "Passe fotos e ficheiros do telemóvel para a TV, sem a nuvem",
+    "Send photos and files from your phone to the TV, no cloud",
+    "Pasa fotos y archivos del móvil a la tele, sin la nube"
+   ],
+   "id": "org.localsend.localsend_app",
+   "minSdk": 24,
+   "repo": "localsend/localsend",
+   "sha256": "222b02d2813578a574cd3fbcfa7b8ff317d4887edb9ca0fb7b292816d222dc63",
+   "size": 39333444,
+   "tag": "v1.18.2",
+   "title": "LocalSend",
+   "url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-android-arm32v7.apk",
+   "version": "1.18.2",
+   "versionCode": 642
+  }
+ ]
+}
