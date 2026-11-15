@@ -238,6 +238,7 @@
     focusRows($('shelfedit'), st.edit, st.zone === Z.EDIT);
     focusRows($('suggest'), st.sug, st.zone === Z.SUGG);
     focusRows($('community'), commOpen < 0 ? st.comm : commAct, st.zone === Z.COMM);
+    commDetailScroll();
     focusRows($('dialog'), dlg.index, st.zone === Z.DLG);
     focusRows($('infosheet'), info.index, st.zone === Z.INFO);
     list = document.querySelectorAll('#tilesheet .qtile');
@@ -1718,7 +1719,15 @@
       svcCall('githubApps', {}, function (r) {
         if (!r || !r.returnValue || !r.packages) return;
         ghMine = r.mine || [];
-        r.packages.forEach(function (p) { if (p && p.manifest && !commAll.some(function (o) { return o.id === p.id; })) commAll.push(p); });
+        // Our own projects (Stremio Claude, PharmaJava/webos) take the place of a catalogue entry with the same id: webOS Homebrew still
+        // lists the original Stremio Origin under that id. A project the person added never replaces one.
+        r.packages.forEach(function (p) {
+          if (!p || !p.manifest) return;
+          var own = p.own || p.repo === 'github.com/PharmaJava/webos', at = -1;
+          commAll.forEach(function (o, n) { if (o.id === p.id) at = n; });
+          if (at < 0) commAll.push(p);
+          else if (own) commAll[at] = p;
+        });
         if (commState === 'error' && commAll.length) commState = 'ready';
         if (commOpen < 0) { commInst = instMap(); commRebuild(); if (st.zone === Z.COMM) renderCommunity(); }
       });
@@ -1923,6 +1932,22 @@
   }
 
   function line(box, cls, text) { return el('div', 'dtext' + (cls ? ' ' + cls : ''), box, text); }
+
+  /**
+   * An app's page can be longer than the screen (a long notice, the release notes): the page keeps a fixed height and moves so the
+   * button with the focus is always in view (▲ on the first one shows the top again: commTop).
+   */
+  var commTop = false;
+  function commDetailScroll() {
+    var box = $('community') && $('community').firstChild;
+    if (!box || commOpen < 0 || st.zone !== Z.COMM) { commTop = false; return; }
+    var rows = box.querySelectorAll('.row'), r = rows[commAct];
+    if (!r) return;
+    if (commTop) { commTop = false; return; }
+    var top = r.offsetTop, bottom = top + r.offsetHeight, view = box.clientHeight;
+    if (bottom + 40 > box.scrollTop + view) box.scrollTop = bottom + 40 - view;
+    else if (top - 30 < box.scrollTop) box.scrollTop = Math.max(0, top - 30);
+  }
 
   /** A button on the detail page; OK runs it. */
   function action(box, label, run) {
@@ -2655,6 +2680,8 @@
       updateFocus();
       return;
     }
+    setClass(box, 'detail', commOpen >= 0);
+    if (commOpen < 0) box.scrollTop = 0;
     if (commOpen >= 0) { renderDetail(box); return; }
     el('div', 'hint', box, store.svc === 'ok'
         ? tr('Pronto: na ficha de cada app (sem root) a TV instala sozinha, sem computador.', 'Ready: each app without root is installed by the TV itself from its page, no computer.', 'Listo: en la ficha de cada app (sin root) la propia tele la instala, sin ordenador.')
@@ -3472,6 +3499,7 @@
       case Z.COMM:
         if (commOpen < 0 && dy) st.comm = Math.max(0, Math.min(commList.length - 1, st.comm + dy));
         else if (commOpen < 0 && dx && commList[st.comm] && commList[st.comm].ctl > 1) { commCtl(commList[st.comm], dx); return; }
+        else if (commOpen >= 0 && dy < 0 && commAct === 0) { $('community').firstChild.scrollTop = 0; commTop = true; return; }   // ▲ on the first button: back to the top, to read it all
         else if (commOpen >= 0 && dy) commAct = Math.max(0, Math.min(commActs.length - 1, commAct + dy));
         break;
       case Z.DLG:

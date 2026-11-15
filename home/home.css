@@ -665,6 +665,8 @@ body.kids #topclock { right: 80px; }
 #community .cico img, #community .dico img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; -o-object-fit: cover; object-fit: cover; }
 #community .cletter { position: absolute; left: 0; right: 0; top: 0; line-height: 72px; text-align: center; font-size: 34px; font-weight: 700; color: rgba(255, 255, 255, 0.7); }
 #community .csym .sym { position: absolute; left: 18px; top: 18px; width: 36px; height: 36px; color: #FFD27A; }
+/* an app's page: no taller than the screen; it scrolls (home.js commDetailScroll) so the focused button stays in view */
+#community .box.detail { top: 50px; max-height: 980px; overflow: hidden; }
 #community .dtext.dhead { position: relative; min-height: 72px; padding-left: 92px; line-height: 72px; margin-bottom: 18px; font-size: 30px; }
 #community .dtext.dhead .dico { left: 0; top: 0; }
 

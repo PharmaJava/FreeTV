@@ -163,7 +163,7 @@ Store.prototype.githubPackage = async function (conn, repo) {
   }
   if (!SHA_RE.test(hash)) throw fail(repo + ' no publica el hash SHA-256 de ' + ipk.name + ' en su última versión: no lo instalo sin poder comprobarlo.');
   var title = GITHUB_TITLES[repo] || repo.split('/')[1];
-  var pkg = {id: nm[1], title: title, github: true, repo: 'github.com/' + repo, shortDescription: '',
+  var pkg = {id: nm[1], title: title, github: true, own: GITHUB_DEFAULT.indexOf(repo) >= 0, repo: 'github.com/' + repo, shortDescription: '',
     manifest: {id: nm[1], version: nm[2], title: title, rootRequired: false, ipkUrl: ipk.browser_download_url, ipkSize: ipk.size || 0, ipkHash: {sha256: hash},
       sourceUrl: 'https://github.com/' + repo, appDescription: ''}};
   GH_CACHE[repo] = {at: Date.now(), pkg: pkg};
@@ -200,8 +200,15 @@ Store.prototype.catalogue = async function (conn) {
       if (!apps.some(function (a) { return a.id === listed; })) apps.push(pkg);
     }
   }
+  // Our own projects (GITHUB_DEFAULT: Stremio Claude in PharmaJava/webos) take the place of a catalogue entry with the same id (webOS
+  // Homebrew still lists the original Stremio Origin under tv.stremioorigin.app); a project the person added never replaces one.
   var gh = await this.githubPackages(conn);
-  gh.forEach(function (p) { if (!apps.some(function (a) { return a.id === p.id; })) apps.push(p); });
+  gh.forEach(function (p) {
+    var at = -1;
+    apps.forEach(function (a, n) { if (a.id === p.id) at = n; });
+    if (at < 0) apps.push(p);
+    else if (p.own) apps[at] = p;
+  });
   if (down && !apps.length) throw fail(down);
   return apps;
 };

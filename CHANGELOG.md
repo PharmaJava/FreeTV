@@ -3,6 +3,16 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.15.4 (2026-11-15)
+
+### Fixed (LG)
+- **The Store showed the original Stremio Origin (v1.0.0, stremio-origin's code) instead of Stremio Claude.** The webOS Homebrew catalogue still lists the
+  original under the same app id (`tv.stremioorigin.app`), and the first entry to arrive won. Our own GitHub projects (`GITHUB_DEFAULT`: PharmaJava/webos)
+  now take the place of a catalogue entry with the same id, in the store service (`catalogue`, so updates compare against our version too) and in the page
+  (`loadGithub`). A repository the person added never replaces a catalogue entry. Seen on a real TV.
+- **A long app page in the Store ran off the bottom of the screen** (a notice plus the release notes hid the buttons). The page keeps to the screen
+  (`#community .box.detail`) and moves so the button with the focus is always in view (`commDetailScroll`); ▲ on the first button shows the top again.
+
 ## 2.15.3 (2026-11-15)
 
 ### Android TV only (LG and Samsung unchanged)

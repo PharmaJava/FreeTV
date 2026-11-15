@@ -419,6 +419,45 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('our Stremio over the catalogue\'s');
+    return ok('Stremio Claude from PharmaJava/webos replaces the original Stremio Origin the webOS Homebrew catalogue lists under the same id; a repository the person added never replaces an entry', async function () {
+      var sha = 'b'.repeat(64);
+      function mk(github) {
+        var s = new Store({});
+        s.github = github || [];
+        s.exec = async function (c, cmd) {
+          if (/repo\.webosbrew\.org/.test(cmd)) return {code: 0, out: JSON.stringify({packages: [
+            {id: 'tv.stremioorigin.app', title: 'Stremio Origin', manifest: {version: '1.0.0', sourceUrl: 'https://github.com/stremio-origin/webos'}},
+            {id: 'com.other.app', title: 'Other', manifest: {version: '2.0.0'}}]}), err: ''};
+          if (/api\.github\.com\/repos\/PharmaJava\/webos\/releases\/latest/.test(cmd)) return {code: 0, out: JSON.stringify({assets: [
+            {name: 'tv.stremioorigin.app_1.0.6_arm.ipk', size: 5000000, browser_download_url: 'https://github.com/PharmaJava/webos/releases/download/v1.0.6/tv.stremioorigin.app_1.0.6_arm.ipk'},
+            {name: 'SHA256SUMS', browser_download_url: 'https://github.com/PharmaJava/webos/releases/download/v1.0.6/SHA256SUMS'}]}), err: ''};
+          if (/someone\/other\/releases\/latest/.test(cmd)) return {code: 0, out: JSON.stringify({assets: [
+            {name: 'com.other.app_9.0.0_all.ipk', size: 1, browser_download_url: 'https://github.com/someone/other/releases/download/v9/com.other.app_9.0.0_all.ipk'},
+            {name: 'SHA256SUMS', browser_download_url: 'https://github.com/someone/other/releases/download/v9/SHA256SUMS'}]}), err: ''};
+          if (/PharmaJava\/webos\/releases\/download\/v1\.0\.6\/SHA256SUMS/.test(cmd)) return {code: 0, out: sha + '  tv.stremioorigin.app_1.0.6_arm.ipk\n', err: ''};
+          if (/someone\/other\/releases\/download\/v9\/SHA256SUMS/.test(cmd)) return {code: 0, out: sha + '  com.other.app_9.0.0_all.ipk\n', err: ''};
+          return {code: 22, out: '', err: ''};
+        };
+        return s;
+      }
+      var apps = await mk(['someone/other']).catalogue(null);
+      var so = apps.filter(function (a) { return a.id === 'tv.stremioorigin.app'; });
+      assert.strictEqual(so.length, 1, 'one entry');
+      assert.strictEqual(so[0].title, 'Stremio Claude');
+      assert.notStrictEqual(so[0].manifest.version, '1.0.0', 'our release, not the original\'s (the exact version may come from the ten-minute cache)');
+      assert.ok(so[0].github && so[0].own, 'from our GitHub project');
+      assert.strictEqual(so[0].manifest.sourceUrl, 'https://github.com/PharmaJava/webos', 'our repository, not stremio-origin');
+      var other = apps.filter(function (a) { return a.id === 'com.other.app'; });
+      assert.strictEqual(other.length, 1);
+      assert.strictEqual(other[0].manifest.version, '2.0.0', 'a repository the person added does not replace the catalogue entry');
+      var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(/var own = p\.own \|\| p\.repo === 'github\.com\/PharmaJava\/webos'/.test(home), 'the page keeps ours too');
+      var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
+      assert.ok(/#community \.box\.detail \{[^}]*max-height: 980px; overflow: hidden;/.test(css) && /function commDetailScroll\(\)/.test(home), 'a long app page stays on the screen and follows the focus');
+    });
+  })
+  .then(function () {
     console.log('companion');
     var comp = fs.readFileSync(path.join(root, 'store-service', 'companion.js'), 'utf8');
     return ok('the companion server only takes its three fields, only with the token, and the inbox only from the TV itself', function () {
