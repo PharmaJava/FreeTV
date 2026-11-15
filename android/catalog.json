@@ -20,6 +20,40 @@
   },
   {
    "desc": [
+    "YouTube sem anúncios, com SponsorBlock, para a TV",
+    "YouTube without ads, with SponsorBlock, for the TV",
+    "YouTube sin anuncios, con SponsorBlock, para la tele"
+   ],
+   "id": "org.smarttube.stable",
+   "minSdk": 17,
+   "repo": "yuliskov/SmartTube",
+   "sha256": "288e8caaa11417f6b64d2a7f906cead85c0b8a9bb5904753d7cb4f79d117d023",
+   "size": 25517725,
+   "tag": "32.71s",
+   "title": "SmartTube",
+   "url": "https://github.com/yuliskov/SmartTube/releases/download/32.71s/SmartTube_stable_32.71_armeabi-v7a.apk",
+   "version": "32.71",
+   "versionCode": 2461
+  },
+  {
+   "desc": [
+    "Os seus filmes e séries do seu servidor Jellyfin",
+    "Your films and shows from your Jellyfin server",
+    "Tus pelis y series desde tu servidor Jellyfin"
+   ],
+   "id": "org.jellyfin.androidtv",
+   "minSdk": 23,
+   "repo": "jellyfin/jellyfin-androidtv",
+   "sha256": "dfcc665195bed4ea087dca63df6f77497acc1185c4b15776b336d80eeaeb7fa6",
+   "size": 29945596,
+   "tag": "v0.20.0",
+   "title": "Jellyfin",
+   "url": "https://github.com/jellyfin/jellyfin-androidtv/releases/download/v0.20.0/jellyfin-androidtv-v0.20.0-release.apk",
+   "version": "0.20.0",
+   "versionCode": 200099
+  },
+  {
+   "desc": [
     "Jogue os jogos do seu PC na TV (GameStream/Sunshine)",
     "Play your PC games on the TV (GameStream/Sunshine)",
     "Juega a los juegos de tu PC en la tele (GameStream/Sunshine)"
