@@ -3,6 +3,21 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.16.0 (2026-11-16)
+
+### Added (Samsung)
+- **Stremio Claude on Samsung TVs.** Samsung only runs web apps, so the native app cannot go there: this is its web version, inside FreeTV's own package
+  (`home/stremio/`, only in the Samsung build: LG and Android TV do not get these files and nothing in their code changed). It shows up as an app named
+  Stremio Claude (with the native app's id, so the shelf and "Open in Stremio Claude" treat it as the same app) and Samsung's default shelf offers it.
+  - **Your account, your addons**: the QR code sign-in (link.stremio.com), or no account (Cinemeta's catalogues). Home, Movies, Series, Search and Library
+    from the addons' catalogues; the title page with seasons and episodes; the sources every addon offers; **Continue watching** and the library are kept in
+    the account, as on LG.
+  - **Playing**: direct links in the TV's own player, with subtitles from the addons (SRT converted, the person's language picked by itself, Windows-1252
+    files read right), ±10 s / ±30 s, the next episode when one ends.
+  - **Torrents** need a Stremio server on the network (Settings: its address): a Samsung web app cannot open torrent connections itself.
+  - A film or series picked on FreeTV's home opens on its own page (`stremio/index.html#open=movie/tt…`).
+  - Not tried on a real Samsung TV yet: it was run in a browser against pretend accounts, addons, subtitles and video (`tests/stremio-web.e2e.js`).
+
 ## 2.15.5 (2026-11-15)
 
 ### Fixed (LG)

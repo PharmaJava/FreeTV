@@ -283,6 +283,30 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('Stremio Claude on Samsung');
+    return ok('the web version ships in the Samsung package only; the TV lists it as Stremio Claude and opens it', function () {
+      var cp = require('child_process'), vm = require('vm');
+      function names(flag) {
+        return JSON.parse(cp.execFileSync('python3', ['-c', 'import sys,json; sys.path.insert(0,"tools"); import build_home as b; ' +
+          'c=b.read_config("config.example.properties"); f=b.files(c' + flag + '); print(json.dumps(sorted(f)))'], {cwd: root, encoding: 'utf8'}));
+      }
+      var tizen = names(', tizen=True'), lg = names(''), android = names(', android=True');
+      ['stremio/index.html', 'stremio/app.js', 'stremio/app.css'].forEach(function (n) {
+        assert.ok(tizen.indexOf(n) >= 0, n + ' is in the Samsung package');
+        assert.ok(lg.indexOf(n) < 0 && android.indexOf(n) < 0, n + ' is not in the LG or Android TV builds');
+      });
+      var app = fs.readFileSync(path.join(root, 'home', 'stremio', 'app.js'), 'utf8');
+      new vm.Script(app);   // it compiles
+      assert.ok(!/=>|\blet |\bconst |`/.test(app.replace(/'[^'\n]*'|"[^"\n]*"/g, '')), 'plain ES5 (the TV may run Chrome 56)');
+      assert.ok(/link\.stremio\.com\/api\//.test(app) && /addonCollectionGet/.test(app) && /datastorePut/.test(app), 'the account is linked as the native app does');
+      var tv = fs.readFileSync(path.join(root, 'home', 'tv.js'), 'utf8');
+      assert.ok(/if \(samsung\) \{[^}]*id: 'tv\.stremioorigin\.app', title: 'Stremio Claude'/.test(tv.replace(/\n/g, ' ')), 'Samsung lists it with the native app\'s id');
+      assert.ok(/id === 'tv\.stremioorigin\.app'\) \{ samsungStremio\('', ''\)/.test(tv), 'launching it opens the page');
+      assert.ok(/'stremio\/index\.html' \+ open/.test(tv), 'a title opens on its own page');
+      assert.ok(!/stremio\//.test(fs.readFileSync(path.join(root, 'android', 'build.sh'), 'utf8')), 'the Android TV build does not touch it');
+    });
+  })
+  .then(function () {
     console.log('Android TV');
     return ok('the Android TV home: the host bridge lists and opens apps, Back and the colour keys arrive as LG codes, Stremio Origin is offered from GitHub, no LG-only files', function () {
       var vm = require('vm'), launched = [], keys = [];
@@ -314,9 +338,9 @@ Promise.resolve()
       assert.ok(/SHA256SUMS/.test(java) && /does not match/.test(java), 'an APK is checked against its release\'s SHA256SUMS');
       assert.ok(/startsWith\("https:\/\/github\.com\/" \+ repo \+ "\/releases\/download\/"\)/.test(java), 'only github.com downloads of that project');
       var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
-      assert.ok(/\(SHELF\[s\]\[0\] === 'stremio' \|\| SHELF\[s\]\[0\] === 'play'\) && TV\.name !== 'android'\) continue;/.test(home), 'Stremio and Google Play on the default shelf are Android TV only (LG and Samsung unchanged)');
+      assert.ok(/SHELF\[s\]\[0\] === 'play' && TV\.name !== 'android'\) continue;/.test(home) && /SHELF\[s\]\[0\] === 'stremio' && TV\.name !== 'android' && TV\.name !== 'tizen'\) continue;/.test(home), 'Google Play is Android TV only; Stremio Claude is on Android TV and Samsung (LG unchanged)');
       assert.ok(/if \(TV\.name === 'android' && stremioHere && !Prefs\.opt\('stremioOffered'/.test(home), 'added to a saved shelf on Android TV only');
-      assert.ok(/if \(TV\.name === 'android'\) \{ if \(!TV\.openStremio\(type, id\)/.test(home), 'Android opens a title through the intent; LG keeps its store service');
+      assert.ok(/if \(TV\.name === 'android' \|\| TV\.name === 'tizen'\) \{ if \(!TV\.openStremio\(type, id\)/.test(home), 'Android and Samsung open a title themselves; LG keeps its store service');
       assert.ok(/id\.matches\("tt\\\\d\{5,10\}"\)/.test(java), 'only an IMDb id goes in the intent');
     });
   })

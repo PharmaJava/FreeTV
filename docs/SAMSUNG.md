@@ -82,3 +82,16 @@ Sin TizenBrew, la Tienda explica cómo instalarlo y el estante es el de siempre.
 
 El empaquetado, el instalador por SDB (`tizen/install.py`) y los logos de Samsung vienen de
 [Free My TV](https://freemytv.io) (MIT). Detalles en [NOTICE.md](../NOTICE.md).
+
+## Stremio Claude en Samsung (2.16)
+
+Las Samsung solo ejecutan apps web, así que la app nativa de LG y Android no puede ir allí. FreeTV trae su **versión web**, dentro del mismo paquete: aparece
+como la app «Stremio Claude» (en tu estante y en todas las apps).
+
+- **Entrar**: con el código QR desde el móvil (igual que en LG) o sin cuenta, con los catálogos de Cinemeta. Con tu cuenta salen **tus addons**, tu biblioteca y
+  «Continuar viendo».
+- **Ver**: enlaces directos (los que dan tus addons) en el reproductor de la tele, con subtítulos de los addons (se elige solo tu idioma; cambiarlo en Ajustes).
+- **Torrents**: una app web de Samsung no puede abrir conexiones de torrents. Pon en *Ajustes* la dirección de un **Stremio Server** de tu red
+  (por ejemplo `192.168.1.20:11470`, en un PC o una Raspberry) y los torrents se ven a través de él. Sin él solo se reproducen enlaces directos.
+- Qué códecs se ven (MKV, HEVC, Dolby…) lo decide el reproductor de cada tele. Si una fuente no se ve, prueba otra.
+- Comprobado en un navegador con cuentas, addons y vídeo de prueba; **no en una Samsung real todavía**.

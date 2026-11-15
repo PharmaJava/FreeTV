@@ -173,7 +173,8 @@
     } else {
       for (var s = 0; s < SHELF.length && out.length < MAX_SHELF; s++) {
         if (SHELF[s][0] === 'youtube' && adfree) continue;   // YouTube AdFree is there instead (Samsung with TizenBrew)
-        if ((SHELF[s][0] === 'stremio' || SHELF[s][0] === 'play') && TV.name !== 'android') continue;   // Android TV only: LG's and Samsung's shelves stay as they were
+        if (SHELF[s][0] === 'play' && TV.name !== 'android') continue;   // Android TV only
+        if (SHELF[s][0] === 'stremio' && TV.name !== 'android' && TV.name !== 'tizen') continue;   // Android TV and Samsung (its web version): LG's shelf stays as it was
         for (var a = 0; a < apps.length; a++) {
           if ((SHELF[s][1].test(apps[a].id) || SHELF[s][2].test(apps[a].title)) && out.indexOf(apps[a]) < 0) { out.push(apps[a]); break; }
         }
@@ -4274,7 +4275,7 @@
   function stremioOpen(type, id, failed) {
     var sa = findApp(STREMIO_APP);
     if (!sa || !/^tt\d{5,10}$/.test(id)) { if (failed) failed(); return; }
-    if (TV.name === 'android') { if (!TV.openStremio(type, id) && failed) failed(); return; }   // Android TV: the title goes in the app's intent (no store service there)
+    if (TV.name === 'android' || TV.name === 'tizen') { if (!TV.openStremio(type, id) && failed) failed(); return; }   // Android TV: the title goes in the app's intent (no store service there)
     svcCall('stremioOpen', {type: type, id: id}, function (r) {
       if (r && r.returnValue) launcher(sa.id, sa.title)(); else if (failed) failed();
     });

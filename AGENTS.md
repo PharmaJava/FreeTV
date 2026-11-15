@@ -183,3 +183,16 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   `tools/android_catalog.py` → `android/catalog.json` (each APK read with aapt2, its SHA-256 pinned), daily in `.github/workflows/android-catalog.yml`.
   `WebHome` installs only an entry that passes `entryProblem` and whose download matches the pinned SHA-256; `home.js` shows it as `INFO.astore`. Never
   edit catalog.json by hand, never pin a hash you did not compute from the file.
+
+## 2.16: Stremio Claude on Samsung (web version)
+
+- Samsung TVs run web apps only, so the native Stremio Claude (C, SDL) cannot go there. `home/stremio/` (`index.html`, `app.js`, `app.css`, plain ES5, no
+  libraries) is a web version that lives in the **Samsung package only**: `build_home.files(tizen=True)` adds it as `stremio/*`; LG and Android TV builds must never
+  contain it (a test checks). Do not let Samsung code leak into `home.js` branches for LG or Android: Samsung is `TV.name === 'tizen'`.
+- `tv.js` lists it on Samsung with the native app's id (`tv.stremioorigin.app`) so `findApp(STREMIO_APP)`, the shelf and "Open in Stremio Claude" work unchanged;
+  `launch` and `openStremio` (`samsungStremio`) go to `stremio/index.html[#open=movie/tt…]`; Back on its first screen returns to `../index.html`.
+- It speaks Stremio's protocol directly: `link.stremio.com/api/create|read` (QR sign-in), `api.strem.io/api/` (`getUser`, `addonCollectionGet`, `datastoreGet|Put` for
+  `libraryItem`, times in **milliseconds**), the addons' `/catalog|meta|stream|subtitles/…json`. `<access origin="*">` in `tizen/config.xml` is what lets a Samsung web app
+  call them. Torrents go through a Stremio server the person types in Settings (`POST <server>/<infoHash>/create`, then `GET <server>/<infoHash>/<fileIdx>`).
+- Checked only in a browser (`tests/stremio-web.e2e.js`: Playwright + ffmpeg; build with `python3 tizen/build.py --no-channels --preview` first). Not tried on a real Samsung TV:
+  the TV's own `<video>` decides which codecs play (Samsung's AVPlay would play more, but needs another privilege in `config.xml`; not added).

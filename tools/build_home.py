@@ -78,8 +78,15 @@ def files(config, tizen=False, android=False):
     for name in sorted(os.listdir(home)):
         if (tizen or android) and name in LG_ONLY:
             continue
+        if os.path.isdir(os.path.join(home, name)):
+            continue   # stremio/ (below) belongs to Samsung's package only
         with open(os.path.join(home, name), 'rb') as f:
             out[name] = f.read()
+    if tizen:   # Stremio Claude's web version: Samsung TVs only run web apps, so it lives here (LG and Android TV have the native app)
+        base = os.path.join(home, 'stremio')
+        for name in sorted(os.listdir(base)):
+            with open(os.path.join(base, name), 'rb') as f:
+                out['stremio/' + name] = f.read()
     for folder in ('symbols', 'fonts', 'tiles') + (('samsung-icons',) if tizen else ()):
         base = os.path.join(ROOT, 'assets', folder)
         for name in sorted(os.listdir(base)):

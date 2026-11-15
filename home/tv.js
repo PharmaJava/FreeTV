@@ -391,6 +391,13 @@ var TV = (function () {
 
   // MARK: - Samsung
 
+  /** Samsung: Stremio Claude's web version (stremio/index.html in this package), on one title when it is given. */
+  function samsungStremio(type, id) {
+    var open = type && /^tt\d{5,10}$/.test(id || '') ? '#open=' + (type === 'series' ? 'series' : 'movie') + '/' + id : '';
+    window.location.href = 'stremio/index.html' + open;
+    return true;
+  }
+
   function samsungApps(done) {
     try {
       window.tizen.application.getAppsInfo(function (list) {
@@ -571,7 +578,7 @@ var TV = (function () {
 
     /** Android TV: whether an app FreeTV can install from GitHub (Stremio Origin) is installable here, installing it, and how it goes. */
     /** Android TV: opens Stremio Claude on one title (type movie|series, an IMDb id); true when Android took it. */
-    openStremio: function (type, id) { return android && androidStremio(type, id); },
+    openStremio: function (type, id) { return samsung ? samsungStremio(type, id) : android && androidStremio(type, id); },
 
     canInstall: function (id) { try { return android && !!window.FreeTVHost.canInstall(id); } catch (e) { return false; } },
     install: function (id) { try { window.FreeTVHost.install(id); return true; } catch (e) { return false; } },
@@ -649,6 +656,11 @@ var TV = (function () {
           // FreeTV's Store for Android TV (home.js INFO.astore): apps from GitHub, each APK's SHA-256 pinned in the catalog.
           list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps', tile: 'tiles/store.png'});
         }
+        if (samsung) {
+          // Stremio Claude's web version (stremio/, only in Samsung's package): it takes the native app's id, so FreeTV's shelf, "Open in Stremio
+          // Claude" and the rest treat it as the same app.
+          list.push({id: 'tv.stremioorigin.app', title: 'Stremio Claude', icon: '', color: '#7B5BF5', symbol: 'play'});
+        }
         if (samsung && window.TizenBrew) {
           // With TizenBrew on the TV: YouTube AdFree and Twitch AdFree (its modules) are apps like any other, and FreeTV's Store
           // icon opens the community modules (tizenbrew.js). Without it, the Store icon explains how to get TizenBrew.
@@ -710,6 +722,7 @@ var TV = (function () {
     launch: function (id, params, done) {
       if (android) { androidLaunch(id, params, done); return; }
       if (samsung) {
+        if (id === 'tv.stremioorigin.app') { samsungStremio('', ''); if (done) setTimeout(function () { done(true); }, 0); return; }
         if (id.indexOf('tizenbrew:') === 0) window.TizenBrew.launch(id.slice(10), done);
         else if (id.indexOf('source:') === 0) samsungSource(id, done);
         else samsungLaunch(id, params, done);
