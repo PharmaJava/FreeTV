@@ -314,7 +314,7 @@ Promise.resolve()
       assert.ok(/SHA256SUMS/.test(java) && /does not match/.test(java), 'an APK is checked against its release\'s SHA256SUMS');
       assert.ok(/startsWith\("https:\/\/github\.com\/" \+ repo \+ "\/releases\/download\/"\)/.test(java), 'only github.com downloads of that project');
       var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
-      assert.ok(/SHELF\[s\]\[0\] === 'stremio' && TV\.name !== 'android'\) continue;/.test(home), 'Stremio on the default shelf is Android TV only (LG and Samsung unchanged)');
+      assert.ok(/\(SHELF\[s\]\[0\] === 'stremio' \|\| SHELF\[s\]\[0\] === 'play'\) && TV\.name !== 'android'\) continue;/.test(home), 'Stremio and Google Play on the default shelf are Android TV only (LG and Samsung unchanged)');
       assert.ok(/if \(TV\.name === 'android' && stremioHere && !Prefs\.opt\('stremioOffered'/.test(home), 'added to a saved shelf on Android TV only');
       assert.ok(/if \(TV\.name === 'android'\) \{ if \(!TV\.openStremio\(type, id\)/.test(home), 'Android opens a title through the intent; LG keeps its store service');
       assert.ok(/id\.matches\("tt\\\\d\{5,10\}"\)/.test(java), 'only an IMDb id goes in the intent');
