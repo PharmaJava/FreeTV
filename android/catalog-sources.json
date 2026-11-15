@@ -3,9 +3,9 @@
   "apps": [
     {"id": "tv.stremioorigin.app", "title": "Stremio Claude", "repo": "PharmaJava/webos", "tag": "^android-tv-v", "asset": "\\.apk$",
      "desc": ["A sua conta e os seus addons do Stremio, com torrents (a nossa versão do Stremio Origin)", "Your Stremio account and addons, with torrents (our build of Stremio Origin)", "Tu cuenta y tus addons de Stremio, con torrents (nuestra versión de Stremio Origin)"]},
-    {"id": "com.teamsmart.videomanager.tv", "title": "SmartTube", "repo": "yuliskov/SmartTube", "asset": "(?i)stable.*\\.apk$", "prefer": ["armeabi-v7a", "universal"],
+    {"id": "org.smarttube.stable", "title": "SmartTube", "repo": "yuliskov/SmartTube", "asset": "(?i)stable.*\\.apk$", "prefer": ["armeabi-v7a", "universal"],
      "desc": ["YouTube sem anúncios, com SponsorBlock, para a TV", "YouTube without ads, with SponsorBlock, for the TV", "YouTube sin anuncios, con SponsorBlock, para la tele"]},
-    {"id": "org.jellyfin.androidtv", "title": "Jellyfin", "repo": "jellyfin/jellyfin-androidtv", "asset": "(?i)\\.apk$",
+    {"id": "org.jellyfin.androidtv", "title": "Jellyfin", "repo": "jellyfin/jellyfin-androidtv", "asset": "(?i)-release\\.apk$",
      "desc": ["Os seus filmes e séries do seu servidor Jellyfin", "Your films and shows from your Jellyfin server", "Tus pelis y series desde tu servidor Jellyfin"]},
     {"id": "com.limelight", "title": "Moonlight", "repo": "moonlight-stream/moonlight-android", "asset": "(?i)nonroot.*\\.apk$", "prefer": ["armeabi-v7a", "universal"],
      "desc": ["Jogue os jogos do seu PC na TV (GameStream/Sunshine)", "Play your PC games on the TV (GameStream/Sunshine)", "Juega a los juegos de tu PC en la tele (GameStream/Sunshine)"]},

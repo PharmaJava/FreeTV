@@ -521,7 +521,7 @@ var TV = (function () {
   }
 
   // YouTube on Android TV: SmartTube (no ads) when it is there, else Google's. A video opens by its address.
-  var ANDROID_YOUTUBE = ['com.teamsmart.videomanager.tv', 'com.liskovsoft.smarttubetv.beta', 'com.liskovsoft.smarttubetv', 'com.google.android.youtube.tv'];
+  var ANDROID_YOUTUBE = ['org.smarttube.stable', 'org.smarttube.beta', 'com.teamsmart.videomanager.tv', 'com.liskovsoft.smarttubetv.beta', 'com.liskovsoft.smarttubetv', 'com.google.android.youtube.tv'];
 
   // Stremio Claude on Android TV: the title it should show (as webOS's open.json) and FreeTV's TMDB key go in its intent (WebHome.openStremio).
   function androidStremio(type, id) {
