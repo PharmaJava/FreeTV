@@ -58,6 +58,7 @@ public class SettingsActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         view.resume();
+        fromInstaller(getIntent());
         // From ADB: am start -n io.freemytv/.SettingsActivity --ez screensaver true (straight to the preview).
         if (preview == null && getIntent().getBooleanExtra("screensaver", false)) {
             getIntent().removeExtra("screensaver");
@@ -69,6 +70,34 @@ public class SettingsActivity extends Activity {
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+    }
+
+    /**
+     * The installer on the person's computer or phone (FREETVAPPWEB, over ADB): am start -n io.freemytv/.SettingsActivity
+     * --es freetv.config64 <base64 of the settings JSON> --ez freetv.setup true. The settings are kept for FreeTV's home (only a JSON
+     * object, at most 16 KB); setup turns FreeTV into the TV's home screen as the menu's own choice does (the TV asks once to allow
+     * FreeTV's debugging key).
+     */
+    private void fromInstaller(Intent i) {
+        if (i == null) return;
+        String b64 = i.getStringExtra("freetv.config64");
+        if (b64 != null) {
+            i.removeExtra("freetv.config64");
+            try {
+                String json = new String(android.util.Base64.decode(b64, android.util.Base64.DEFAULT), java.nio.charset.StandardCharsets.UTF_8);
+                if (json.length() <= 16384) {
+                    new org.json.JSONObject(json);   // only a JSON object is kept
+                    Prefs.setFreetvConfig(json);
+                }
+            } catch (Exception e) {
+                AppLog.w("installer settings: " + e.getMessage());
+            }
+        }
+        if (i.getBooleanExtra("freetv.setup", false)) {
+            i.removeExtra("freetv.setup");
+            org.json.JSONObject st = HomeMode.state(this);
+            if (!(HomeMode.FREE.equals(st.optString("mode")) && !st.optBoolean("homeReverted"))) HomeMode.request(this, HomeMode.FREE);
+        }
     }
 
     @Override protected void onPause() {

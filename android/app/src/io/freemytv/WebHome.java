@@ -98,6 +98,7 @@ final class WebHome {
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 String u = req.getUrl().toString();
+                if (u.equals("file:///android_asset/freetv/config.js")) return config();
                 if (!u.startsWith(ICON_HOST)) return null;
                 byte[] png = icon(Uri.decode(u.substring(ICON_HOST.length())));
                 if (png == null) return new WebResourceResponse("image/png", null, 404, "Not Found", null, new ByteArrayInputStream(new byte[0]));
@@ -114,6 +115,28 @@ final class WebHome {
     }
 
     View view() { return web; }
+
+    /**
+     * config.js with the installer's settings laid over the built-in ones (Prefs.freetvConfig): what the LG installer writes into
+     * its package. data.js then keeps them in fmtv.cfg as on LG. Without installer settings, the file as built.
+     */
+    private WebResourceResponse config() {
+        String extra = Prefs.freetvConfig();
+        if (extra.isEmpty()) return null;
+        try (InputStream in = activity.getAssets().open("freetv/config.js")) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            JSONObject o = new JSONObject(extra);   // checked again: only a JSON object goes into the page
+            String js = out.toString("UTF-8") + "\n/* The installer's settings (FREETVAPPWEB). */\n(function (o) { for (var k in o) if (k !== 'version') window.CONFIG[k] = o[k]; })("
+                    + o.toString() + ");\n";
+            return new WebResourceResponse("application/javascript", "UTF-8", new ByteArrayInputStream(js.getBytes("UTF-8")));
+        } catch (Exception e) {
+            AppLog.w("config.js: " + e.getMessage());
+            return null;
+        }
+    }
 
     void resume() { web.onResume(); js("window.FreeTVHostEvent && FreeTVHostEvent('resume')"); }
 

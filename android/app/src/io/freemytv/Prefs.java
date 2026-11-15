@@ -108,6 +108,13 @@ final class Prefs {
     }
 
     /** The home screen's soft click when moving and opening. */
+    /**
+     * The settings the computer or phone installer chose (city, TMDB key, services…), as the JSON object FreeTV's config.js carries
+     * (the installer's makeConfig): WebHome lays them over the built-in config.js, as the LG installer writes them into its package.
+     */
+    static String freetvConfig() { return sp().getString("freetv_config", ""); }
+    static void setFreetvConfig(String json) { sp().edit().putString("freetv_config", json).apply(); version++; }
+
     /** FreeTV's home screen (the same as on LG and Samsung) instead of Free My TV's own ("classic"). */
     static boolean freetvHome() { return sp().getBoolean("freetv_home", true); }
     static void setFreetvHome(boolean on) { sp().edit().putBoolean("freetv_home", on).apply(); version++; }

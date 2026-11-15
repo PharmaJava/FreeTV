@@ -74,7 +74,11 @@ python3 ../tools/build_home.py "${FT_CONFIG[@]}" --android out/web/freetv
 # --- Build
 "$BT/aapt2" compile --dir app/res -o out/res.zip
 # Fonts uncompressed: Android reads them straight from the APK.
+# FreeTV's version (home/appinfo.json) is the app's: x.y.z → versionCode xxyyzz, so every release installs over the one before
+FT_VERSION=$(python3 -c 'import json; print(json.load(open("../home/appinfo.json"))["version"])')
+FT_CODE=$(python3 -c 'import sys; a, b, c = (int(x) for x in sys.argv[1].split(".")); print(a * 10000 + b * 100 + c)' "$FT_VERSION")
 "$BT/aapt2" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
+  --version-code "$FT_CODE" --version-name "$FT_VERSION" --replace-version \
   --min-sdk-version 26 --target-sdk-version 33 -A app/assets -A out/web -0 ttf
 # Windows aapt2 packs assets with backslash separators ("assets/symbols\x.png") and Android
 # cannot find them: the home screen loses its icons and fonts. Rename the zip entries to "/".

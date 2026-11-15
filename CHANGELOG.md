@@ -3,6 +3,14 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.15.1 (2026-11-15)
+
+### Android TV only (LG and Samsung unchanged)
+- **The installer on the computer or phone can set it all up** (FREETVAPPWEB, over ADB): `SettingsActivity` takes `freetv.config64` (the page's settings:
+  city, TMDB key, services…, a JSON object of at most 16 KB, kept in `Prefs.freetvConfig`) and `freetv.setup` (turns FreeTV into the TV's home as the menu
+  does). `WebHome` serves `config.js` with those settings laid over the built-in ones, as the LG installer writes them into its package.
+- The APK carries FreeTV's version (2.15.1 → versionCode 21501), so each release installs over the one before.
+
 ## 2.15.0 (2026-11-15)
 
 ### New
