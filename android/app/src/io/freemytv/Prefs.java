@@ -108,6 +108,10 @@ final class Prefs {
     }
 
     /** The home screen's soft click when moving and opening. */
+    /** FreeTV's home screen (the same as on LG and Samsung) instead of Free My TV's own ("classic"). */
+    static boolean freetvHome() { return sp().getBoolean("freetv_home", true); }
+    static void setFreetvHome(boolean on) { sp().edit().putBoolean("freetv_home", on).apply(); version++; }
+
     static boolean sounds() { return sp().getBoolean("sounds", true); }
     static void setSounds(boolean on) { put("sounds", on); }
 

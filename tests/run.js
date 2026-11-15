@@ -283,6 +283,44 @@ Promise.resolve()
     });
   })
   .then(function () {
+    console.log('Android TV');
+    return ok('the Android TV home: the host bridge lists and opens apps, Back and the colour keys arrive as LG codes, Stremio Origin is offered from GitHub, no LG-only files', function () {
+      var vm = require('vm'), launched = [], keys = [];
+      var doc = {activeElement: null, body: {dispatchEvent: function (e) { keys.push([e.type, e.keyCode]); }}, createEvent: function () { return {initEvent: function (t) { this.type = t; }}; }};
+      var host = {apps: function () { return JSON.stringify([{id: 'com.netflix.ninja', title: 'Netflix', icon: 'https://freetv.local/icon/com.netflix.ninja'}, {id: 'io.freemytv', title: 'FreeTV'}]); },
+        inputs: function () { return JSON.stringify([{id: 'live', label: 'Live TV'}, {id: 'input:x/HW1', label: 'PS5', connected: true}]); },
+        launch: function (id, uri) { launched.push([id, uri]); return true; }, canInstall: function (p) { return p === 'tv.stremioorigin.app'; },
+        zone: function () { return 'Europe/Madrid'; }};
+      var win = {FreeTVHost: host, localStorage: {getItem: function () { return null; }, setItem: function () {}}};
+      var ctx = {window: win, document: doc, localStorage: win.localStorage, setTimeout: function (f) { f(); }, JSON: JSON, Intl: Intl, tr: function (a, b) { return b; }, console: console};
+      win.window = win; vm.createContext(ctx);
+      vm.runInContext(fs.readFileSync(path.join(root, 'home', 'tv.js'), 'utf8') + '\nwindow.TV = TV;', ctx);
+      var TV = win.TV;
+      assert.strictEqual(TV.name, 'android');
+      var apps = null; TV.apps(function (l) { apps = l; });
+      assert.deepStrictEqual(apps.map(function (a) { return a.id; }), ['com.netflix.ninja', 'freetv.get:tv.stremioorigin.app'], 'FreeTV itself is hidden; Stremio Origin can be installed');
+      var ins = null; TV.inputs(function (l) { ins = l; });
+      assert.strictEqual(ins[0].key, 'live'); assert.strictEqual(ins[1].label, 'PS5');
+      TV.launch('com.google.android.youtube.tv', {contentTarget: 'v=abc_12'}, function () {});
+      assert.deepStrictEqual(launched[0], ['com.google.android.youtube.tv', 'https://www.youtube.com/watch?v=abc_12'], 'a channel video opens by its address');
+      win.FreeTVHostKey('keydown', 461);
+      assert.deepStrictEqual(keys[0], ['keydown', 461], 'Back reaches the page as LG\'s Back');
+      assert.strictEqual(TV.keys.back, 461);
+      var build = require('child_process').execFileSync('python3', ['-c', 'import sys,json; sys.path.insert(0,"tools"); import build_home as b; ' +
+        'c=b.read_config("config.example.properties"); f=b.files(c, android=True); print(json.dumps(sorted(f)))'], {cwd: root, encoding: 'utf8'});
+      var names = JSON.parse(build);
+      ['extras.js', 'renewal.js', 'helper-control.js', 'native-bootstrap.js', 'apps.js'].forEach(function (n) { assert.ok(names.indexOf(n) < 0, n + ' is LG only'); });
+      var java = fs.readFileSync(path.join(root, 'android', 'app', 'src', 'io', 'freemytv', 'WebHome.java'), 'utf8');
+      assert.ok(/SHA256SUMS/.test(java) && /does not match/.test(java), 'an APK is checked against its release\'s SHA256SUMS');
+      assert.ok(/startsWith\("https:\/\/github\.com\/" \+ repo \+ "\/releases\/download\/"\)/.test(java), 'only github.com downloads of that project');
+      var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(/SHELF\[s\]\[0\] === 'stremio' && TV\.name !== 'android'\) continue;/.test(home), 'Stremio on the default shelf is Android TV only (LG and Samsung unchanged)');
+      assert.ok(/if \(TV\.name === 'android' && stremioHere && !Prefs\.opt\('stremioOffered'/.test(home), 'added to a saved shelf on Android TV only');
+      assert.ok(/if \(TV\.name === 'android'\) \{ if \(!TV\.openStremio\(type, id\)/.test(home), 'Android opens a title through the intent; LG keeps its store service');
+      assert.ok(/id\.matches\("tt\\\\d\{5,10\}"\)/.test(java), 'only an IMDb id goes in the intent');
+    });
+  })
+  .then(function () {
     console.log('two listings for one app id');
     return ok('the Cobalt YouTube is listed beside the catalogue one, under its own name, and installs with the real id', async function () {
       var cat = {packages: [{id: 'youtube.leanback.v4', title: 'old', manifest: {version: '0.5.3'}}]};

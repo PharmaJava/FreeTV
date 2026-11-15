@@ -3,6 +3,22 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.15.0 (2026-11-15)
+
+### New
+- **FreeTV on Android TV and Google TV (Sony Bravia…).** `android/` (Free My TV's app, which already takes over the TV's Home through the TV's own ADB)
+  now shows FreeTV's own home: `home/` built by `tools/build_home.py --android` into `assets/freetv` and run in a WebView (`WebHome.java`). The page's TV is
+  `window.FreeTVHost` (`tv.js`, `TV.name === 'android'`): the apps the launcher lists (their banners served at `https://freetv.local/icon/<package>`), Live TV
+  and the HDMI inputs, opening them, the TV's settings, the time zone. Back, OK and the colour keys reach the page as LG's codes (461, 13, 403-406), so
+  `home.js` handles them as on LG. A channel video opens in SmartTube or YouTube by its address. Free My TV's own screen stays as the classic look
+  (`Prefs.freetvHome`). What needs LG's service (the webOS Store, Continue watching with Stremio, Jellyfin and Plex, memory, Developer Mode) is not there.
+- **Stremio Claude on the shelf by default, and installed from GitHub on Android TV.** On Android TV only (LG and Samsung keep their shelves) it is second on a new shelf
+  and comes onto a saved one once; when it is missing, its icon offers to install it: FreeTV takes the newest `android-tv-v*` release of `PharmaJava/webos`, only github.com
+  downloads of that project, checks the APK against the release's `SHA256SUMS` (none, or a mismatch: refused) and hands it to Android's installer, which
+  asks the person. Once installed it takes its installer icon's place. Picks and Continue watching open it as on LG
+  (2.14): FreeTV launches it with the title in the intent (`freetv.open.type`/`freetv.open.id`) and its TMDB key (`freetv.tmdb.key`), and the app writes
+  the same `open.json` / `tmdb.key` its store service leaves on webOS.
+- `android/build.sh` builds it all (FreeTV's `config.properties` when there is one, else the generic home), and the app is called FreeTV.
 ## 2.14.1 (2026-11-13)
 
 ### Changed

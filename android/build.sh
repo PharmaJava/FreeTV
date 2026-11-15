@@ -66,11 +66,16 @@ final class Config {
 }
 EOF
 
+# --- FreeTV's home screen (home/, the same web app LG and Samsung run) for the WebView, in assets/freetv. Your FreeTV
+# config.properties when there is one (city, TMDB key); else the generic build, which finds its settings on the TV.
+if [ -f ../config.properties ]; then FT_CONFIG=(--config ../config.properties); else FT_CONFIG=(--config ../config.example.properties --generic); fi
+python3 ../tools/build_home.py "${FT_CONFIG[@]}" --android out/web/freetv
+
 # --- Build
 "$BT/aapt2" compile --dir app/res -o out/res.zip
 # Fonts uncompressed: Android reads them straight from the APK.
 "$BT/aapt2" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
-  --min-sdk-version 26 --target-sdk-version 33 -A app/assets -0 ttf
+  --min-sdk-version 26 --target-sdk-version 33 -A app/assets -A out/web -0 ttf
 # Windows aapt2 packs assets with backslash separators ("assets/symbols\x.png") and Android
 # cannot find them: the home screen loses its icons and fonts. Rename the zip entries to "/".
 case "$(uname -s 2>/dev/null)" in

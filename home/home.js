@@ -68,6 +68,7 @@
   /** Shelf apps in this order when installed, like the Android app: key, LG app id, name on the TV, brand gradient. */
   var SHELF = [
     ['netflix', /^netflix$/, /netflix/i, ['#0A0A0A', '#000000']],
+    ['stremio', /^(freetv\.get:)?tv\.stremioorigin\.app$/, /^stremio (origin|claude)$/i, ['#7B5BF5', '#3A1F8F']],   // Android TV only (pickShelf): it offers to install it when it is missing
     ['ytadfree', /^tizenbrew:npm\/@foxreis\/tizentube$/, /^youtube adfree$/i, ['#1C1C1E', '#09090A']],   // Samsung, through TizenBrew
     ['youtube', /youtube/, /^youtube$/i, ['#1C1C1E', '#09090A']],
     ['prime', /^amazon$/, /prime video|amazon/i, ['#2AA8FF', '#0A68D4']],
@@ -144,6 +145,26 @@
       Prefs.set('shelf', chosen);
     }
     if (brew.length && !Prefs.brewOffered()) Prefs.set('brewOffered', true);
+    // Android TV: Stremio Origin (or the icon that installs it) comes onto a saved shelf once, second; and once installed it takes its
+    // installer icon's place.
+    if (chosen) {
+      var swapped = false;
+      chosen = chosen.map(function (id) {
+        if (id.indexOf('freetv.get:') !== 0) return id;
+        var real = id.slice(11);
+        for (var k = 0; k < apps.length; k++) if (apps[k].id === real) { swapped = true; return real; }
+        return id;
+      });
+      if (swapped) Prefs.set('shelf', chosen);
+    }
+    var stremioHere = apps.filter(function (x) { return x.id === STREMIO_APP || x.id === 'freetv.get:' + STREMIO_APP; })[0];
+    if (TV.name === 'android' && stremioHere && !Prefs.opt('stremioOffered', false)) {
+      if (chosen && chosen.indexOf(stremioHere.id) < 0) {
+        chosen = chosen.slice(0, 1).concat([stremioHere.id], chosen.slice(1)).slice(0, MAX_SHELF);
+        Prefs.set('shelf', chosen);
+      }
+      Prefs.set('stremioOffered', true);
+    }
     if (chosen) {
       for (var i = 0; i < chosen.length && out.length < MAX_SHELF; i++) {
         for (var j = 0; j < apps.length; j++) if (apps[j].id === chosen[i]) out.push(apps[j]);
@@ -151,6 +172,7 @@
     } else {
       for (var s = 0; s < SHELF.length && out.length < MAX_SHELF; s++) {
         if (SHELF[s][0] === 'youtube' && adfree) continue;   // YouTube AdFree is there instead (Samsung with TizenBrew)
+        if (SHELF[s][0] === 'stremio' && TV.name !== 'android') continue;   // Android TV only: LG's and Samsung's shelves stay as they were
         for (var a = 0; a < apps.length; a++) {
           if ((SHELF[s][1].test(apps[a].id) || SHELF[s][2].test(apps[a].title)) && out.indexOf(apps[a]) < 0) { out.push(apps[a]); break; }
         }
@@ -2808,6 +2830,7 @@
     return function () {
       if (kidsOver && Prefs.kids()) { checkKidsLimit(); toast(tr('Acabou o tempo de TV', 'TV time is over', 'Se acabó el tiempo de tele')); return; }
       if (id === 'freetv.store') { openCommunity(true); return; }
+      if (id.indexOf('freetv.get:') === 0) { offerInstall(id.slice(11), name || id); return; }
       if (id.indexOf('chan:') === 0) {
         var ch = allChannels().filter(function (c) { return 'chan:' + c.key === id; })[0];
         if (ch) openChannel(ch);
@@ -2822,6 +2845,37 @@
         if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + (name || id));
       });
     };
+  }
+
+  /** Android TV: an app FreeTV installs from its GitHub release (Stremio Origin). Android itself asks to confirm (and, the first time, to
+      allow FreeTV to install apps); FreeTV checks the file's SHA-256 against the release's SHA256SUMS before that. */
+  function offerInstall(pkg, name) {
+    if (!TV.canInstall(pkg)) { toast(tr('Não dá para instalar daqui', 'It cannot be installed from here', 'No se puede instalar desde aquí')); return; }
+    showDialog(name, [
+      {text: tr(name + ' não está nesta TV. O FreeTV pode instalá-lo da sua página no GitHub: confere a impressão SHA-256 do ficheiro e depois o Android pede que confirme.',
+        name + ' is not on this TV. FreeTV can install it from its GitHub page: it checks the file\'s SHA-256 fingerprint, then Android asks you to confirm.',
+        name + ' no está en esta tele. FreeTV puede instalarlo desde su página de GitHub: comprueba la huella SHA-256 del archivo y después Android te pide que lo confirmes.')},
+      {text: tr('A primeira vez, o Android pede também que permita ao FreeTV instalar apps: ative-o e volte a carregar.',
+        'The first time, Android also asks you to allow FreeTV to install apps: turn it on and press it again.',
+        'La primera vez, Android también pide permitir que FreeTV instale apps: actívalo y vuelve a pulsar.'), cls: 'warn'}
+    ], [
+      {label: tr('Instalar', 'Install', 'Instalar'), run: function () {
+        if (!TV.install(pkg)) { toast(tr('Não deu para instalar', 'Could not install', 'No se pudo instalar')); return; }
+        toast(tr('Baixando ', 'Downloading ', 'Descargando ') + name + '…');
+        var tries = 0, last = '';
+        (function watch() {
+          var s = TV.installState();
+          if (s !== last) {
+            last = s;
+            if (s === 'busy:install' || s === 'asked') toast(tr('Confirme na janela do Android', 'Confirm in Android\'s window', 'Confírmalo en la ventana de Android'));
+            else if (s === 'permission') toast(tr('Permita ao FreeTV instalar apps e carregue outra vez', 'Allow FreeTV to install apps and press it again', 'Permite que FreeTV instale apps y vuelve a pulsar'));
+            else if (s.indexOf('error:') === 0) toast(tr('Não deu para instalar: ', 'Could not install: ', 'No se pudo instalar: ') + s.slice(6));
+          }
+          if (s.indexOf('busy') === 0 && ++tries < 240) setTimeout(watch, 500);
+        })();
+      }},
+      {label: tr('Agora não', 'Not now', 'Ahora no'), run: function () {}}
+    ], 0);
   }
 
   // MARK: - Dialog: a small box with some text and buttons (OK chooses, Back closes)
@@ -4144,6 +4198,7 @@
   function stremioOpen(type, id, failed) {
     var sa = findApp(STREMIO_APP);
     if (!sa || !/^tt\d{5,10}$/.test(id)) { if (failed) failed(); return; }
+    if (TV.name === 'android') { if (!TV.openStremio(type, id) && failed) failed(); return; }   // Android TV: the title goes in the app's intent (no store service there)
     svcCall('stremioOpen', {type: type, id: id}, function (r) {
       if (r && r.returnValue) launcher(sa.id, sa.title)(); else if (failed) failed();
     });

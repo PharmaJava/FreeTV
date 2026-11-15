@@ -1,0 +1,48 @@
+# FreeTV for Android TV / Google TV: builds android/ (FreeTV's home inside Free My TV's app) on every push and pull request.
+# From main it publishes the release android-tv-v<version> (the APK and its SHA256SUMS), but only when the repository has the
+# FREETV_ANDROID_KEYSTORE secret (base64 of the keystore build.sh signs with, password "freemytv"): Android only updates an app
+# signed with the same key, so a release signed with a key made on the spot would not update the TVs that have the previous one.
+name: android
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: The signing key, when the repository has it
+        env:
+          KEYSTORE: ${{ secrets.FREETV_ANDROID_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then echo "$KEYSTORE" | base64 -d > android/freemytv.keystore; echo "signed=1" >> "$GITHUB_ENV"
+          else echo "No FREETV_ANDROID_KEYSTORE secret: signed with a key made now (fine to try, not published)" | tee -a "$GITHUB_STEP_SUMMARY"; fi
+      - name: Build
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+          cd android && bash build.sh
+          version=$(python3 -c 'import json; print(json.load(open("../home/appinfo.json"))["version"])')
+          mkdir -p ../dist && cp FreeMyTV.apk "../dist/FreeTV-AndroidTV-$version.apk"
+          unzip -l FreeMyTV.apk | grep -q 'assets/freetv/index.html'
+      - uses: actions/upload-artifact@v4
+        with: { name: freetv-android, path: dist/*.apk }
+      - name: Publish android-tv-v<version>
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && env.signed == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("home/appinfo.json"))["version"])')
+          tag="android-tv-v$version"
+          (cd dist && sha256sum *.apk > SHA256SUMS)
+          if gh release view "$tag" >/dev/null 2>&1; then echo "$tag already published"; exit 0; fi
+          gh release create "$tag" dist/*.apk dist/SHA256SUMS --title "FreeTV $version for Android TV" \
+            --notes "FreeTV's home for Android TV and Google TV (Sony Bravia…). Install it, open FreeTV and choose its home screen: see docs/ANDROID-TV.md."
+    permissions:
+      contents: write

@@ -50,7 +50,7 @@ ids, and every install is confirmed on the TV. The TV side of it (launch params 
 | `tests/run.js` | `node tests/run.js`: the store service's logic with a mocked TV shell (versions, updates, Developer Mode renewal) and a parse check of `home/`. CI (`.github/workflows/ci.yml`) runs it, `tools/check_secrets.py --all` and a keyless build on every push. Run it before pushing |
 | `tools/make_symbols.py` | Draws FreeTV's own symbols (search, kids, health, calm, lock, timer, tiles) into `assets/symbols/`, same weight as the Material ones |
 | `tizen/` | Samsung: `build.py` (unsigned/signed .wgt), `install.py` (SDB over Wi-Fi). Experimental, untested by us on a Samsung |
-| `android/` | Free My TV's Android app, unchanged (`build.sh`, `app/`). Not built or tested by us. Never commit its `config.properties`, `*.keystore` or `*.apk` |
+| `android/` | Android TV / Google TV: Free My TV's app (`build.sh`, `app/`), whose home is FreeTV's own (`WebHome.java`, a WebView with `home/` built by `build_home.py --android`). Built here, tried in a browser with a mocked `FreeTVHost`; not on a real TV yet. Never commit its `config.properties`, `*.keystore` or `*.apk` |
 
 ## Debugging the live screen
 
@@ -167,3 +167,15 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   started by the store service over the TV's SSH (`companion.js`, `screenguard.js`). The Developer Mode shell is denied `tvpower` on the Luna bus: the guard uses the remote control API (SSAP) with the
   page's power key. It knows a video is playing from Stremio Origin's own log (`data/applog.log`, a `[video] ev {"currentTime"` line every 30 s); if a later version of the app changes that, the guard
   just stops acting.
+
+## 2.15: Android TV
+
+- `tv.js` has a third TV, `android`: `window.FreeTVHost` (`android/app/src/io/freemytv/WebHome.java`, `@JavascriptInterface` methods returning JSON strings).
+  Keep the bridge small; anything new goes on both sides. Keys the WebView would not pass (Back, OK, colours) come in through `FreeTVHostKey(type, code)` with
+  LG's codes, so `home.js` needs no Android branches for keys.
+- App icons are served by the WebView itself at `https://freetv.local/icon/<package>` (`shouldInterceptRequest`).
+- `freetv.get:<package>` is an app FreeTV can install from GitHub (`WebHome.GITHUB`: package → project). The rules live in `WebHome.install`: an `android-tv-v*`
+  release, github.com downloads of that project only, the APK's SHA-256 in the release's `SHA256SUMS`, Android's installer asks. `pickShelf` swaps it for the
+  real app once installed.
+- Releases: `.github/workflows/android.yml` builds the APK on every push; it publishes `android-tv-v<version>` from `main` only when the repository has the
+  `FREETV_ANDROID_KEYSTORE` secret (base64 of the keystore `build.sh` signs with): Android only updates an app signed with the same key.

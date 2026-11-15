@@ -7,7 +7,7 @@ situación honesta de cada tipo de tele:
 |---|---|---|
 | **LG (webOS)** | FreeTV completo: pantalla nueva, botón Home, Atrás, renovación, sugerencias, mercados… | **Probado** en una LG OLED (`bash install.sh <IP>`) |
 | **Samsung (Tizen 3 o más: 2017 en adelante)** | La **misma pantalla** de FreeTV (iconos, sugerencias, mercados, reordenado) empaquetada con las herramientas de Free My TV (`tizen/`) | **Experimental**: la instalación por red es la de Free My TV, probada allí en Samsung de 2017 y 2019; FreeTV como tal **no lo hemos probado en ninguna Samsung**. Guía: [SAMSUNG.md](SAMSUNG.md) |
-| **Android TV / Google TV** (Sony, TCL, Xiaomi, Philips, Hisense, onn, Chromecast con Google TV…) | La app **Free My TV para Android** (`android/`), tal cual la publicó su equipo | **Incluida sin cambios**: no la hemos compilado ni probado aquí. No lleva las novedades de FreeTV (menú Sugerencias, reordenado con OK, fila de 18…). Guía: [ANDROID-TV.md](ANDROID-TV.md) |
+| **Android TV / Google TV** (Sony Bravia, TCL, Xiaomi, Philips, Hisense, onn, Chromecast con Google TV…) | La **misma pantalla** de FreeTV dentro de la app de Free My TV (`android/`), que se pone como inicio de la tele, y **Stremio Claude** en el estante (lo instala desde GitHub si falta) | **Experimental**: compilada y probada con una tele simulada, no en una Bravia todavía. Guía: [ANDROID-TV.md](ANDROID-TV.md) |
 | Samsung antiguas (hasta 2016) | Nada | **No se puede**: la tele no ofrece el Modo Desarrollador. Mira «Alternativa» abajo |
 | Fire TV, Roku, Apple TV | Nada | No soportado |
 

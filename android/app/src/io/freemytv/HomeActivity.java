@@ -16,6 +16,7 @@ import android.widget.TextView;
  */
 public class HomeActivity extends Activity {
     private HomeView home;
+    private WebHome web;   // FreeTV's own home screen (the web app LG and Samsung run); the native one is the "classic" look
     private int prefsVersion = Prefs.version;   // settings changed while we were away: start over
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +35,12 @@ public class HomeActivity extends Activity {
             return;
         }
         Ui.init(this);
+        if (Prefs.freetvHome()) {
+            web = new WebHome(this);
+            setContentView(web.view());
+            web.view().requestFocus();
+            return;
+        }
         home = new HomeView(this);
         setContentView(home);
         getWindow().setBackgroundDrawable(null);
@@ -48,10 +55,12 @@ public class HomeActivity extends Activity {
             return;
         }
         if (home != null) home.resume();
+        if (web != null) web.resume();
     }
 
     @Override protected void onPause() {
         if (home != null) home.pause();
+        if (web != null) web.pause();
         super.onPause();
     }
 
@@ -59,10 +68,12 @@ public class HomeActivity extends Activity {
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         if (home != null) home.reset(true);
+        if (web != null) web.home();
     }
 
     @Override protected void onDestroy() {
         if (home != null) home.destroy();
+        if (web != null) web.destroy();
         super.onDestroy();
     }
 
@@ -74,6 +85,7 @@ public class HomeActivity extends Activity {
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (RemoteKeys.onKey(this, event)) return true;
         if (home != null && home.onKey(event)) return true;
+        if (web != null && web.onKey(event)) return true;
         return super.dispatchKeyEvent(event);
     }
 

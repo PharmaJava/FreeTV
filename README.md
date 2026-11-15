@@ -2,7 +2,7 @@
 
 **A clean, ad-free home screen for your TV, and a Home button that always takes you to it.**
 
-**LG (webOS): tested** · Samsung (Tizen 2017+): experimental · Android TV and Google TV: Free My TV's app included · [what there is for each TV](docs/OTRAS-TELES.md)
+**LG (webOS): tested** · Samsung (Tizen 2017+): experimental · Android TV and Google TV (Sony Bravia…): experimental · [what there is for each TV](docs/OTRAS-TELES.md)
 
 [Versión en español ↓](#freetv-en-español) · [Guide to do it with any AI](docs/GUIA-IA.md) · [Troubleshooting](docs/PROBLEMAS.md)
 (the guides are in Spanish for now; any AI can translate them for you)
@@ -11,6 +11,13 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.15: Android TV and Google TV (Sony Bravia…), with Stremio Claude
+
+- The same FreeTV home on **Android TV and Google TV**, inside the app in `android/`, which becomes the TV's home screen ([guide](docs/ANDROID-TV.md)). Apps,
+  inputs, the remote's Back and colour keys, the picks, the weather, widgets and the rest work as on LG; what needs LG's service (the webOS Store,
+  Continue watching with Stremio/Jellyfin/Plex, memory) does not exist there.
+- **Stremio Claude is on the shelf by default.** On Android TV, if it is not installed, its icon installs it from its GitHub release (SHA-256 checked;
+  Android asks you to confirm), and picks open it. Not tried on a real Bravia yet.
 ### FreeTV 2.14: picks open in Stremio Claude
 
 - OK on a film or series of the home's picks opens **its own page in Stremio Claude** (and Continue watching's Stremio titles too). FreeTV also gives Stremio Claude its TMDB key, on the same TV,
@@ -448,6 +455,13 @@ affiliated with LG.
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
 
+### FreeTV 2.15: Android TV y Google TV (Sony Bravia…), con Stremio Claude
+
+- La misma pantalla de FreeTV en **Android TV y Google TV**, dentro de la app de `android/`, que se pone como inicio de la tele ([guía](docs/ANDROID-TV.md)).
+  Apps, entradas, Atrás y los botones de colores, sugerencias, el tiempo, widgets y lo demás funcionan como en LG; lo que necesita el servicio de LG (la
+  Tienda de webOS, Continuar viendo con Stremio/Jellyfin/Plex, la memoria) no existe allí.
+- **Stremio Claude está en el estante por defecto.** En Android TV, si no está instalado, su icono lo instala desde su versión de GitHub (comprobando el
+  SHA-256; Android te pide confirmarlo), y las sugerencias lo abren. Aún sin probar en una Bravia de verdad.
 ### FreeTV 2.14: las sugerencias se abren en Stremio Claude
 
 - OK en una película o serie de las sugerencias del inicio abre **su ficha en Stremio Claude** (y también los títulos de Stremio en Continuar viendo). FreeTV además le pasa a Stremio Claude su clave

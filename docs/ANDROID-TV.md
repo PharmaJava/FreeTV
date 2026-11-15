@@ -1,9 +1,13 @@
-# Android TV y Google TV: la app de Free My TV (incluida)
+# Android TV y Google TV (Sony Bravia y demás): FreeTV
 
-> **Estado:** `android/` es la app **Free My TV para Android**, copiada **sin cambios** de su repositorio (MIT, con su
-> crédito). **No la hemos compilado ni probado nosotros** (aquí no hay SDK de Android) y **no lleva las novedades de FreeTV**
-> (menú Sugerencias, reordenar con OK, la fila de hasta 18, XRP…). Para las últimas versiones y soporte, mira
-> https://freemytv.io. Si la pruebas, cuéntanos en una *Issue* qué tele y cómo fue.
+> **Estado (FreeTV 2.15):** `android/` es la app de Free My TV (MIT, con su crédito) con **la misma pantalla de FreeTV** que
+> en LG y Samsung dentro (un WebView con `home/`), más **Stremio Claude** en el estante: si no está en la tele, FreeTV lo
+> instala desde su versión de GitHub (comprueba su huella SHA-256 y Android pide confirmarlo), y las sugerencias lo abren por
+> defecto. Compilada y probada en un navegador con una tele simulada; **todavía no en una Bravia de verdad**. La pantalla
+> nativa de Free My TV sigue dentro como aspecto «clásico». Si la pruebas, cuéntanos en una *Issue* qué tele y cómo fue.
+>
+> Lo que en Android TV **no** hay (como en Samsung): la Tienda de webOS, Continuar viendo con Stremio, Jellyfin y Plex, la
+> memoria y la renovación del Modo Desarrollador. Todo eso vive en el servicio que solo existe en LG.
 
 Es una pantalla de inicio que **sustituye** a la de tu Google TV o Android TV, más una app de ajustes que cambia entre *Free My
 TV* y el inicio original de la tele. Usa `adb` para **desactivar** (nunca desinstalar) las apps de publicidad del fabricante;
@@ -30,7 +34,7 @@ adb connect 192.168.1.50:5555    # la IP de tu tele; la tele pregunta «¿Permit
 adb install -r FreeMyTV.apk
 ```
 
-3. **En la tele** (no desde el ordenador): abre *Free My TV* → **Pantalla de inicio (Home Screen) → Free My TV**. La app usa el `adb` de la propia tele y
+3. **En la tele** (no desde el ordenador): abre *FreeTV* → **Pantalla de inicio (Home Screen) → Free My TV**. La app usa el `adb` de la propia tele y
    te pedirá permiso una vez más. Antes de cambiar, lee qué hace: cambia el inicio y el salvapantallas, **desactiva** una
    lista corta de apps promocionales y *Original* lo devuelve todo.
 4. Para ver qué hizo: `adb logcat -s FreeMyTV`.

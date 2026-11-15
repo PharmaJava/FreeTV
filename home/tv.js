@@ -2,6 +2,7 @@
  * The TV's side of the web home screen: its apps, opening one, its inputs, its settings, the Back key, its time zone.
  *  - LG webOS: the TV's service bus (Luna), the same calls LG's launcher makes.
  *  - Samsung Tizen: Tizen's web APIs (tizen.application for the apps, tizen.tvwindow for the inputs).
+ *  - Android TV / Google TV (Sony Bravia…): the FreeTV app's WebView, window.FreeTVHost (android/app/src/io/freemytv/WebHome.java).
  *  - A desktop browser: a stand-in with sample apps, so the screen can be previewed and tested on a computer.
  * Plain ES5: older TVs run a Chromium from 2015-2017 (webOS 3 and 4, Tizen 3).
  */
@@ -10,6 +11,7 @@ var TV = (function () {
 
   var webos = typeof window.PalmServiceBridge !== 'undefined';
   var samsung = !webos && typeof window.tizen !== 'undefined' && !!window.tizen.application;
+  var android = !webos && !samsung && typeof window.FreeTVHost !== 'undefined';
   var calls = [];   // a bridge is collected if nothing holds it before its reply arrives
 
   // Samsung sends the colour and number keys to an app only when it asks for them.
@@ -501,13 +503,71 @@ var TV = (function () {
     }
   }
 
+  // MARK: - Android TV
+
+  // The Android app hands the page the keys its WebView would not (Back, OK, the colour keys) with LG's codes
+  // (WebHome.onKey): they become key events home.js reads as on LG.
+  if (android) {
+    window.FreeTVHostKey = function (type, code) {
+      var ev;
+      try { ev = document.createEvent('Event'); ev.initEvent(type, true, true); } catch (e) { return; }
+      ev.keyCode = code; ev.which = code;
+      (document.activeElement || document.body || document).dispatchEvent(ev);
+    };
+  }
+
+  function hostJson(fn, fallback) {
+    try { var v = JSON.parse(fn()); return v || fallback; } catch (e) { return fallback; }
+  }
+
+  // YouTube on Android TV: SmartTube (no ads) when it is there, else Google's. A video opens by its address.
+  var ANDROID_YOUTUBE = ['com.teamsmart.videomanager.tv', 'com.liskovsoft.smarttubetv.beta', 'com.liskovsoft.smarttubetv', 'com.google.android.youtube.tv'];
+
+  // Stremio Claude on Android TV: the title it should show (as webOS's open.json) and FreeTV's TMDB key go in its intent (WebHome.openStremio).
+  function androidStremio(type, id) {
+    var key = String((window.CONFIG && window.CONFIG.tmdbKey) || '').trim();
+    try { return !!window.FreeTVHost.openStremio(type || '', id || '', key); } catch (e) { return false; }
+  }
+
+  function androidLaunch(id, params, done) {
+    if (id === 'tv.stremioorigin.app') { var so = androidStremio('', ''); if (done) setTimeout(function () { done(so); }, 0); return; }
+    var uri = '', t = params && params.contentTarget;
+    if (t && ANDROID_YOUTUBE.indexOf(id) >= 0) {
+      if (typeof t === 'string' && /^v=[\w-]+$/.test(t)) uri = 'https://www.youtube.com/watch?' + t;
+      else if (t && t.intent === 'SearchContent' && t.intentParam) uri = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(t.intentParam);
+    }
+    var ok = false;
+    try { ok = !!window.FreeTVHost.launch(id, uri); } catch (e) {}
+    if (done) setTimeout(function () { done(ok); }, 0);
+  }
+
+  function TVcanInstall(id) { try { return !!window.FreeTVHost.canInstall(id); } catch (e) { return false; } }
+
+  function androidInputs(done) {
+    var list = hostJson(function () { return window.FreeTVHost.inputs(); }, []);
+    var n = 0;
+    done(list.map(function (x) {
+      var live = x.id === 'live';
+      if (!live) n++;
+      return {id: x.id, key: live ? 'live' : 'hdmi' + n, label: live ? null : x.label, symbol: live ? 'live_tv' : 'hdmi', connected: x.connected !== false};
+    }));
+  }
+
   // MARK: - The TV, whichever it is
 
   return {
-    name: webos ? 'webos' : samsung ? 'tizen' : 'browser',
+    name: webos ? 'webos' : samsung ? 'tizen' : android ? 'android' : 'browser',
 
     /** The YouTube app the Custom tab opens its channels in: YouTube AdFree on LG (it takes LG's YouTube id), Samsung's own YouTube. */
-    youtube: samsung ? ['9Ur5IzDKqV.TizenYouTube', '111299001912'] : ['youtube.leanback.v4'],
+    youtube: samsung ? ['9Ur5IzDKqV.TizenYouTube', '111299001912'] : android ? ANDROID_YOUTUBE : ['youtube.leanback.v4'],
+
+    /** Android TV: whether an app FreeTV can install from GitHub (Stremio Origin) is installable here, installing it, and how it goes. */
+    /** Android TV: opens Stremio Claude on one title (type movie|series, an IMDb id); true when Android took it. */
+    openStremio: function (type, id) { return android && androidStremio(type, id); },
+
+    canInstall: function (id) { try { return android && !!window.FreeTVHost.canInstall(id); } catch (e) { return false; } },
+    install: function (id) { try { window.FreeTVHost.install(id); return true; } catch (e) { return false; } },
+    installState: function () { try { return String(window.FreeTVHost.installState() || ''); } catch (e) { return ''; } },
 
     /** Puts the TV in standby (the sleep timer), through the remote control API; done(ok). */
     turnOff: function (done) {
@@ -570,6 +630,12 @@ var TV = (function () {
           // FreeTV's own store (Community apps): an icon like any other, which opens that screen instead of an app.
           list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps', tile: 'tiles/store.png'});
         }
+        if (android) {
+          // Stremio Claude (our Stremio Origin), when it is not on the TV: an icon that installs it from its GitHub release (home.js offerInstall).
+          var STREMIO = 'tv.stremioorigin.app', has = false;
+          for (var i = 0; i < list.length; i++) if (list[i].id === STREMIO) has = true;
+          if (!has && TVcanInstall(STREMIO)) list.push({id: 'freetv.get:' + STREMIO, title: 'Stremio Claude', icon: '', color: '#7B5BF5', symbol: 'play'});
+        }
         if (samsung && window.TizenBrew) {
           // With TizenBrew on the TV: YouTube AdFree and Twitch AdFree (its modules) are apps like any other, and FreeTV's Store
           // icon opens the community modules (tizenbrew.js). Without it, the Store icon explains how to get TizenBrew.
@@ -586,6 +652,13 @@ var TV = (function () {
 
     appsOnly: function (done) {
       if (samsung) { samsungApps(done); return; }
+      if (android) {
+        var host = hostJson(function () { return window.FreeTVHost.apps(); }, []);
+        done(host.filter(function (a) { return a && a.id && !HIDDEN.test(a.id); }).map(function (a) {
+          return {id: a.id, title: a.title || a.id, icon: a.icon || '', color: '', banner: !!a.banner};
+        }));
+        return;
+      }
       if (!webos) {
         done(SAMPLE.map(function (s) { return {id: s[0], title: s[1], icon: '', color: s[2]}; }));
         return;
@@ -622,6 +695,7 @@ var TV = (function () {
 
     /** Opens an app (or an input); done(ok). */
     launch: function (id, params, done) {
+      if (android) { androidLaunch(id, params, done); return; }
       if (samsung) {
         if (id.indexOf('tizenbrew:') === 0) window.TizenBrew.launch(id.slice(10), done);
         else if (id.indexOf('source:') === 0) samsungSource(id, done);
@@ -640,6 +714,7 @@ var TV = (function () {
     /** The antenna and HDMI inputs; `connected` when the TV says a device is on (when it tells). */
     inputs: function (done) {
       if (samsung) { samsungInputs(done); return; }
+      if (android) { androidInputs(done); return; }
       var list = INPUTS.map(function (x) { return {id: x.id, key: x.key, label: x.label, symbol: x.symbol, connected: true}; });
       if (!webos) {
         list[2].connected = false;
@@ -667,7 +742,8 @@ var TV = (function () {
 
     /** The TV's own settings; done(ok). */
     settings: function (done) {
-      if (samsung) samsungSettings(done);
+      if (android) androidLaunch('settings', null, done);
+      else if (samsung) samsungSettings(done);
       else this.launch('com.palm.app.settings', null, done);
     },
 
@@ -684,6 +760,9 @@ var TV = (function () {
     zone: function () {
       if (samsung) {
         try { return window.tizen.time.getLocalTimezone() || ''; } catch (e) {}
+      }
+      if (android) {
+        try { return String(window.FreeTVHost.zone() || ''); } catch (e) {}
       }
       try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; }
     },
