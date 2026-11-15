@@ -3,6 +3,17 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.15.2 (2026-11-15)
+
+### Android TV only (LG and Samsung unchanged)
+- **A Store on Android TV.** The Store icon is on the shelf (`freetv.store`; LG keeps its webOS Store, Samsung its TizenBrew modules) and opens a sheet
+  (`INFO.astore`) with the apps of `android/catalog.json`: Stremio Claude, SmartTube, Jellyfin, Moonlight, Nova Video Player and LocalSend to begin with.
+  Each row says whether the app is there, up to date or has a newer version; OK installs, updates, opens or uninstalls it (Android asks every time).
+- **Every APK's SHA-256 is pinned.** `tools/android_catalog.py` makes the catalogue from `android/catalog-sources.json`: each app's newest GitHub release,
+  the APK read with aapt2 (a different package under that name is refused) and its SHA-256 written down; `.github/workflows/android-catalog.yml` does it
+  every day and commits the catalogue when something changed (no FreeTV release: the TVs fetch it from GitHub at most every six hours, and the app
+  carries the one of its build). The TV only installs a github.com download of the app's own project whose SHA-256 is the pinned one.
+
 ## 2.15.1 (2026-11-15)
 
 ### Android TV only (LG and Samsung unchanged)

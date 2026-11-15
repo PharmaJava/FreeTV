@@ -70,6 +70,8 @@ EOF
 # config.properties when there is one (city, TMDB key); else the generic build, which finds its settings on the TV.
 if [ -f ../config.properties ]; then FT_CONFIG=(--config ../config.properties); else FT_CONFIG=(--config ../config.example.properties --generic); fi
 python3 ../tools/build_home.py "${FT_CONFIG[@]}" --android out/web/freetv
+# the Store's catalog as it is now (the TV fetches newer ones from GitHub: WebHome.CATALOG_URL)
+cp catalog.json out/web/catalog.json
 
 # --- Build
 "$BT/aapt2" compile --dir app/res -o out/res.zip

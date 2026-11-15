@@ -298,7 +298,7 @@ Promise.resolve()
       var TV = win.TV;
       assert.strictEqual(TV.name, 'android');
       var apps = null; TV.apps(function (l) { apps = l; });
-      assert.deepStrictEqual(apps.map(function (a) { return a.id; }), ['com.netflix.ninja', 'freetv.get:tv.stremioorigin.app'], 'FreeTV itself is hidden; Stremio Origin can be installed');
+      assert.deepStrictEqual(apps.map(function (a) { return a.id; }), ['com.netflix.ninja', 'freetv.get:tv.stremioorigin.app', 'freetv.store'], 'FreeTV itself is hidden; Stremio Claude can be installed; the Store is there');
       var ins = null; TV.inputs(function (l) { ins = l; });
       assert.strictEqual(ins[0].key, 'live'); assert.strictEqual(ins[1].label, 'PS5');
       TV.launch('com.google.android.youtube.tv', {contentTarget: 'v=abc_12'}, function () {});
@@ -318,6 +318,38 @@ Promise.resolve()
       assert.ok(/if \(TV\.name === 'android' && stremioHere && !Prefs\.opt\('stremioOffered'/.test(home), 'added to a saved shelf on Android TV only');
       assert.ok(/if \(TV\.name === 'android'\) \{ if \(!TV\.openStremio\(type, id\)/.test(home), 'Android opens a title through the intent; LG keeps its store service');
       assert.ok(/id\.matches\("tt\\\\d\{5,10\}"\)/.test(java), 'only an IMDb id goes in the intent');
+    });
+  })
+  .then(function () {
+    console.log('Android TV Store');
+    return ok('the catalogue pins each APK: only the package the source names, from its own project, its SHA-256 kept; the TV checks every entry; LG\'s Store is untouched', function () {
+      var out = require('child_process').execFileSync('python3', ['-c', [
+        'import sys, json, hashlib; sys.path.insert(0, "tools"); import android_catalog as c',
+        'src = {"id": "a.b.c", "title": "T", "desc": ["x", "y", "z"], "repo": "o/r", "asset": "[.]apk$", "prefer": ["armeabi-v7a"]}',
+        'rels = [{"tag_name": "v2", "prerelease": True, "assets": []}, {"tag_name": "v1", "assets": [',
+        '  {"name": "app-arm64-v8a.apk", "browser_download_url": "https://github.com/o/r/releases/download/v1/app-arm64-v8a.apk"},',
+        '  {"name": "app-armeabi-v7a.apk", "browser_download_url": "https://github.com/o/r/releases/download/v1/app-armeabi-v7a.apk"},',
+        '  {"name": "evil.apk", "browser_download_url": "https://example.com/evil.apk"}]}]',
+        'e = c.entry_for(src, rels, fetch=lambda u: b"APK" + u.encode(), read=lambda p: ("a.b.c", "1.2", 12, 21))',
+        'bad = None',
+        'try: c.entry_for(src, rels, fetch=lambda u: b"APK", read=lambda p: ("other.app", "1", 1, 21))',
+        'except ValueError as x: bad = str(x)',
+        'print(json.dumps({"e": e, "bad": bad}))'].join('\n')], {cwd: root, encoding: 'utf8'});
+      var r = JSON.parse(out);
+      assert.strictEqual(r.e.tag, 'v1', 'a pre-release is skipped');
+      assert.ok(/armeabi-v7a\.apk$/.test(r.e.url), 'the preferred build');
+      assert.ok(r.e.url.indexOf('https://github.com/o/r/releases/download/') === 0, 'only its own project');
+      assert.strictEqual(r.e.sha256, require('crypto').createHash('sha256').update('APK' + r.e.url).digest('hex'), 'the SHA-256 of that file');
+      assert.ok(/is other\.app, not a\.b\.c/.test(r.bad), 'another app under that name is refused');
+      var cat = JSON.parse(fs.readFileSync(path.join(root, 'android', 'catalog.json'), 'utf8'));
+      assert.ok(Array.isArray(cat.apps));
+      cat.apps.forEach(function (a) { assert.ok(/^[0-9a-f]{64}$/.test(a.sha256) && a.url.indexOf('https://github.com/' + a.repo + '/releases/download/') === 0, a.id); });
+      var java = fs.readFileSync(path.join(root, 'android', 'app', 'src', 'io', 'freemytv', 'WebHome.java'), 'utf8');
+      assert.ok(/if \(!got\.equals\(want\)\) \{ f\.delete\(\); throw new IOException\("SHA-256 does not match"\); \}/.test(java), 'the download must match the pinned SHA-256');
+      assert.ok(/url\.startsWith\("https:\/\/github\.com\/" \+ repo \+ "\/releases\/download\/"\)/.test(java), 'the TV checks each entry too');
+      var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
+      assert.ok(/if \(id === 'freetv\.store' && TV\.name === 'android'\) \{ openInfo\('astore'\); return; \}/.test(home), 'Android opens its own Store');
+      assert.ok(/if \(id === 'freetv\.store'\) \{ openCommunity\(true\); return; \}/.test(home), 'LG and Samsung keep theirs');
     });
   })
   .then(function () {

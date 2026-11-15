@@ -567,6 +567,9 @@ var TV = (function () {
 
     canInstall: function (id) { try { return android && !!window.FreeTVHost.canInstall(id); } catch (e) { return false; } },
     install: function (id) { try { window.FreeTVHost.install(id); return true; } catch (e) { return false; } },
+    /** Android TV's Store: [{id, title, desc: [pt, en, es], version, versionCode, size, installed, installedCode, tooOld}]; uninstalling (Android asks). */
+    storeApps: function (refresh) { return android ? hostJson(function () { return window.FreeTVHost.storeApps(!!refresh); }, []) : []; },
+    uninstall: function (id) { try { return android && !!window.FreeTVHost.uninstall(id); } catch (e) { return false; } },
     installState: function () { try { return String(window.FreeTVHost.installState() || ''); } catch (e) { return ''; } },
 
     /** Puts the TV in standby (the sleep timer), through the remote control API; done(ok). */
@@ -635,6 +638,8 @@ var TV = (function () {
           var STREMIO = 'tv.stremioorigin.app', has = false;
           for (var i = 0; i < list.length; i++) if (list[i].id === STREMIO) has = true;
           if (!has && TVcanInstall(STREMIO)) list.push({id: 'freetv.get:' + STREMIO, title: 'Stremio Claude', icon: '', color: '#7B5BF5', symbol: 'play'});
+          // FreeTV's Store for Android TV (home.js INFO.astore): apps from GitHub, each APK's SHA-256 pinned in the catalog.
+          list.push({id: 'freetv.store', title: tr('Loja', 'Store', 'Tienda'), icon: '', color: '#FF4D79', symbol: 'apps', tile: 'tiles/store.png'});
         }
         if (samsung && window.TizenBrew) {
           // With TizenBrew on the TV: YouTube AdFree and Twitch AdFree (its modules) are apps like any other, and FreeTV's Store

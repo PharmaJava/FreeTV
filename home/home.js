@@ -2829,6 +2829,7 @@
   function launcher(id, name) {
     return function () {
       if (kidsOver && Prefs.kids()) { checkKidsLimit(); toast(tr('Acabou o tempo de TV', 'TV time is over', 'Se acabó el tiempo de tele')); return; }
+      if (id === 'freetv.store' && TV.name === 'android') { openInfo('astore'); return; }   // Android TV: its own Store (INFO.astore)
       if (id === 'freetv.store') { openCommunity(true); return; }
       if (id.indexOf('freetv.get:') === 0) { offerInstall(id.slice(11), name || id); return; }
       if (id.indexOf('chan:') === 0) {
@@ -2859,23 +2860,62 @@
         'The first time, Android also asks you to allow FreeTV to install apps: turn it on and press it again.',
         'La primera vez, Android también pide permitir que FreeTV instale apps: actívalo y vuelve a pulsar.'), cls: 'warn'}
     ], [
-      {label: tr('Instalar', 'Install', 'Instalar'), run: function () {
-        if (!TV.install(pkg)) { toast(tr('Não deu para instalar', 'Could not install', 'No se pudo instalar')); return; }
-        toast(tr('Baixando ', 'Downloading ', 'Descargando ') + name + '…');
-        var tries = 0, last = '';
-        (function watch() {
-          var s = TV.installState();
-          if (s !== last) {
-            last = s;
-            if (s === 'busy:install' || s === 'asked') toast(tr('Confirme na janela do Android', 'Confirm in Android\'s window', 'Confírmalo en la ventana de Android'));
-            else if (s === 'permission') toast(tr('Permita ao FreeTV instalar apps e carregue outra vez', 'Allow FreeTV to install apps and press it again', 'Permite que FreeTV instale apps y vuelve a pulsar'));
-            else if (s.indexOf('error:') === 0) toast(tr('Não deu para instalar: ', 'Could not install: ', 'No se pudo instalar: ') + s.slice(6));
-          }
-          if (s.indexOf('busy') === 0 && ++tries < 240) setTimeout(watch, 500);
-        })();
-      }},
+      {label: tr('Instalar', 'Install', 'Instalar'), run: function () { androidInstall(pkg, name); }},
       {label: tr('Agora não', 'Not now', 'Ahora no'), run: function () {}}
     ], 0);
+  }
+
+  /** Android TV: installs (or updates) an app FreeTV knows, and says how it goes (download, Android's own confirmation, errors). */
+  function androidInstall(pkg, name) {
+    if (!TV.install(pkg)) { toast(tr('Não deu para instalar', 'Could not install', 'No se pudo instalar')); return; }
+    toast(tr('Baixando ', 'Downloading ', 'Descargando ') + name + '…');
+    var tries = 0, last = '';
+    (function watch() {
+      var s = TV.installState();
+      if (s !== last) {
+        last = s;
+        if (s === 'busy:install' || s === 'asked') toast(tr('Confirme na janela do Android', 'Confirm in Android\'s window', 'Confírmalo en la ventana de Android'));
+        else if (s === 'permission') toast(tr('Permita ao FreeTV instalar apps e carregue outra vez', 'Allow FreeTV to install apps and press it again', 'Permite que FreeTV instale apps y vuelve a pulsar'));
+        else if (s.indexOf('error:') === 0) toast(tr('Não deu para instalar: ', 'Could not install: ', 'No se pudo instalar: ') + s.slice(6));
+      }
+      if (s.indexOf('busy') === 0 && ++tries < 240) setTimeout(watch, 500);
+      else if (st.zone === Z.INFO && info.kind === 'astore') renderInfo();
+    })();
+  }
+
+  /**
+   * Android TV's Store: the apps of FreeTV's catalog (android/catalog.json, made from GitHub releases with each APK's SHA-256
+   * pinned). A row per app with what it does; OK: install, update, open or uninstall (Android asks every time).
+   */
+  function infoAStore() {
+    var list = TV.storeApps(false), rows = [];
+    function mb(n) { return n ? Math.max(1, Math.round(n / 1048576)) + ' MB' : ''; }
+    list.forEach(function (a) {
+      var d = a.desc && a.desc.length === 3 ? tr(a.desc[0], a.desc[1], a.desc[2]) : '';
+      var newer = a.installed && a.versionCode > a.installedCode;
+      var value = a.tooOld ? tr('Android antigo', 'Android too old', 'Android antiguo')
+        : !a.installed ? tr('Instalar', 'Install', 'Instalar')
+        : newer ? tr('Atualizar', 'Update', 'Actualizar') + ' → ' + a.version : 'v' + a.installed + ' ✓';
+      rows.push({label: a.title, value: value, plain: true, icon: a.installed ? (newer ? 'sync' : 'check') : 'apps', dim: a.tooOld,
+        run: function () {
+          if (a.tooOld) { toast(tr('Esta TV tem um Android antigo demais para ', 'This TV\'s Android is too old for ', 'Esta tele tiene un Android demasiado antiguo para ') + a.title); return; }
+          var buttons = [];
+          if (!a.installed || newer) buttons.push({label: (newer ? tr('Atualizar', 'Update', 'Actualizar') : tr('Instalar', 'Install', 'Instalar')) + ' (' + a.version + (a.size ? ', ' + mb(a.size) : '') + ')',
+            run: function () { androidInstall(a.id, a.title); }});
+          if (a.installed) buttons.push({label: tr('Abrir', 'Open', 'Abrir'), run: launcher(a.id, a.title)});
+          if (a.installed) buttons.push({label: tr('Desinstalar', 'Uninstall', 'Desinstalar'), run: function () {
+            if (!TV.uninstall(a.id)) toast(tr('Não deu para desinstalar', 'Could not uninstall', 'No se pudo desinstalar'));
+          }});
+          buttons.push({label: cancelText()});
+          showDialog(a.title, [{text: d}, {text: (a.installed ? tr('Instalada: ', 'Installed: ', 'Instalada: ') + a.installed + ' · ' : '') + tr('No catálogo: ', 'In the catalogue: ', 'En el catálogo: ') + a.version, cls: 'code'},
+            {text: tr('Vem do GitHub do projeto; o FreeTV só instala o ficheiro cuja impressão SHA-256 está fixada no catálogo, e o Android pede que confirme.',
+              'It comes from the project\'s GitHub; FreeTV only installs the file whose SHA-256 fingerprint is pinned in the catalogue, and Android asks you to confirm.',
+              'Viene del GitHub del proyecto; FreeTV solo instala el archivo cuya huella SHA-256 está fijada en el catálogo, y Android te pide que lo confirmes.'), cls: 'warn'}], buttons, 0);
+        }});
+    });
+    if (!rows.length) rows.push({label: tr('O catálogo ainda está a carregar: volte a abrir daqui a pouco', 'The catalogue is still loading: open it again in a moment', 'El catálogo aún se está cargando: vuelve a abrirlo en un momento'), value: '', plain: true});
+    return {title: tr('Loja', 'Store', 'Tienda'), icon: 'apps', rows: rows, visible: 7,
+      hint: tr('OK instala, atualiza, abre ou desinstala · Voltar fecha', 'OK installs, updates, opens or uninstalls · Back closes', 'OK instala, actualiza, abre o desinstala · Atrás cierra')};
   }
 
   // MARK: - Dialog: a small box with some text and buttons (OK chooses, Back closes)
@@ -4365,6 +4405,7 @@
   var info = {kind: '', arg: null, rows: [], index: 0, back: null};
   var INFO = {};   // kind → function (arg): {title, icon, build(box), rows, hint, visible, back}
   INFO.repos = infoRepos;
+  INFO.astore = infoAStore;   // Android TV's Store
   INFO.memory = infoMemory;
   INFO.diag = infoDiag;
   INFO.watchlist = infoWatchlist;

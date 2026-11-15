@@ -6,6 +6,9 @@
 > defecto. Compilada y probada en un navegador con una tele simulada; **todavía no en una Bravia de verdad**. La pantalla
 > nativa de Free My TV sigue dentro como aspecto «clásico». Si la pruebas, cuéntanos en una *Issue* qué tele y cómo fue.
 >
+> **Tienda (2.15.2):** el icono de la Tienda del estante instala, actualiza y quita apps del catálogo `android/catalog.json` (Stremio Claude,
+> SmartTube, Jellyfin, Moonlight, Nova Video Player, LocalSend). Para añadir una: `android/catalog-sources.json`; el flujo diario hace el resto.
+>
 > Lo que en Android TV **no** hay (como en Samsung): la Tienda de webOS, Continuar viendo con Stremio, Jellyfin y Plex, la
 > memoria y la renovación del Modo Desarrollador. Todo eso vive en el servicio que solo existe en LG.
 

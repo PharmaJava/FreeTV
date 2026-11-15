@@ -11,6 +11,12 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.15.2: a Store on Android TV
+
+- On Android TV (Sony Bravia…) the **Store** is on the shelf: Stremio Claude, SmartTube (YouTube without ads), Jellyfin, Moonlight, Nova Video Player and LocalSend,
+  installed, updated or removed with OK. Every app comes from its own GitHub page and FreeTV only installs the exact file whose SHA-256 is pinned in its catalogue,
+  which GitHub checks and updates every day.
+
 ### FreeTV 2.15: Android TV and Google TV (Sony Bravia…), with Stremio Claude
 
 - The same FreeTV home on **Android TV and Google TV**, inside the app in `android/`, which becomes the TV's home screen ([guide](docs/ANDROID-TV.md)). Apps,
@@ -454,6 +460,12 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.15.2: una Tienda en Android TV
+
+- En Android TV (Sony Bravia…) la **Tienda** está en el estante: Stremio Claude, SmartTube (YouTube sin anuncios), Jellyfin, Moonlight, Nova Video Player y LocalSend,
+  que se instalan, actualizan o quitan con OK. Cada app viene de su propia página de GitHub y FreeTV solo instala el archivo exacto cuya huella SHA-256 está fijada en
+  su catálogo, que GitHub revisa y actualiza cada día.
 
 ### FreeTV 2.15: Android TV y Google TV (Sony Bravia…), con Stremio Claude
 

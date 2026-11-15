@@ -112,6 +112,7 @@ final class WebHome {
             }
         });
         web.loadUrl("file:///android_asset/freetv/index.html");
+        refreshCatalog(false);
     }
 
     View view() { return web; }
@@ -199,15 +200,79 @@ final class WebHome {
         try { return pm.getApplicationInfo(pkg, 0).banner != 0; } catch (Exception e) { return false; }
     }
 
-    // MARK: - Installing an app from its GitHub release
+    // MARK: - The Store's catalog (android/catalog.json: tools/android_catalog.py pins each APK's SHA-256)
+
+    static final String CATALOG_URL = "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/android/catalog.json";
+    private static final long CATALOG_EVERY = 6 * 3600 * 1000L;
+
+    /** The newest catalog this TV has: the one fetched from GitHub (kept in files/), else the one built into the app. */
+    private synchronized JSONObject catalog() {
+        File kept = new File(activity.getFilesDir(), "catalog.json");
+        try {
+            if (kept.isFile()) return new JSONObject(readText(new FileInputStream(kept)));
+        } catch (Exception e) { AppLog.w("catalog (kept): " + e.getMessage()); }
+        try {
+            return new JSONObject(readText(activity.getAssets().open("catalog.json")));
+        } catch (Exception e) { return new JSONObject(); }
+    }
+
+    /** Fetches the catalog from GitHub at most every six hours (in the background); only a catalog that reads well is kept. */
+    private void refreshCatalog(boolean now) {
+        final File kept = new File(activity.getFilesDir(), "catalog.json");
+        if (!now && kept.isFile() && System.currentTimeMillis() - kept.lastModified() < CATALOG_EVERY) return;
+        new Thread(new Runnable() { public void run() {
+            try {
+                String text = get(CATALOG_URL);
+                JSONArray apps = new JSONObject(text).getJSONArray("apps");
+                for (int i = 0; i < apps.length(); i++) if (entryProblem(apps.getJSONObject(i)) != null) throw new IOException("bad entry " + i);
+                File tmp = new File(kept.getPath() + ".tmp");
+                try (OutputStream o = new FileOutputStream(tmp)) { o.write(text.getBytes("UTF-8")); }
+                if (!tmp.renameTo(kept)) throw new IOException("rename");
+            } catch (Exception e) { AppLog.w("catalog: " + e.getMessage()); }
+        }}, "freetv-catalog").start();
+    }
+
+    /** null when an entry is one the TV may install: a package name, a github.com download of its own project, a SHA-256. */
+    static String entryProblem(JSONObject e) {
+        String id = e.optString("id"), repo = e.optString("repo"), url = e.optString("url"), sha = e.optString("sha256");
+        if (!id.matches("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+")) return "id";
+        if (!repo.matches("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")) return "repo";
+        if (!url.startsWith("https://github.com/" + repo + "/releases/download/") || !url.endsWith(".apk")) return "url";
+        if (!sha.matches("[0-9a-f]{64}")) return "sha256";
+        return null;
+    }
+
+    private JSONObject entry(String pkg) {
+        JSONArray apps = catalog().optJSONArray("apps");
+        if (apps == null) return null;
+        for (int i = 0; i < apps.length(); i++) {
+            JSONObject e = apps.optJSONObject(i);
+            if (e != null && pkg.equals(e.optString("id")) && entryProblem(e) == null) return e;
+        }
+        return null;
+    }
+
+    private static String readText(InputStream in) throws IOException {
+        try (InputStream i = in) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int n;
+            while ((n = i.read(buf)) > 0) { out.write(buf, 0, n); if (out.size() > 4 << 20) throw new IOException("too big"); }
+            return out.toString("UTF-8");
+        }
+    }
+
+    // MARK: - Installing an app
 
     /**
-     * Downloads the newest APK of a known GitHub project, checks its SHA-256 against the SHA256SUMS published beside it
-     * (none: refused), and hands it to Android's installer, which asks the person (and, the first time, to allow FreeTV to
-     * install apps). Only packages in GITHUB; only github.com addresses.
+     * Installs (or updates) an app: from the Store's catalog when it has it (that exact APK: its SHA-256 is pinned in the catalog),
+     * else, for a package in GITHUB, the newest android-tv release whose SHA256SUMS lists the APK. Only github.com downloads of that
+     * app's project; nothing that does not match is installed. Android's installer asks the person (and, the first time, to allow
+     * FreeTV to install apps).
      */
     private void install(final String pkg) {
-        final String repo = GITHUB.get(pkg);
+        final JSONObject e = entry(pkg);
+        final String repo = e != null ? e.optString("repo") : GITHUB.get(pkg);
         if (repo == null) { installState = "error:unknown"; return; }
         if (installState.startsWith("busy")) return;
         installState = "busy:download";
@@ -220,28 +285,16 @@ final class WebHome {
                     try { activity.startActivity(i); } catch (Exception ignored) {}
                     return;
                 }
-                JSONObject rel = null;
-                JSONArray list = new JSONArray(get("https://api.github.com/repos/" + repo + "/releases?per_page=20"));
-                for (int i = 0; i < list.length() && rel == null; i++) {
-                    JSONObject r = list.getJSONObject(i);
-                    if (!r.optBoolean("draft") && !r.optBoolean("prerelease") && r.optString("tag_name").startsWith("android-tv-v")) rel = r;
+                String apk, want;
+                if (e != null) {
+                    if (e.optInt("minSdk") > Build.VERSION.SDK_INT) throw new IOException("this TV's Android is too old for it");
+                    apk = e.getString("url");
+                    want = e.getString("sha256");
+                } else {
+                    String[] found = fromRelease(repo);
+                    apk = found[0];
+                    want = found[1];
                 }
-                if (rel == null) throw new IOException("no Android TV release");
-                JSONArray assets = rel.getJSONArray("assets");
-                String apk = null, apkName = null, sums = null;
-                for (int i = 0; i < assets.length(); i++) {
-                    JSONObject a = assets.getJSONObject(i);
-                    String n = a.getString("name"), u = a.getString("browser_download_url");
-                    if (!u.startsWith("https://github.com/" + repo + "/releases/download/")) continue;
-                    if (n.endsWith(".apk")) { apk = u; apkName = n; } else if (n.equals("SHA256SUMS")) sums = u;
-                }
-                if (apk == null || sums == null) throw new IOException("the release has no APK and SHA256SUMS");
-                String want = null;
-                for (String line : get(sums).split("\n")) {
-                    String[] p = line.trim().split("\\s+\\*?");
-                    if (p.length == 2 && p[1].equals(apkName)) want = p[0].toLowerCase(Locale.ROOT);
-                }
-                if (want == null || !want.matches("[0-9a-f]{64}")) throw new IOException("no SHA-256 for " + apkName);
                 File f = new File(activity.getCacheDir(), "install.apk");
                 String got = download(apk, f);
                 if (!got.equals(want)) { f.delete(); throw new IOException("SHA-256 does not match"); }
@@ -263,11 +316,52 @@ final class WebHome {
                 }
                 f.delete();
                 installState = "asked";
-            } catch (Exception e) {
-                AppLog.w("install " + pkg + ": " + e);
-                installState = "error:" + e.getMessage();
+            } catch (Exception ex) {
+                AppLog.w("install " + pkg + ": " + ex);
+                installState = "error:" + ex.getMessage();
             }
         }}, "freetv-install").start();
+    }
+
+    /** {APK address, its SHA-256} of the newest android-tv release of repo that publishes SHA256SUMS. */
+    private static String[] fromRelease(String repo) throws Exception {
+        JSONObject rel = null;
+        JSONArray list = new JSONArray(get("https://api.github.com/repos/" + repo + "/releases?per_page=20"));
+        for (int i = 0; i < list.length() && rel == null; i++) {
+            JSONObject r = list.getJSONObject(i);
+            if (!r.optBoolean("draft") && !r.optBoolean("prerelease") && r.optString("tag_name").startsWith("android-tv-v")) rel = r;
+        }
+        if (rel == null) throw new IOException("no Android TV release");
+        JSONArray assets = rel.getJSONArray("assets");
+        String apk = null, apkName = null, sums = null;
+        for (int i = 0; i < assets.length(); i++) {
+            JSONObject a = assets.getJSONObject(i);
+            String n = a.getString("name"), u = a.getString("browser_download_url");
+            if (!u.startsWith("https://github.com/" + repo + "/releases/download/")) continue;
+            if (n.endsWith(".apk")) { apk = u; apkName = n; } else if (n.equals("SHA256SUMS")) sums = u;
+        }
+        if (apk == null || sums == null) throw new IOException("the release has no APK and SHA256SUMS");
+        String want = null;
+        for (String line : get(sums).split("\n")) {
+            String[] p = line.trim().split("\\s+\\*?");
+            if (p.length == 2 && p[1].equals(apkName)) want = p[0].toLowerCase(Locale.ROOT);
+        }
+        if (want == null || !want.matches("[0-9a-f]{64}")) throw new IOException("no SHA-256 for " + apkName);
+        return new String[] {apk, want};
+    }
+
+    /** Android's own "uninstall?" for an app of the Store (it asks the person). */
+    private boolean uninstall(String pkg) {
+        if (entry(pkg) == null && !GITHUB.containsKey(pkg)) return false;
+        try {
+            Intent i = new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + pkg));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            activity.startActivity(i);
+            return true;
+        } catch (Exception e) {
+            AppLog.w("uninstall " + pkg + ": " + e);
+            return false;
+        }
     }
 
     private static String get(String url) throws IOException {
@@ -400,7 +494,45 @@ final class WebHome {
         }
 
         /** Whether FreeTV can install this package from GitHub. */
-        @JavascriptInterface public boolean canInstall(String pkg) { return GITHUB.containsKey(pkg); }
+        @JavascriptInterface public boolean canInstall(String pkg) { return GITHUB.containsKey(pkg) || entry(pkg) != null; }
+
+        /**
+         * The Store: [{id, title, desc: [pt, en, es], version, size, installed: versionName or ""}], from the newest catalog (fetched
+         * again in the background when it is older than six hours; refresh: now).
+         */
+        @JavascriptInterface public String storeApps(boolean refresh) {
+            refreshCatalog(refresh);
+            JSONArray out = new JSONArray();
+            JSONArray apps = catalog().optJSONArray("apps");
+            PackageManager pm = activity.getPackageManager();
+            for (int i = 0; apps != null && i < apps.length(); i++) {
+                JSONObject e = apps.optJSONObject(i);
+                if (e == null || entryProblem(e) != null) continue;
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("id", e.getString("id"));
+                    o.put("title", e.optString("title", e.getString("id")));
+                    o.put("desc", e.optJSONArray("desc"));
+                    o.put("version", e.optString("version"));
+                    o.put("versionCode", e.optLong("versionCode"));
+                    o.put("size", e.optLong("size"));
+                    o.put("tooOld", e.optInt("minSdk") > Build.VERSION.SDK_INT);
+                    String have = "";
+                    long haveCode = 0;
+                    try {
+                        PackageInfo p = pm.getPackageInfo(e.getString("id"), 0);
+                        have = p.versionName != null ? p.versionName : "?";
+                        haveCode = Build.VERSION.SDK_INT >= 28 ? p.getLongVersionCode() : p.versionCode;
+                    } catch (PackageManager.NameNotFoundException ignored) {}
+                    o.put("installed", have);
+                    o.put("installedCode", haveCode);
+                    out.put(o);
+                } catch (JSONException ignored) {}
+            }
+            return out.toString();
+        }
+
+        @JavascriptInterface public boolean uninstall(String pkg) { return WebHome.this.uninstall(pkg); }
 
         @JavascriptInterface public void install(String pkg) { WebHome.this.install(pkg); }
 

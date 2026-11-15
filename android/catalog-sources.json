@@ -1,0 +1,17 @@
+{
+  "_about": "The apps FreeTV's Store offers on Android TV. tools/android_catalog.py turns this into catalog.json: each app's newest release on GitHub, its APK checked (package name with aapt2) and its SHA-256 pinned. Add an app here; the daily workflow does the rest. Only GitHub releases; only APKs for TVs.",
+  "apps": [
+    {"id": "tv.stremioorigin.app", "title": "Stremio Claude", "repo": "PharmaJava/webos", "tag": "^android-tv-v", "asset": "\\.apk$",
+     "desc": ["A sua conta e os seus addons do Stremio, com torrents (a nossa versão do Stremio Origin)", "Your Stremio account and addons, with torrents (our build of Stremio Origin)", "Tu cuenta y tus addons de Stremio, con torrents (nuestra versión de Stremio Origin)"]},
+    {"id": "com.teamsmart.videomanager.tv", "title": "SmartTube", "repo": "yuliskov/SmartTube", "asset": "(?i)stable.*\\.apk$", "prefer": ["armeabi-v7a", "universal"],
+     "desc": ["YouTube sem anúncios, com SponsorBlock, para a TV", "YouTube without ads, with SponsorBlock, for the TV", "YouTube sin anuncios, con SponsorBlock, para la tele"]},
+    {"id": "org.jellyfin.androidtv", "title": "Jellyfin", "repo": "jellyfin/jellyfin-androidtv", "asset": "(?i)\\.apk$",
+     "desc": ["Os seus filmes e séries do seu servidor Jellyfin", "Your films and shows from your Jellyfin server", "Tus pelis y series desde tu servidor Jellyfin"]},
+    {"id": "com.limelight", "title": "Moonlight", "repo": "moonlight-stream/moonlight-android", "asset": "(?i)nonroot.*\\.apk$", "prefer": ["armeabi-v7a", "universal"],
+     "desc": ["Jogue os jogos do seu PC na TV (GameStream/Sunshine)", "Play your PC games on the TV (GameStream/Sunshine)", "Juega a los juegos de tu PC en la tele (GameStream/Sunshine)"]},
+    {"id": "org.courville.nova", "title": "Nova Video Player", "repo": "nova-video-player/aos-AVP", "asset": "(?i)\\.apk$", "prefer": ["armeabi-v7a", "arm.apk", "universal"],
+     "desc": ["Leitor de vídeos do USB, da rede (SMB, UPnP) e do NAS", "Video player for USB, the network (SMB, UPnP) and your NAS", "Reproductor de vídeos del USB, la red (SMB, UPnP) y tu NAS"]},
+    {"id": "org.localsend.localsend_app", "title": "LocalSend", "repo": "localsend/localsend", "asset": "(?i)android.*\\.apk$", "prefer": ["armeabi", "universal"],
+     "desc": ["Passe fotos e ficheiros do telemóvel para a TV, sem a nuvem", "Send photos and files from your phone to the TV, no cloud", "Pasa fotos y archivos del móvil a la tele, sin la nube"]}
+  ]
+}

@@ -179,3 +179,7 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   real app once installed.
 - Releases: `.github/workflows/android.yml` builds the APK on every push; it publishes `android-tv-v<version>` from `main` only when the repository has the
   `FREETV_ANDROID_KEYSTORE` secret (base64 of the keystore `build.sh` signs with): Android only updates an app signed with the same key.
+- The Android TV Store (2.15.2): `android/catalog-sources.json` (what is offered: package, GitHub project, asset regex, three descriptions) →
+  `tools/android_catalog.py` → `android/catalog.json` (each APK read with aapt2, its SHA-256 pinned), daily in `.github/workflows/android-catalog.yml`.
+  `WebHome` installs only an entry that passes `entryProblem` and whose download matches the pinned SHA-256; `home.js` shows it as `INFO.astore`. Never
+  edit catalog.json by hand, never pin a hash you did not compute from the file.
