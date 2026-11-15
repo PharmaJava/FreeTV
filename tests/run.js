@@ -432,7 +432,7 @@ Promise.resolve()
           if (/api\.github\.com\/repos\/PharmaJava\/webos\/releases\/latest/.test(cmd)) return {code: 0, out: JSON.stringify({assets: [
             {name: 'tv.stremioorigin.app_1.0.6_arm.ipk', size: 5000000, browser_download_url: 'https://github.com/PharmaJava/webos/releases/download/v1.0.6/tv.stremioorigin.app_1.0.6_arm.ipk'},
             {name: 'SHA256SUMS', browser_download_url: 'https://github.com/PharmaJava/webos/releases/download/v1.0.6/SHA256SUMS'}]}), err: ''};
-          if (/someone\/other\/releases\/latest/.test(cmd)) return {code: 0, out: JSON.stringify({assets: [
+          if (/repos\/someone\/other\/releases/.test(cmd)) return {code: 0, out: JSON.stringify({assets: [
             {name: 'com.other.app_9.0.0_all.ipk', size: 1, browser_download_url: 'https://github.com/someone/other/releases/download/v9/com.other.app_9.0.0_all.ipk'},
             {name: 'SHA256SUMS', browser_download_url: 'https://github.com/someone/other/releases/download/v9/SHA256SUMS'}]}), err: ''};
           if (/PharmaJava\/webos\/releases\/download\/v1\.0\.6\/SHA256SUMS/.test(cmd)) return {code: 0, out: sha + '  tv.stremioorigin.app_1.0.6_arm.ipk\n', err: ''};
@@ -453,8 +453,29 @@ Promise.resolve()
       assert.strictEqual(other[0].manifest.version, '2.0.0', 'a repository the person added does not replace the catalogue entry');
       var home = fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
       assert.ok(/var own = p\.own \|\| p\.repo === 'github\.com\/PharmaJava\/webos'/.test(home), 'the page keeps ours too');
+      // our project not answering: the original is not offered in its place
+      assert.ok(/OWN_IDS = \['tv\.stremioorigin\.app'\]/.test(fs.readFileSync(path.join(root, 'store-service', 'store.js'), 'utf8')));
+      assert.ok(/OWN_IDS\.indexOf\(p\.id\) < 0/.test(home), 'the page drops the catalogue\'s entry for our id');
       var css = fs.readFileSync(path.join(root, 'home', 'home.css'), 'utf8');
       assert.ok(/#community \.box\.detail \{[^}]*max-height: 980px; overflow: hidden;/.test(css) && /function commDetailScroll\(\)/.test(home), 'a long app page stays on the screen and follows the focus');
+    });
+  })
+  .then(function () {
+    console.log('a release without a webOS package');
+    return ok('the newest release with an .ipk is taken when the newest one has none (PharmaJava/webos publishes Android TV APKs too)', async function () {
+      var sha = 'c'.repeat(64), s = new Store({});
+      s.exec = async function (c, cmd) {
+        if (/repos\/acme\/tvapp\/releases\?per_page/.test(cmd)) return {code: 0, out: JSON.stringify([
+          {tag_name: 'android-tv-v2.0.0', assets: [{name: 'App-AndroidTV-2.0.0.apk', browser_download_url: 'https://github.com/acme/tvapp/releases/download/android-tv-v2.0.0/App-AndroidTV-2.0.0.apk'}]},
+          {tag_name: 'v1.9.0', prerelease: true, assets: [{name: 'com.acme.tvapp_1.9.0_arm.ipk', browser_download_url: 'https://github.com/acme/tvapp/releases/download/v1.9.0/com.acme.tvapp_1.9.0_arm.ipk'}]},
+          {tag_name: 'v1.8.0', assets: [{name: 'com.acme.tvapp_1.8.0_arm.ipk', size: 1, browser_download_url: 'https://github.com/acme/tvapp/releases/download/v1.8.0/com.acme.tvapp_1.8.0_arm.ipk'},
+            {name: 'SHA256SUMS', browser_download_url: 'https://github.com/acme/tvapp/releases/download/v1.8.0/SHA256SUMS'}]}]), err: ''};
+        if (/v1\.8\.0\/SHA256SUMS/.test(cmd)) return {code: 0, out: sha + '  com.acme.tvapp_1.8.0_arm.ipk\n', err: ''};
+        return {code: 22, out: '', err: ''};
+      };
+      var p = await s.githubPackage(null, 'acme/tvapp');
+      assert.strictEqual(p.manifest.version, '1.8.0', 'the Android release and the pre-release are skipped');
+      assert.strictEqual(p.manifest.ipkHash.sha256, sha);
     });
   })
   .then(function () {

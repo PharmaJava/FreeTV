@@ -3,6 +3,15 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.15.5 (2026-11-15)
+
+### Fixed (LG)
+- **The Store still showed the original Stremio Origin** (seen again on the TV after 2.15.4). The real cause: FreeTV read PharmaJava/webos's *latest*
+  release, and the latest one is now the Android TV APK (`android-tv-v1.0.6`), with no webOS package; our project was then dropped and the catalogue's
+  original stayed. `githubPackage` now takes the newest release that has an `.ipk` (pre-releases and drafts skipped), and the page's "What's new" reads
+  the same release. Stremio Claude's id is never offered from another source any more (`OWN_IDS`, in the service and the page): if our project does not
+  answer, the app is just not listed that time, never the original. Its page shows our code, https://github.com/PharmaJava/webos.
+
 ## 2.15.4 (2026-11-15)
 
 ### Fixed (LG)

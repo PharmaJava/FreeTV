@@ -119,6 +119,8 @@ function q(value) {
 var GITHUB_DEFAULT = ['PharmaJava/webos', 'silirim/VodMax'];
 // Names for the ones whose repository is not called like the app (the release's package says the id, not the name)
 var GITHUB_TITLES = {'PharmaJava/webos': 'Stremio Claude'};
+// The app ids our own projects publish (Stremio Claude): only ever offered from that project, never from another source.
+var OWN_IDS = ['tv.stremioorigin.app'];
 var REPO_RE = /^[A-Za-z0-9_.-]{1,39}\/[A-Za-z0-9_.-]{1,100}$/;
 var GH_CACHE = {};
 
@@ -139,10 +141,19 @@ Store.prototype.githubPackage = async function (conn, repo) {
   var hit = GH_CACHE[repo];
   if (hit && Date.now() - hit.at < 10 * 60000) return hit.pkg;
   var head = ' -H ' + q('Accept: application/vnd.github+json') + ' -H ' + q('User-Agent: FreeTV') + ' ';
-  var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 40' + head + q('https://api.github.com/repos/' + repo + '/releases/latest'));
+  // The newest release that has a webOS package: a project can publish other ones in between (PharmaJava/webos publishes its
+  // Android TV APK as android-tv-v*), and "latest" may be one of those.
+  var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 40' + head + q('https://api.github.com/repos/' + repo + '/releases?per_page=15'));
   if (r.code !== 0) throw fail('No pude leer la última versión de ' + repo + ' en GitHub (' + (r.err.trim().split('\n').pop() || 'sin respuesta') + ').');
-  var rel;
-  try { rel = JSON.parse(r.out); } catch (e) { throw fail('GitHub no respondió con el formato esperado.'); }
+  var rels, rel = null;
+  try { rels = JSON.parse(r.out); } catch (e) { throw fail('GitHub no respondió con el formato esperado.'); }
+  if (!Array.isArray(rels)) rels = [rels];   // (one release object, as /releases/latest answers)
+  for (var n = 0; n < rels.length && !rel; n++) {
+    var cand = rels[n];
+    if (!cand || cand.draft || cand.prerelease) continue;
+    if ((cand.assets || []).some(function (a) { return a && /\.ipk$/i.test(a.name || ''); })) rel = cand;
+  }
+  if (!rel) throw fail('Ninguna versión reciente de ' + repo + ' trae un paquete .ipk.');
   var assets = (rel.assets || []).filter(function (a) { return a && typeof a.name === 'string' && typeof a.browser_download_url === 'string' && a.browser_download_url.indexOf('https://github.com/') === 0; });
   var ipks = assets.filter(function (a) { return /\.ipk$/i.test(a.name); });
   var ipk = ipks.filter(function (a) { return /_all\.ipk$/i.test(a.name); })[0] || ipks.filter(function (a) { return /_(arm|armv7)\.ipk$/i.test(a.name); })[0] || ipks[0];
@@ -203,6 +214,9 @@ Store.prototype.catalogue = async function (conn) {
   // Our own projects (GITHUB_DEFAULT: Stremio Claude in PharmaJava/webos) take the place of a catalogue entry with the same id (webOS
   // Homebrew still lists the original Stremio Origin under tv.stremioorigin.app); a project the person added never replaces one.
   var gh = await this.githubPackages(conn);
+  // The ids our own projects use are never offered from another source (webOS Homebrew still lists the original Stremio Origin under
+  // Stremio Claude's id): when our project does not answer, the app is just not offered this time.
+  OWN_IDS.forEach(function (id) { apps = apps.filter(function (a) { return a.id !== id; }); });
   gh.forEach(function (p) {
     var at = -1;
     apps.forEach(function (a, n) { if (a.id === p.id) at = n; });

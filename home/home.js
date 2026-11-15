@@ -1442,6 +1442,7 @@
   // by the person's computer (tools/community.py serve): the TV asks, the computer downloads, checks the hash and installs.
 
   var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
+  var OWN_IDS = ['tv.stremioorigin.app'];   // our own apps (Stremio Claude, PharmaJava/webos): never from another source (store.js OWN_IDS)
   // Other people's repositories, read only for these app ids (keep in step with store-service/store.js); they always need the "unofficial" confirmation.
   var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
     {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
@@ -1682,7 +1683,8 @@
     var saved = cache('catalogue'), fresh = false, finished = false;
     function accept(list) {
       commInst = instMap();
-      commAll = list.filter(function (p) { return p && p.id && p.manifest; });
+      // Stremio Claude's id is only offered from our project (loadGithub): webOS Homebrew still lists the original under it
+      commAll = list.filter(function (p) { return p && p.id && p.manifest && OWN_IDS.indexOf(p.id) < 0; });
       if (!commSeen()) commMarkSeen();   // the first visit: nothing is "new" yet
       commRebuild();
       commState = 'ready';
@@ -2644,7 +2646,12 @@
       var gh = /github\.com\/([\w.-]+)\/([\w.-]+)/.exec(m.sourceUrl || '');
       if (gh && commNotes[a.id] === undefined) {
         commNotes[a.id] = '';
-        Data.getJson('https://api.github.com/repos/' + gh[1] + '/' + gh[2].replace(/\.git$/, '') + '/releases/latest', function (err, rel) {
+        Data.getJson('https://api.github.com/repos/' + gh[1] + '/' + gh[2].replace(/\.git$/, '') + '/releases?per_page=15', function (err, rels) {
+          // the newest release with a webOS package (a project may publish others in between: PharmaJava/webos's Android TV APKs)
+          var rel = null;
+          (rels instanceof Array ? rels : []).forEach(function (x) {
+            if (!rel && x && !x.draft && !x.prerelease && (x.assets || []).some(function (y) { return /\.ipk$/i.test(y.name || ''); })) rel = x;
+          });
           commNotes[a.id] = !err && rel && rel.body ? rel.body.replace(/[#*`>_\[\]]/g, '').replace(/\(http[^)]*\)/g, '').replace(/\s+/g, ' ').slice(0, 260) : '';
           if (commNotes[a.id] && st.zone === Z.COMM && commList[commOpen] === a) renderCommunity();
         });
