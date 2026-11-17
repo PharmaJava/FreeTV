@@ -15,6 +15,7 @@
 
 - When the TV cannot download an app from github.com (older TVs may not trust its certificate), the Store takes the same file from the project's
   GitHub Pages site, checked with the same SHA-256. Stremio Claude publishes there.
+- LG TVs see FreeTV's updates again: the Android TV release no longer takes the *Latest* place on GitHub.
 
 ### FreeTV 2.15.2: a Store on Android TV
 
@@ -470,6 +471,7 @@ affiliated with LG.
 
 - Si la tele no puede descargar una app de github.com (las teles antiguas pueden no fiarse de su certificado), la Tienda coge el mismo archivo de la
   web de GitHub Pages del proyecto, comprobado con el mismo SHA-256. Stremio Claude lo publica ahí.
+- Las teles LG vuelven a ver las actualizaciones de FreeTV: la versión de Android TV ya no ocupa el puesto de *Latest* en GitHub.
 
 ### FreeTV 2.15.2: una Tienda en Android TV
 

@@ -42,7 +42,8 @@ jobs:
           tag="android-tv-v$version"
           (cd dist && sha256sum *.apk > SHA256SUMS)
           if gh release view "$tag" >/dev/null 2>&1; then echo "$tag already published"; exit 0; fi
-          gh release create "$tag" dist/*.apk dist/SHA256SUMS --title "FreeTV $version for Android TV" \
+          # (--latest=false: LG's "FreeTV updates" read the repository's latest release, which must stay the LG one)
+          gh release create "$tag" dist/*.apk dist/SHA256SUMS --latest=false --title "FreeTV $version for Android TV" \
             --notes "FreeTV's home for Android TV and Google TV (Sony Bravia…). Install it, open FreeTV and choose its home screen: see docs/ANDROID-TV.md."
     permissions:
       contents: write
