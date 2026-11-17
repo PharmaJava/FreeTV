@@ -199,6 +199,9 @@ Promise.resolve()
       assert.strictEqual(store.githubRepo('https://github.com/silirim/VodMax/releases/tag/v1'), 'silirim/VodMax');
       assert.strictEqual(store.githubRepo('github.com/a/b.git'), 'a/b');
       assert.strictEqual(store.githubRepo('a/b'), 'a/b');
+      assert.strictEqual(store.githubMirror('https://github.com/PharmaJava/webos/releases/download/v1.2.4/tv.stremioorigin.app_1.2.4_arm.ipk'), 'https://pharmajava.github.io/webos/tv.stremioorigin.app_1.2.4_arm.ipk');
+      assert.strictEqual(store.githubMirror('https://evil.com/PharmaJava/webos/releases/download/v1/x.ipk'), '');
+      assert.strictEqual(store.githubMirror('https://github.com/a/b/releases/download/v1/x.tar.gz'), '');
       assert.strictEqual(store.githubRepo('https://evil.example/a/b'), '');
       var good = 'a'.repeat(64), rel = {assets: [
         {name: 'app.demo.client_1.2.3_all.ipk', size: 10, browser_download_url: 'https://github.com/o/r/releases/download/v1.2.3/app.demo.client_1.2.3_all.ipk'},

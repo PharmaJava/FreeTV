@@ -3,6 +3,13 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.17.1 (2026-11-17)
+
+### Fixed (LG)
+- **The Store installs and updates Stremio Claude on more TVs**: when the TV cannot download a package from github.com (an older TV may not trust
+  that site's certificate, Sectigo ECC), the Store takes the same file from the project's own GitHub Pages site (Stremio Claude publishes every
+  release at pharmajava.github.io/webos, Let's Encrypt). The SHA-256 check is the same, so only the very file the release publishes is installed.
+
 ## 2.17.0 (2026-11-17)
 
 ### Added (Samsung)

@@ -124,6 +124,12 @@ var OWN_IDS = ['tv.stremioorigin.app'];
 var REPO_RE = /^[A-Za-z0-9_.-]{1,39}\/[A-Za-z0-9_.-]{1,100}$/;
 var GH_CACHE = {};
 
+/** A GitHub release package's copy on the project's own Pages site: https://github.com/o/r/releases/download/v/f.ipk -> https://o.github.io/r/f.ipk ('' otherwise). */
+function githubMirror(url) {
+  var m = /^https:\/\/github\.com\/([A-Za-z0-9-]{1,39})\/([A-Za-z0-9_.-]{1,100})\/releases\/download\/[^\/]+\/([A-Za-z0-9._+-]+\.ipk)$/.exec(String(url || ''));
+  return m ? 'https://' + m[1].toLowerCase() + '.github.io/' + m[2] + '/' + m[3] : '';
+}
+
 /** "https://github.com/owner/repo/...", "github.com/owner/repo" or "owner/repo" -> "owner/repo" ('' when it is none of those). */
 function githubRepo(text) {
   text = String(text || '').trim();
@@ -314,7 +320,11 @@ Store.prototype.run = async function (appId, flag, opts) {
 
     this.set({phase: 'downloading'});
     var limit = Math.min(MAX_PACKAGE, Math.max(8 * 1048576, Math.round((m.ipkSize || 0) * 1.25) || MAX_PACKAGE));
-    var d = await this.exec(conn, '/bin/rm -f ' + q(file) + '; curl -fsSL --connect-timeout 20 --max-time 1800 --max-filesize ' + limit + ' -o ' + q(file) + ' ' + q(m.ipkUrl));
+    var get = function (url) { return self.exec(conn, '/bin/rm -f ' + q(file) + '; curl -fsSL --connect-timeout 20 --max-time 1800 --max-filesize ' + limit + ' -o ' + q(file) + ' ' + q(url)); };
+    var d = await get(m.ipkUrl), mirror = githubMirror(m.ipkUrl);
+    // An older TV may not trust github.com's certificate (Sectigo ECC) while it trusts github.io's (Let's Encrypt): the same file from the
+    // project's own GitHub Pages site, when it publishes one there (Stremio Claude does). The hash below decides either way.
+    if (d.code !== 0 && mirror) { this.log('download from github.com failed (' + d.err.trim().split('\n').pop() + '), trying ' + mirror); d = await get(mirror); }
     if (d.code !== 0) throw fail('No pude descargar el paquete (' + (d.err.trim().split('\n').pop() || 'código ' + d.code) + ').');
 
     this.set({phase: 'verifying'});
@@ -605,4 +615,4 @@ Store.prototype.check = async function () {
   }
 };
 
-module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED, isNewer: isNewer, githubRepo: githubRepo, GITHUB_DEFAULT: GITHUB_DEFAULT};
+module.exports = {Store: Store, CAUTION: CAUTION, PROTECTED: PROTECTED, isNewer: isNewer, githubRepo: githubRepo, githubMirror: githubMirror, GITHUB_DEFAULT: GITHUB_DEFAULT};
