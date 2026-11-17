@@ -453,6 +453,11 @@ Promise.resolve()
       assert.strictEqual(p.manifest.version, '1.0.1');
       var src = fs.readFileSync(path.join(root, 'store-service', 'store.js'), 'utf8') + fs.readFileSync(path.join(root, 'home', 'home.js'), 'utf8');
       assert.ok(!/stremio-origin\.github\.io/.test(src), 'stremio-origin\'s feed is not read');
+      // its updates need no second yes, go with "Update all", and come by themselves once a day only while the home is on screen
+      assert.ok(/flag: OWN_IDS\.indexOf\(dev\[i\]\.id\) >= 0 \? '' :/.test(src), 'no confirmation flag on our own app\'s update');
+      assert.ok(/need === 'official-removed' \|\| OWN_IDS\.indexOf\(realId\) >= 0\) need = ''/.test(src), 'its update installs without the warning');
+      assert.ok(/function ownUpdate\(\) \{\n\s*if \(TV\.name !== 'webos' \|\| document\.hidden/.test(src), 'never while another app is in front');
+      assert.ok(/function autoUpdate\(\) \{\n\s*ownUpdate\(\);/.test(src), 'checked with the other updates');
     });
   })
   .then(function () {

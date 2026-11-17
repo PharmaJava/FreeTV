@@ -249,7 +249,8 @@ Store.prototype.updates = async function (conn) {
       if (m.rootRequired || !SHA_RE.test(hash) || typeof m.ipkUrl !== 'string' || !URL_RE.test(m.ipkUrl)) break;
       if (!isNewer(m.version, dev[i].version)) break;
       list.push({id: dev[i].id, title: apps[j].title || dev[i].title, from: dev[i].version, to: String(m.version),
-                 flag: CAUTION[dev[i].id] && CAUTION[dev[i].id] !== 'official-removed' ? CAUTION[dev[i].id] : apps[j].github ? 'unofficial' : ''});
+                 flag: OWN_IDS.indexOf(dev[i].id) >= 0 ? '' : CAUTION[dev[i].id] && CAUTION[dev[i].id] !== 'official-removed' ? CAUTION[dev[i].id] : apps[j].github ? 'unofficial' : ''});
+      // (our own apps, Stremio Claude: their warning was met when they were installed; an update of them needs no other yes, and goes with the rest)
       break;
     }
   }
@@ -306,7 +307,7 @@ Store.prototype.run = async function (appId, flag, opts) {
       // warning is about the first install; an installed one has already met it.)
       var dev = await this.devApps(conn);
       if (!dev || !dev.some(function (d) { return d.id === realId; })) throw fail('Esta app no está instalada desde el Modo Desarrollador: no hay nada que actualizar.');
-      if (need === 'official-removed') need = '';
+      if (need === 'official-removed' || OWN_IDS.indexOf(realId) >= 0) need = '';   // (our own app: its warning was met at its install)
     }
     if (need && need !== flag) throw fail('Esta app necesita que confirmes su aviso en la tele.');
     if (!SHA_RE.test(hash)) throw fail('El catálogo no publica el hash SHA-256 de este paquete: no lo instalo sin poder comprobarlo.');

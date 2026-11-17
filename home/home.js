@@ -2513,8 +2513,25 @@
   }
 
   /** The automatic update (Home Settings, off until the person turns it on): once a day, in the background, only what is installed. */
+  /* Stremio Claude (our own app) updates by itself once a day, whatever "Update apps by itself" says: only while FreeTV's home is on screen
+     (never over a film in it), and only when its update is waiting. Its warning was met at its install. */
+  function ownUpdate() {
+    if (TV.name !== 'webos' || document.hidden || Prefs.autoUpdate() || Date.now() - Prefs.opt('ownUpdAt', 0) < 24 * 3600 * 1000) return;
+    svcCall('updates', {}, function (r) {
+      var u = r && r.returnValue && (r.updates || []).filter(function (x) { return x.id === STREMIO_APP; })[0];
+      if (!r || !r.returnValue) return;
+      Prefs.set('ownUpdAt', Date.now());
+      if (!u || document.hidden) return;
+      svcCall('install', {id: STREMIO_APP, flag: '', update: true}, function (r2) {
+        if (!r2 || !r2.returnValue) return;
+        svcPoll({id: STREMIO_APP, title: 'Stremio Claude ' + u.to});   // (its toast says it is in; the shelf and the Store follow)
+      });
+    });
+  }
   function autoUpdate() {
-    if (TV.name !== 'webos' || !Prefs.autoUpdate() || Date.now() - Prefs.updCheckedAt() < 24 * 3600 * 1000) return;
+    ownUpdate();
+    // (only while FreeTV's home is on screen: an update closes the app it updates, never one being watched)
+    if (TV.name !== 'webos' || document.hidden || !Prefs.autoUpdate() || Date.now() - Prefs.updCheckedAt() < 24 * 3600 * 1000) return;
     Prefs.set('updCheckedAt', Date.now());
     svcCall('updateAll', {}, function (r) {
       if (!r || !r.returnValue) return;

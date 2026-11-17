@@ -3,6 +3,13 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.17.2 (2026-11-17)
+
+### Changed (LG)
+- **Stremio Claude updates by itself.** Once a day, while FreeTV's home is on screen (never over a film), FreeTV installs Stremio Claude's new
+  version when there is one, even with *Update apps by itself* off, and says so. Its update no longer asks for the third-party warning again (it
+  was accepted at its install), so it also goes with *Update all*. Automatic app updates now wait for the home to be on screen too.
+
 ## 2.17.1 (2026-11-17)
 
 ### Fixed (LG)
