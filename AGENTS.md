@@ -193,6 +193,12 @@ Holding Home stops the helper and leaves `state/blocked` in `com.local.nativehom
   `launch` and `openStremio` (`samsungStremio`) go to `stremio/index.html[#open=movie/tt…]`; Back on its first screen returns to `../index.html`.
 - It speaks Stremio's protocol directly: `link.stremio.com/api/create|read` (QR sign-in), `api.strem.io/api/` (`getUser`, `addonCollectionGet`, `datastoreGet|Put` for
   `libraryItem`, times in **milliseconds**), the addons' `/catalog|meta|stream|subtitles/…json`. `<access origin="*">` in `tizen/config.xml` is what lets a Samsung web app
-  call them. Torrents go through a Stremio server the person types in Settings (`POST <server>/<infoHash>/create`, then `GET <server>/<infoHash>/<fileIdx>`).
+  call them. Torrents go through `withEngine`: a Stremio server typed in Settings, else the engine on the TV (below), asked for with the person's yes (`sc.engine`).
 - Checked only in a browser (`tests/stremio-web.e2e.js`: Playwright + ffmpeg; build with `python3 tizen/build.py --no-channels --preview` first). Not tried on a real Samsung TV:
   the TV's own `<video>` decides which codecs play (Samsung's AVPlay would play more, but needs another privilege in `config.xml`; not added).
+- The engine (2.17): `tizenbrew-torrent/` is a TizenBrew *service module* (`packageType: app`, `serviceFile: service.js`). TizenBrew downloads `package.json` and `service.js` from
+  jsDelivr by the module's name and runs the file in a vm with its own `require` (core modules only), so `service.js` is `src/service.js` + torrent-stream bundled by `build.js`
+  (esbuild; one line of parse-torrent-file is patched there, the build stops if it moved). After changing `src/`: `npm install && npm run build`, commit `service.js`, and change
+  `MODULE` in `home/stremio/app.js` to the FreeTV tag that has the change (`gh/PharmaJava/FreeTV@v<version>/tizenbrew-torrent`: a tag is immutable on jsDelivr). The page talks to
+  TizenBrew's service on `ws://127.0.0.1:8081` (events `ModuleAction` 10 `add`, `GetModules` 4, `StartService` 6) and to the engine on `127.0.0.1:11470`. Never use
+  `autolaunchService`: it replaces the person's whole list of auto-started services. `tizenbrew-torrent/test/engine.e2e.js` runs the bundle like TizenBrew does against a local seeder.

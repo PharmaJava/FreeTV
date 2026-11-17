@@ -91,7 +91,10 @@ como la app «Stremio Claude» (en tu estante y en todas las apps).
 - **Entrar**: con el código QR desde el móvil (igual que en LG) o sin cuenta, con los catálogos de Cinemeta. Con tu cuenta salen **tus addons**, tu biblioteca y
   «Continuar viendo».
 - **Ver**: enlaces directos (los que dan tus addons) en el reproductor de la tele, con subtítulos de los addons (se elige solo tu idioma; cambiarlo en Ajustes).
-- **Torrents**: una app web de Samsung no puede abrir conexiones de torrents. Pon en *Ajustes* la dirección de un **Stremio Server** de tu red
-  (por ejemplo `192.168.1.20:11470`, en un PC o una Raspberry) y los torrents se ven a través de él. Sin él solo se reproducen enlaces directos.
+- **Torrents**: una app web de Samsung no puede abrir conexiones de torrents, así que FreeTV usa **TizenBrew** (que sí ejecuta Node en la tele). La primera vez que
+  eliges un torrent, FreeTV te pregunta y, si dices que sí, añade a TizenBrew el módulo «Stremio Claude Torrents» (código en `tizenbrew-torrent/`) y lo arranca;
+  el torrent se ve a través de él. Hace falta TizenBrew instalado y **abierto una vez desde que se encendió la tele**, y sitio libre en la tele (el tamaño del vídeo:
+  solo guarda un torrent a la vez y lo borra al cambiar). Si prefieres, en *Ajustes* puedes poner la dirección de un **Stremio Server** de tu red
+  (`192.168.1.20:11470`) y se usa ese en su lugar.
 - Qué códecs se ven (MKV, HEVC, Dolby…) lo decide el reproductor de cada tele. Si una fuente no se ve, prueba otra.
-- Comprobado en un navegador con cuentas, addons y vídeo de prueba; **no en una Samsung real todavía**.
+- Comprobado en un navegador y con un TizenBrew simulado (el motor de torrents, en Node 10 a 22 contra un semillero local); **no en una Samsung real todavía**: no sabemos qué Node trae TizenBrew en cada modelo.

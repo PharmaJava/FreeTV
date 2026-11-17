@@ -3,6 +3,20 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.17.0 (2026-11-17)
+
+### Added (Samsung)
+- **Torrents in Stremio Claude on Samsung, with nothing else at home.** A Samsung web app cannot open torrent connections, but TizenBrew's service runs Node
+  on the TV: `tizenbrew-torrent/` is a TizenBrew module ("Stremio Claude Torrents") with a small streaming engine (torrent-stream) that speaks the part of
+  Stremio's streaming server the page needs (`POST /<infoHash>/create`, `GET /<infoHash>/<fileIdx>` with Range, `GET /status`) on `127.0.0.1:11470`.
+  The Stremio page asks first (nothing is added to TizenBrew without a yes), adds the module and starts its service through TizenBrew's own service
+  (`ws://127.0.0.1:8081`), and plays the torrent through it. One torrent at a time (the TV has little room): the data of the last one is removed when another
+  is chosen, when the service starts and after 20 idle minutes; it refuses a file that does not fit in the free space. A Stremio Server typed in Settings still
+  wins when there is one. Needs TizenBrew installed and opened since the TV was switched on, and a TizenBrew whose Node is 10 or newer.
+- Checked on Node 10, 12, 14 and 22 with a local seeder (whole file, ranges, a second torrent replacing the first, no peers) and the page against a pretended
+  TizenBrew. **Not tried on a real Samsung**: which Node each model gives TizenBrew, how much room the TV has and whether real swarms answer are open.
+- The Stremio page keeps its place in the sources list when you come back to it.
+
 ## 2.16.0 (2026-11-16)
 
 ### Added (Samsung)

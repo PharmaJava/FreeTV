@@ -2,13 +2,17 @@
  * Stremio Claude for Samsung (Tizen): the web version of our Stremio, inside FreeTV's package (Samsung TVs only run web apps).
  * Your Stremio account (linked with a QR code, as on LG) and your own addons: Home, Movies, Series, Search, Library, titles with
  * their episodes, sources from your addons, subtitles, and Continue watching kept in your account.
- * Direct links play in the TV's own player. Torrents need a Stremio streaming server on your network (Settings): a Samsung web app
- * cannot open torrent connections itself. Plain ES5 (the TV may run Chrome 56), no libraries. Remote control only.
+ * Direct links play in the TV's own player. A Samsung web app cannot open torrent connections itself, so torrents go through an engine
+ * running as a TizenBrew service on this TV (tizenbrew-torrent/, started from here, with the person's yes) or through a Stremio streaming
+ * server on the network (Settings), whichever is set. Plain ES5 (the TV may run Chrome 56), no libraries. Remote control only.
  */
 (function () {
   'use strict';
   var API = 'https://api.strem.io/api/', LINK = 'https://link.stremio.com/api/';
   var CINEMETA = 'https://v3-cinemeta.strem.io';
+  var MODULE = 'gh/PharmaJava/FreeTV@v2.17.0/tizenbrew-torrent', LOCAL = 'http://127.0.0.1:11470';   // the torrent engine, as a TizenBrew module
+  var BREW_APP = 'xvvl3S1bvH.TizenBrewStandalone', BREW_WS = 'ws://127.0.0.1:8081';
+  var BREW = {GetModules: 4, StartService: 6, Error: 8, ModuleAction: 10};   // TizenBrew's service events
 
   // ---- small helpers ------------------------------------------------------------------------------------------------
   var LANG = (function () {
@@ -229,7 +233,7 @@
   }
 
   // ---- screen manager and focus -------------------------------------------------------------------------------------
-  var view = $('view'), navBox = $('nav'), cur = null, stack = [], here = null, token = 0, playing = null;
+  var view = $('view'), navBox = $('nav'), cur = null, stack = [], here = null, token = 0, playing = null, wantKey = null;
   var TABS = [['home', T('Inicio', 'Home', 'Início')], ['movie', T('Películas', 'Movies', 'Filmes')], ['series', T('Series', 'Series', 'Séries')],
               ['search', T('Buscar', 'Search', 'Pesquisar')], ['lib', T('Biblioteca', 'Library', 'Biblioteca')], ['set', T('Ajustes', 'Settings', 'Definições')]];
 
@@ -314,6 +318,7 @@
     var mine = token;
     var fn = SCREENS[s.name];
     fn(s.args, view, mine);
+    wantKey = restore ? s.k : null;   // screens that fill in later (the sources) put the focus back there when it exists
     var f = restore ? focusKey(s.k) : null;
     if (restore && s.scroll) view.scrollTop = s.scroll;
     f = f || firstFocus();
@@ -529,8 +534,16 @@
       store.set('sublang', SUBLANGS[n][0]);
       sl.value.textContent = SUBLANGS[n][1];
     });
-    var sv = line('srv', T('Servidor de torrents (Stremio Server)', 'Torrent server (Stremio Server)', 'Servidor de torrents (Stremio Server)'),
-      T('Dirección en tu red, por ejemplo 192.168.1.20:11470. Sin él solo se reproducen enlaces directos.', 'An address on your network, like 192.168.1.20:11470. Without it only direct links play.', 'Endereço na sua rede, ex.: 192.168.1.20:11470.'), '', null);
+    var en = line('eng', T('Torrents en esta tele (TizenBrew)', 'Torrents on this TV (TizenBrew)', 'Torrents nesta TV (TizenBrew)'),
+      T('Módulo «Stremio Claude Torrents»: se añade a TizenBrew y se arranca al elegir un torrent', 'The “Stremio Claude Torrents” module: added to TizenBrew and started when you pick a torrent', 'Módulo para TizenBrew'),
+      store.get('engine') === '1' ? T('Sí', 'On', 'Sim') : T('No', 'Off', 'Não'), function () {
+        var on = store.get('engine') === '1';
+        store.set('engine', on ? null : '1');
+        en.value.textContent = on ? T('No', 'Off', 'Não') : T('Sí', 'On', 'Sim');
+        toast(on ? T('Torrents de la tele desactivados', 'This TV’s torrents are off', 'Desativado') : T('Se arrancarán al elegir un torrent', 'They start when you pick a torrent', 'Arrancam ao escolher um torrent'));
+      });
+    var sv = line('srv', T('Servidor de torrents de tu red (Stremio Server)', 'Torrent server on your network (Stremio Server)', 'Servidor de torrents da rede (Stremio Server)'),
+      T('Opcional, por ejemplo 192.168.1.20:11470. Si lo escribes se usa en vez del módulo de la tele.', 'Optional, like 192.168.1.20:11470. If set, it is used instead of the TV module.', 'Opcional. Se preenchido, usa-se em vez do módulo.'), '', null);
     var inp = h('input');
     inp.type = 'text';
     inp.value = store.get('server') || '';
@@ -696,7 +709,7 @@
     var addons = addonsFor('stream', type, vid), got = 0, total = addons.length, groups = [], found = 0;
     if (!total) { sub.textContent = T('Ninguno de tus addons ofrece fuentes para este título.', 'None of your addons offers sources for this title.', 'Nenhum addon tem fontes.'); var bb = fk(h('div', 'btn f', T('Atrás', 'Back', 'Voltar')), 'b'); bb.act = back; list.appendChild(bb); setFocus(bb); return; }
     function row(a, s) {
-      var kind = streamKind(s), r = fk(h('div', 'src f' + (kind === 'torrent' && !serverUrl() ? ' dis' : '')), 's:' + found++);
+      var kind = streamKind(s), r = fk(h('div', 'src f'), 's:' + found++);
       r.appendChild(h('div', 'a', addonName(a)));
       var m = h('div', 'm');
       m.appendChild(h('div', 'nm', String(s.name || s.title || '').replace(/\n+/g, ' · ')));
@@ -724,36 +737,135 @@
         for (i = 0; i < ss.length; i++) if (ss[i] && (streamKind(ss[i]) || ss[i].externalUrl || ss[i].ytId)) place(row(a, ss[i]), idx);
         sub.textContent = found ? (found + ' ' + T('fuentes', 'sources', 'fontes') + (got < total ? ' · ' + T('buscando…', 'searching…', 'a procurar…') : '')) :
           (got < total ? T('Buscando fuentes en tus addons…', 'Looking for sources in your addons…', 'A procurar fontes…') : T('No hay fuentes para este título.', 'No sources for this title.', 'Sem fontes.'));
-        if (!cur || !/\bsrc\b/.test(cur.className)) { var f = list.querySelector('.f'); if (f) setFocus(f); }
+        var wf = wantKey && focusKey(wantKey);
+        if (wf) { setFocus(wf); wantKey = null; }
+        else if (!wantKey && (!cur || !/\bsrc\b/.test(cur.className))) { var f = list.querySelector('.f'); if (f) setFocus(f); }
       });
     });
   };
 
   function playStream(s, ctx, kind) {
     if (kind === 'url') { openPlayer(s.url, s, ctx); return; }
-    var srv = serverUrl();
-    if (!srv) { toast(T('Los torrents necesitan un servidor Stremio en tu red: configúralo en Ajustes.', 'Torrents need a Stremio server on your network: set it in Settings.', 'Os torrents precisam de um servidor Stremio: configure em Definições.'), 5500); return; }
-    toast(T('Preparando el torrent…', 'Preparing the torrent…', 'A preparar o torrent…'), 30000);
-    var ih = String(s.infoHash).toLowerCase(), sources = (s.sources || []).slice(), i;
-    sources.push('dht:' + ih);
-    var body = {torrent: {infoHash: ih}, peerSearch: {sources: sources, min: 40, max: 150}};
-    if (typeof s.fileIdx !== 'number') body.guessFileIdx = {};
-    http('POST', srv + '/' + ih + '/create', body, function (err, j) {
-      $('toast').style.display = 'none';
-      if (err) { toast(T('No se pudo hablar con el servidor de torrents (' + srv + ').', 'Could not reach the torrent server (' + srv + ').', 'Sem resposta do servidor (' + srv + ').'), 5500); return; }
-      var idx = typeof s.fileIdx === 'number' ? s.fileIdx : (j && typeof j.guessedFileIdx === 'number' ? j.guessedFileIdx : -1);
-      if (idx < 0 && j && j.files && j.files.length) {
-        var best = -1, size = -1;
-        for (i = 0; i < j.files.length; i++) {
-          var f = j.files[i];
-          if (/\.(mkv|mp4|avi|mov|m4v|webm|ts)$/i.test(f.name || f.path || '') && num(f.length) > size) { size = num(f.length); best = i; }
+    withEngine(function (base) {
+      var ih = String(s.infoHash).toLowerCase(), sources = (s.sources || []).slice(), i;
+      sources.push('dht:' + ih);
+      var body = {torrent: {infoHash: ih}, peerSearch: {sources: sources, min: 40, max: 150}};
+      if (typeof s.fileIdx !== 'number') body.guessFileIdx = {}; else body.fileIdx = s.fileIdx;
+      toast(T('Preparando el torrent…', 'Preparing the torrent…', 'A preparar o torrent…'), 100000);
+      http('POST', base + '/' + ih + '/create', body, function (err, j) {
+        $('toast').style.display = 'none';
+        if (err) {
+          var why = j && j.error ? String(j.error) : '';
+          if (err.status === 504) toast(T('Nadie respondió con este torrent (sin pares). Prueba otra fuente.', 'Nobody answered for this torrent (no peers). Try another source.', 'Sem pares para este torrent. Tente outra fonte.'), 6000);
+          else if (err.status === 507) toast(why || T('No hay sitio libre en la tele para este torrent.', 'Not enough free space on the TV for this torrent.', 'Sem espaço livre na TV.'), 8000);
+          else toast(T('No se pudo preparar el torrent', 'Could not prepare the torrent', 'Não foi possível preparar o torrent') + (why ? ': ' + why : ' (' + base + ')'), 6000);
+          return;
         }
-        idx = best;
-      }
-      if (idx < 0) idx = 0;
-      openPlayer(srv + '/' + ih + '/' + idx, s, ctx);
-    }, 30000);
+        var idx = typeof s.fileIdx === 'number' ? s.fileIdx : (j && typeof j.guessedFileIdx === 'number' ? j.guessedFileIdx : -1);
+        if (idx < 0 && j && j.files && j.files.length) {
+          var best = -1, size = -1;
+          for (i = 0; i < j.files.length; i++) {
+            var f = j.files[i];
+            if (/\.(mkv|mp4|avi|mov|m4v|webm|ts)$/i.test(f.name || f.path || '') && num(f.length) > size) { size = num(f.length); best = i; }
+          }
+          idx = best;
+        }
+        if (idx < 0) idx = 0;
+        openPlayer(base + '/' + ih + '/' + idx, s, ctx);
+      }, 120000);
+    }, function () { playStream(s, ctx, kind); });
   }
+
+  // ---- the torrent engine ---------------------------------------------------------------------------------------------------------
+  function probe(base, cb) {
+    http('GET', base + '/status', null, function (err, j) { cb(!err && !!j && j.ok === true); }, 2500);
+  }
+  /** Asks TizenBrew's service (ws://127.0.0.1:8081) to add our module and start its service; cb(null) when asked, or a reason. */
+  function startLocal(cb) {
+    var ws, done = false, timer;
+    function fin(reason) { if (done) return; done = true; clearTimeout(timer); try { ws.close(); } catch (e) {} cb(reason); }
+    try { ws = new WebSocket(BREW_WS); } catch (e) { setTimeout(function () { cb('nobrew'); }, 0); return; }
+    timer = setTimeout(function () { fin('nobrew'); }, 5000);
+    ws.onerror = function () { fin('nobrew'); };
+    ws.onopen = function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () { fin('module'); }, 25000);
+      ws.send(JSON.stringify({type: BREW.ModuleAction, payload: {action: 'add', module: MODULE}}));
+      setTimeout(function () { try { ws.send(JSON.stringify({type: BREW.GetModules, payload: true})); } catch (e) { fin('nobrew'); } }, 300);
+    };
+    ws.onmessage = function (e) {
+      var m;
+      try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.type === BREW.Error) { fin('module'); return; }
+      if (m.type !== BREW.GetModules || !m.payload) return;
+      var mod = null, i;
+      for (i = 0; i < m.payload.length; i++) if (m.payload[i].fullName === MODULE) mod = m.payload[i];
+      if (!mod || !mod.serviceFile) { fin('module'); return; }
+      ws.send(JSON.stringify({type: BREW.StartService, payload: mod}));
+      setTimeout(function () { fin(null); }, 400);
+    };
+  }
+  /** The torrent engine's address: a Stremio server typed in Settings, or the engine on this TV (started when needed). */
+  function withEngine(cb, again) {
+    var srv = serverUrl();
+    if (srv) { cb(srv); return; }
+    if (store.get('engine') !== '1') {
+      go('ask', {title: T('Torrents en esta tele', 'Torrents on this TV', 'Torrents nesta TV'),
+        text: T('Una app web de Samsung no puede abrir torrents por sí sola. FreeTV puede añadir a TizenBrew un módulo, «Stremio Claude Torrents» (código en github.com/PharmaJava/FreeTV, carpeta tizenbrew-torrent), que se ejecuta solo en esta tele, descarga únicamente el torrent que elijas y borra sus datos al cambiar de torrent. Necesita TizenBrew instalado y abierto desde que se encendió la tele, y sitio libre en la tele (el tamaño del vídeo).',
+          'A Samsung web app cannot open torrents by itself. FreeTV can add a module to TizenBrew, “Stremio Claude Torrents” (code at github.com/PharmaJava/FreeTV, folder tizenbrew-torrent), which runs only on this TV, downloads only the torrent you pick and removes its data when you pick another. It needs TizenBrew installed and opened since the TV was switched on, and free space on the TV (the size of the video).',
+          'Uma app web da Samsung não abre torrents sozinha. O FreeTV pode adicionar ao TizenBrew o módulo «Stremio Claude Torrents» (código em github.com/PharmaJava/FreeTV), que corre só nesta TV. Precisa do TizenBrew aberto e de espaço livre.'),
+        buttons: [{label: T('Activar torrents', 'Turn torrents on', 'Ativar torrents'), act: function () { store.set('engine', '1'); back(); setTimeout(again, 50); }},
+                  {label: T('Ahora no', 'Not now', 'Agora não'), act: back}]});
+      return;
+    }
+    toast(T('Arrancando los torrents de esta tele…', 'Starting this TV’s torrents…', 'A iniciar os torrents…'), 60000);
+    probe(LOCAL, function (up) {
+      if (up) { $('toast').style.display = 'none'; cb(LOCAL); return; }
+      startLocal(function (reason) {
+        if (reason) { $('toast').style.display = 'none'; engineProblem(reason); return; }
+        var tries = 0;
+        (function wait() {
+          probe(LOCAL, function (ok) {
+            if (ok) { $('toast').style.display = 'none'; cb(LOCAL); return; }
+            if (++tries > 40) { $('toast').style.display = 'none'; engineProblem('slow'); return; }
+            setTimeout(wait, 1000);
+          });
+        })();
+      });
+    });
+  }
+  function openBrew() {
+    try { window.tizen.application.launch(BREW_APP, function () {}, function () { toast(T('TizenBrew no está instalado en esta tele', 'TizenBrew is not installed on this TV', 'O TizenBrew não está instalado')); }); } catch (e) { toast(T('No se pudo abrir TizenBrew', 'Could not open TizenBrew', 'Não foi possível abrir o TizenBrew')); }
+  }
+  function engineProblem(reason) {
+    var nobrew = reason === 'nobrew';
+    go('ask', {title: nobrew ? T('TizenBrew no responde', 'TizenBrew does not answer', 'O TizenBrew não responde') : T('El motor de torrents no arrancó', 'The torrent engine did not start', 'O motor de torrents não arrancou'),
+      text: nobrew
+        ? T('Los torrents de esta tele necesitan TizenBrew (gratis, de la comunidad) instalado y abierto al menos una vez desde que se encendió la tele. Ábrelo, vuelve a FreeTV (botón Home → Apps) y prueba otra vez. Si no lo tienes, la guía para instalarlo está en la web de FreeTV. También puedes escribir en Ajustes la dirección de un Stremio Server de tu red.',
+            'This TV’s torrents need TizenBrew (free, from the community) installed and opened at least once since the TV was switched on. Open it, come back to FreeTV (Home button → Apps) and try again. If you do not have it, the install guide is on FreeTV’s website. You can also type the address of a Stremio Server on your network in Settings.',
+            'Os torrents desta TV precisam do TizenBrew instalado e aberto uma vez desde que ligou a TV. Abra-o, volte ao FreeTV e tente de novo.')
+        : T('TizenBrew está abierto, pero el módulo de torrents no llegó a arrancar. Suele ser la conexión a internet de la tele (el módulo se descarga de jsdelivr) o una tele cuyo TizenBrew trae un Node demasiado antiguo. Inténtalo otra vez en un momento, o usa un Stremio Server de tu red (Ajustes).',
+            'TizenBrew is open, but the torrent module did not start. It is usually the TV’s internet connection (the module comes from jsdelivr) or a TV whose TizenBrew has a Node that is too old. Try again in a moment, or use a Stremio Server on your network (Settings).',
+            'O módulo de torrents não arrancou. Verifique a internet da TV ou use um Stremio Server (Definições).'),
+      buttons: (nobrew ? [{label: T('Abrir TizenBrew', 'Open TizenBrew', 'Abrir TizenBrew'), act: openBrew}] : []).concat([{label: T('Atrás', 'Back', 'Voltar'), act: back}])});
+  }
+  SCREENS.ask = function (args, root) {
+    var box = h('div', 'login'), col = h('div', 'r');
+    col.style.width = '1100px'; col.style.padding = '0';
+    col.appendChild(h('h1', '', args.title));
+    var p = h('p', '', args.text);
+    p.style.textAlign = 'left';
+    col.appendChild(p);
+    var first = null;
+    (args.buttons || []).forEach(function (b, i) {
+      var e = fk(h('div', 'btn f' + (i === 0 ? ' main' : ''), b.label), 'ask:' + i);
+      e.act = b.act;
+      col.appendChild(e);
+      if (!first) first = e;
+    });
+    box.appendChild(col);
+    root.appendChild(box);
+  };
 
   // ---- player -------------------------------------------------------------------------------------------------------
   var LANGNAMES = {spa: 'Español', eng: 'English', por: 'Português', fre: 'Français', fra: 'Français', ger: 'Deutsch', deu: 'Deutsch', ita: 'Italiano', dut: 'Nederlands', pol: 'Polski', rus: 'Русский',

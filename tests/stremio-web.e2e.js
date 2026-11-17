@@ -56,6 +56,28 @@ const assert = require('assert');
     const a = +rg[1], z = rg[2] ? +rg[2] : buf.length - 1;
     route.fulfill({status: 206, headers: {'accept-ranges': 'bytes', 'content-range': 'bytes ' + a + '-' + z + '/' + buf.length}, contentType: 'video/webm', body: buf.slice(a, z + 1)});
   });
+  let engineUp = false; const creates = [];
+  await page.exposeFunction('engineStarted', () => { engineUp = true; });
+  await page.addInitScript(() => {   // TizenBrew's service on ws://127.0.0.1:8081, pretended
+    window.WebSocket = function (url) {
+      const me = this; this.url = url;
+      setTimeout(() => me.onopen && me.onopen(), 20);
+      this.send = (d) => {
+        const m = JSON.parse(d); (window.__brew = window.__brew || []).push(m);
+        if (m.type === 4) setTimeout(() => me.onmessage({ data: JSON.stringify({ type: 4, payload: [{ fullName: 'gh/PharmaJava/FreeTV@v2.17.0/tizenbrew-torrent', serviceFile: 'service.js', appName: 'Stremio Claude Torrents' }] }) }), 30);
+        if (m.type === 6) window.engineStarted();
+      };
+      this.close = () => {};
+    };
+  });
+  await page.route(/127\.0\.0\.1:11470/, (route) => {   // the engine on the TV: only once its service was started
+    const u = new URL(route.request().url());
+    if (!engineUp) return route.abort('connectionrefused');
+    if (u.pathname === '/status') return json(route, { ok: true, name: 'freetv-torrents' });
+    if (u.pathname.endsWith('/create')) { creates.push(JSON.parse(route.request().postData())); return json(route, { files: [{ name: 'a.webm', length: 545342 }], guessedFileIdx: 1 }); }
+    const buf = fs.readFileSync(SP + '/test.webm');
+    return route.fulfill({ status: 200, headers: { 'accept-ranges': 'bytes', 'access-control-allow-origin': '*' }, contentType: 'video/webm', body: buf });
+  });
   await page.goto(base + '/stremio/index.html');
   const key = k => page.keyboard.press(k);
   const txt = () => page.evaluate(() => document.body.innerText);
@@ -95,11 +117,29 @@ const assert = require('assert');
   t = await txt();
   assert.ok(t.includes('Direct 1080p') && t.includes('Torrent 4K') && t.includes('Trailer'));
   await page.screenshot({ path: SP + '/s5-streams.png' });
-  // torrent without a server: toast, no player
+  // a torrent with no server: the person is asked first (nothing is added to TizenBrew without a yes)
   await key('ArrowDown'); await key('Enter');
-  await page.waitForTimeout(200);
-  assert.ok((await page.evaluate(() => document.getElementById('toast').textContent)).match(/servidor|server/i));
-  assert.strictEqual(await page.evaluate(() => document.getElementById('player').style.display), '');
+  await page.waitForSelector('.login h1');
+  t = await txt();
+  assert.ok(/Torrents on this TV|Torrents en esta tele/.test(t) && /tizenbrew-torrent/.test(t), t.slice(0, 200));
+  await page.screenshot({ path: SP + '/s5b-ask.png' });
+  assert.deepStrictEqual(await page.evaluate(() => window.__brew || []), [], 'nothing was sent to TizenBrew yet');
+  await key('ArrowRight'); await key('Enter');   // Not now
+  await page.waitForSelector('.src');
+  assert.deepStrictEqual(await page.evaluate(() => window.__brew || []), []);
+  assert.strictEqual(await page.evaluate(() => window.localStorage.getItem('sc.engine')), null);
+  // yes: the module is added, its service started, and the torrent plays through the engine on this TV
+  await key('Enter'); await page.waitForSelector('.login h1');
+  await key('Enter');   // Turn torrents on
+  await page.waitForSelector('#player video', { timeout: 20000 });
+  const brew = await page.evaluate(() => window.__brew);
+  assert.strictEqual(brew[0].type, 10); assert.deepStrictEqual(brew[0].payload, {action: 'add', module: 'gh/PharmaJava/FreeTV@v2.17.0/tizenbrew-torrent'});
+  assert.ok(brew.some((m) => m.type === 4) && brew.some((m) => m.type === 6 && m.payload.serviceFile === 'service.js'), JSON.stringify(brew));
+  assert.strictEqual(await page.evaluate(() => window.localStorage.getItem('sc.engine')), '1');
+  assert.ok(creates.length === 1 && creates[0].peerSearch.sources.indexOf('dht:' + 'a'.repeat(40)) >= 0 && creates[0].fileIdx === 1, JSON.stringify(creates));
+  assert.ok((await page.evaluate(() => document.querySelector('#player video').src)).indexOf('http://127.0.0.1:11470/' + 'a'.repeat(40) + '/1') === 0);
+  await page.screenshot({ path: SP + '/s5c-engine.png' });
+  await key('Escape'); await page.waitForFunction(() => document.getElementById('player').style.display === 'none');
   // direct: player
   await key('ArrowUp'); await key('Enter');
   await page.waitForSelector('#player video');

@@ -304,6 +304,16 @@ Promise.resolve()
       assert.ok(/id === 'tv\.stremioorigin\.app'\) \{ samsungStremio\('', ''\)/.test(tv), 'launching it opens the page');
       assert.ok(/'stremio\/index\.html' \+ open/.test(tv), 'a title opens on its own page');
       assert.ok(!/stremio\//.test(fs.readFileSync(path.join(root, 'android', 'build.sh'), 'utf8')), 'the Android TV build does not touch it');
+      var mod = JSON.parse(fs.readFileSync(path.join(root, 'tizenbrew-torrent', 'package.json'), 'utf8'));
+      assert.ok(mod.packageType === 'app' && mod.serviceFile === 'service.js' && mod.appPath === 'index.html' && mod.appName, 'a TizenBrew service module');
+      ['service.js', 'index.html', 'src/service.js'].forEach(function (n) { assert.ok(fs.existsSync(path.join(root, 'tizenbrew-torrent', n)), n); });
+      var ref = /var MODULE = '(gh\/PharmaJava\/FreeTV@v(\d+\.\d+\.\d+)\/tizenbrew-torrent)'/.exec(app);
+      assert.ok(ref, 'the page names the module by a release tag');
+      var svc = fs.readFileSync(path.join(root, 'tizenbrew-torrent', 'service.js'), 'utf8');
+      new vm.Script(svc);
+      assert.ok(/Array\.isArray\(announce\)/.test(svc), 'the bundle has its parse-torrent-file fix');
+      assert.ok(/ModuleAction: 10/.test(app) && /StartService: 6/.test(app) && /GetModules: 4/.test(app), 'TizenBrew\'s events');
+      assert.ok(!/autolaunchService/.test(app), 'the person\'s own auto-started services are never replaced');
     });
   })
   .then(function () {

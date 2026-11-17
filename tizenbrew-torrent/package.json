@@ -1,0 +1,19 @@
+{
+  "name": "freetv-torrents",
+  "version": "1.0.0",
+  "description": "Torrents for Stremio Claude on Samsung TVs (FreeTV): a small streaming engine that runs as a TizenBrew service.",
+  "packageType": "app",
+  "appName": "Stremio Claude Torrents",
+  "appPath": "index.html",
+  "serviceFile": "service.js",
+  "keys": [],
+  "license": "MIT",
+  "repository": "https://github.com/PharmaJava/FreeTV",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "torrent-stream": "1.2.1"
+  }
+}

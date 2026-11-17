@@ -25,3 +25,8 @@ as an unofficial extra, is a third-party app (MIT) that this project does not ma
 FreeTV is not affiliated with, endorsed by or sponsored by LG Electronics. "LG" and "webOS" belong to their owners.
 Netflix, YouTube, Prime Video, Disney+ and the other app icons shown on the home screen are the icons your own TV gives
 to apps already installed on it.
+
+## tizenbrew-torrent (Samsung torrents)
+
+`tizenbrew-torrent/service.js` bundles [torrent-stream](https://github.com/mafintosh/torrent-stream) (MIT) and its dependencies (MIT, ISC or BSD licensed:
+bittorrent-dht, bittorrent-tracker, peer-wire-swarm, parse-torrent, bncode, mkdirp, rimraf and others; see `tizenbrew-torrent/package-lock.json`).
