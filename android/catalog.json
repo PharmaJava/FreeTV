@@ -27,13 +27,13 @@
    "id": "org.smarttube.stable",
    "minSdk": 17,
    "repo": "yuliskov/SmartTube",
-   "sha256": "288e8caaa11417f6b64d2a7f906cead85c0b8a9bb5904753d7cb4f79d117d023",
-   "size": 25517725,
-   "tag": "32.71s",
+   "sha256": "f90eea37b474f848ba37e8bfc37df5ab31517aa41e12d0d38e185e62378488b8",
+   "size": 25569109,
+   "tag": "32.80s",
    "title": "SmartTube",
-   "url": "https://github.com/yuliskov/SmartTube/releases/download/32.71s/SmartTube_stable_32.71_armeabi-v7a.apk",
-   "version": "32.71",
-   "versionCode": 2461
+   "url": "https://github.com/yuliskov/SmartTube/releases/download/32.80s/SmartTube_stable_32.80_armeabi-v7a.apk",
+   "version": "32.80",
+   "versionCode": 2470
   },
   {
    "desc": [
