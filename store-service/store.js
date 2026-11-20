@@ -116,9 +116,9 @@ function q(value) {
 
 // GitHub projects whose latest release carries an .ipk (named <id>_<version>_<arch>.ipk, as ares-package makes it) and a SHA-256 for it.
 // These come with FreeTV; the person adds more by pasting a link (the service keeps them). All of them need the "unofficial" confirmation.
-var GITHUB_DEFAULT = ['PharmaJava/webos', 'silirim/VodMax'];
+var GITHUB_DEFAULT = ['PharmaJava/webos', 'silirim/VodMax', '4gray/iptvnator'];
 // Names for the ones whose repository is not called like the app (the release's package says the id, not the name)
-var GITHUB_TITLES = {'PharmaJava/webos': 'Stremio Claude'};
+var GITHUB_TITLES = {'PharmaJava/webos': 'Stremio Claude', '4gray/iptvnator': 'IPTVnator TV'};
 // The app ids our own projects publish (Stremio Claude): only ever offered from that project, never from another source.
 var OWN_IDS = ['tv.stremioorigin.app'];
 var REPO_RE = /^[A-Za-z0-9_.-]{1,39}\/[A-Za-z0-9_.-]{1,100}$/;
@@ -178,6 +178,9 @@ Store.prototype.githubPackage = async function (conn, repo) {
     }
     if (!hash && sums[i].name.toLowerCase().indexOf(ipk.name.toLowerCase()) === 0 && /^[0-9a-fA-F]{64}\b/.test(t.out.trim())) hash = t.out.trim().slice(0, 64).toLowerCase();
   }
+  // No SHA256SUMS in the release (IPTVnator publishes none): the SHA-256 GitHub itself computed for that very file when it was uploaded
+  // (the asset's "digest"), which the release page shows beside it. The download is then checked against it like any other.
+  if (!SHA_RE.test(hash) && typeof ipk.digest === 'string' && /^sha256:[0-9a-f]{64}$/i.test(ipk.digest)) hash = ipk.digest.slice(7).toLowerCase();
   if (!SHA_RE.test(hash)) throw fail(repo + ' no publica el hash SHA-256 de ' + ipk.name + ' en su última versión: no lo instalo sin poder comprobarlo.');
   var title = GITHUB_TITLES[repo] || repo.split('/')[1];
   var pkg = {id: nm[1], title: title, github: true, own: GITHUB_DEFAULT.indexOf(repo) >= 0, repo: 'github.com/' + repo, shortDescription: '',

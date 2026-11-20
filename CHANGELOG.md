@@ -3,6 +3,13 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.17.3 (2026-11-20)
+
+### Added (LG)
+- **IPTVnator TV in the Store** (github.com/4gray/iptvnator, MIT): an IPTV player for your own m3u playlists, with favourites and a TV guide. It brings
+  no channels. Its releases publish no SHA256SUMS, so the Store takes the SHA-256 GitHub computed for that very file (the asset's digest) and checks the
+  download against it, as with any other app.
+
 ## 2.17.2 (2026-11-17)
 
 ### Changed (LG)

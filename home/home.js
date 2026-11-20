@@ -2553,6 +2553,7 @@
     'twitch.adamffdev.v1': ['Twitch sem anúncios', 'Twitch without ads', 'Twitch sin anuncios'],
     'app.vodmax.client': ['Centro multimídia próprio: TV ao vivo, filmes e séries (precisa do seu servidor VodMax)', 'Your own media centre: live TV, films and series (needs your VodMax server)', 'Tu centro multimedia: TV en directo, películas y series (necesita tu servidor VodMax)'],
     'tv.stremioorigin.app': ['Stremio Claude: cliente não oficial do Stremio (sua conta e addons), corrigido', 'Stremio Claude: unofficial Stremio client (your account and addons), fixed', 'Stremio Claude: cliente no oficial de Stremio (tu cuenta y tus addons), corregido'],
+    'com.iptvnator.tv.prototype': ['Leitor de IPTV: as suas listas m3u, favoritos e guia de TV (não traz canais)', 'IPTV player: your own m3u playlists, favourites and TV guide (it brings no channels)', 'Reproductor IPTV: tus listas m3u, favoritos y guía de TV (no trae canales)'],
     'org.jellyfin.webos': ['Seus filmes e séries do seu servidor Jellyfin', 'Your films and shows from your Jellyfin server', 'Tus pelis y series desde tu servidor Jellyfin'],
     'org.xbmc.kodi': ['Centro multimídia livre: vídeos, música, extensões', 'Free media centre: videos, music, add-ons', 'Centro multimedia libre: vídeos, música, complementos'],
     'com.limelight.webos': ['Jogue os jogos do seu PC na TV (GameStream/Sunshine)', 'Play your PC games on the TV (GameStream/Sunshine)', 'Juega a los juegos de tu PC en la tele (GameStream/Sunshine)'],

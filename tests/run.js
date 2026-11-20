@@ -223,6 +223,17 @@ Promise.resolve()
       var refused = false;
       try { await fake('b'.repeat(64) + '  another.ipk\n').githubPackage(null, 'o2/r2'); } catch (e) { refused = /no publica el hash/.test(e.message); }
       assert.ok(refused, 'no hash for that file: refused');
+      // no SHA256SUMS at all (IPTVnator): the SHA-256 GitHub computed for the file (its "digest") is taken; a malformed one is not
+      var dg = 'd'.repeat(64);
+      rel = {assets: [{name: 'com.iptvnator.tv.prototype_0.1.25_all.ipk', size: 10, digest: 'sha256:' + dg,
+        browser_download_url: 'https://github.com/o3/r3/releases/download/v0.25.0/com.iptvnator.tv.prototype_0.1.25_all.ipk'}]};
+      var p2 = await fake('').githubPackage(null, 'o3/r3');
+      assert.strictEqual(p2.id, 'com.iptvnator.tv.prototype');
+      assert.strictEqual(p2.manifest.ipkHash.sha256, dg);
+      rel.assets[0].digest = 'sha256:xyz';
+      refused = false;
+      try { await fake('').githubPackage(null, 'o4/r4'); } catch (e) { refused = /no publica el hash/.test(e.message); }
+      assert.ok(refused, 'a malformed digest is no hash: refused');
     });
   })
   .then(function () {
