@@ -2159,7 +2159,7 @@
   /** Columns for a tile sheet: two for up to four tiles, three for six, four for more. */
   function tileCols(n) { return n <= 4 ? 2 : n <= 6 ? 3 : 4; }
 
-  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines', 'watchlist', 'companion'];   // tiles that start hidden (Home Settings → Quick panel)
+  var QUICK_OFF = ['accent', 'apps', 'store', 'tvset', 'reload', 'profile', 'usage', 'routines', 'watchlist', 'companion', 'sports'];   // tiles that start hidden (Home Settings → Quick panel)
   function quickShown(id) { return (Prefs.opt('quickHidden', QUICK_OFF) || []).indexOf(id) < 0; }
   function quickShow(id, on) {
     var hidden = (Prefs.opt('quickHidden', QUICK_OFF) || []).filter(function (x) { return x !== id; });
@@ -2195,6 +2195,7 @@
         sub: Data.weather ? Data.degrees(Data.weather.temp) + ' · ' + Data.condition(Data.weather.code, Data.weather.isDay) : '', run: function () { openInfo('weather'); }},
       {id: 'markets', sym: 'bitcoin', name: tr('Mercados', 'Markets', 'Mercados'), sub: tr('Gráficos e alertas', 'Charts and alerts', 'Gráficas y alertas'), run: function () { openInfo('markets'); }},
       {id: 'widgets', sym: 'partly_cloudy_day', name: tr('Meus widgets', 'My widgets', 'Mis widgets'), sub: tr('Calendário, notas, futebol…', 'Calendar, notes, football…', 'Calendario, notas, fútbol…'), run: function () { openInfo('widgets'); }},
+      {id: 'sports', sym: 'sports', name: tr('Esportes ao vivo', 'Live sports', 'Deportes en directo'), sub: tr('Placares e gols', 'Scores and goals', 'Marcadores y goles'), run: function () { openInfo('sports'); }},
       {id: 'companion', lg: true, sym: 'sparkles', name: 'Companion', sub: tr('Escrever pelo celular', 'Type from your phone', 'Escribir desde el móvil'), run: function () { openInfo('companion'); }},
       {id: 'watchlist', sym: 'play', name: tr('Minha lista', 'My list', 'Mi lista'), sub: String(wlist().length), run: function () { openInfo('watchlist'); }},
       {id: 'profile', sym: 'home', name: tr('Perfil', 'Profile', 'Perfil'), sub: profileName(profileNow()), run: function () { openInfo('profiles'); }},
@@ -5049,12 +5050,142 @@
     });
   }
 
+  // MARK: - 2.18: live sports. The matches of the competitions the person follows (ESPN's public scoreboards: no key, and they let any
+  // page read them), the score as it goes, and, if they want it, a notice on the home when someone scores. Asked only while the sheet is
+  // open or the notices are on: every minute while a match is being played, every 15 minutes otherwise.
+
+  var LEAGUES = [
+    ['soccer/esp.1', 'LaLiga'], ['soccer/esp.2', 'LaLiga Hypermotion'], ['soccer/uefa.champions', 'Champions League'], ['soccer/uefa.europa', 'Europa League'],
+    ['soccer/eng.1', 'Premier League'], ['soccer/ita.1', 'Serie A'], ['soccer/ger.1', 'Bundesliga'], ['soccer/fra.1', 'Ligue 1'],
+    ['soccer/por.1', 'Liga Portugal'], ['soccer/bra.1', 'Brasileirão'], ['soccer/usa.1', 'MLS'], ['basketball/nba', 'NBA'], ['football/nfl', 'NFL']
+  ];
+
+  /** The competitions followed: the person's choice, or the obvious ones for the TV's country. */
+  function sportsLeagues() {
+    var mine = Prefs.opt('sportsLeagues', null);
+    if (mine instanceof Array) return mine;
+    var c = Data.country;
+    return c === 'ES' ? ['soccer/esp.1', 'soccer/uefa.champions'] : c === 'PT' ? ['soccer/por.1', 'soccer/uefa.champions'] : c === 'BR' ? ['soccer/bra.1']
+      : c === 'IT' ? ['soccer/ita.1', 'soccer/uefa.champions'] : c === 'DE' ? ['soccer/ger.1', 'soccer/uefa.champions'] : c === 'FR' ? ['soccer/fra.1', 'soccer/uefa.champions']
+      : c === 'US' ? ['soccer/usa.1', 'basketball/nba', 'football/nfl'] : ['soccer/eng.1', 'soccer/uefa.champions'];
+  }
+  function leagueName(id) { for (var i = 0; i < LEAGUES.length; i++) if (LEAGUES[i][0] === id) return LEAGUES[i][1]; return id; }
+  function sportsAlerts() { return Prefs.opt('sportsAlerts', false) === true; }
+
+  var sports = {at: 0, games: [], busy: false};
+
+  /** One match from ESPN's scoreboard, or null when it does not look like one. */
+  function sportsGame(lg, e) {
+    var c = e && e.competitions && e.competitions[0], st2 = e && e.status && e.status.type, home = null, away = null;
+    if (!c || !c.competitors || !st2) return null;
+    c.competitors.forEach(function (t) { if (t.homeAway === 'home') home = t; else away = t; });
+    if (!home || !away || !home.team || !away.team) return null;
+    return {lg: lg, id: String(e.id), at: Date.parse(e.date) || 0, state: st2.state, detail: st2.shortDetail || '',
+      home: home.team.shortDisplayName || home.team.displayName || '', away: away.team.shortDisplayName || away.team.displayName || '',
+      hs: home.score === undefined ? '' : String(home.score), as: away.score === undefined ? '' : String(away.score)};
+  }
+
+  /** Asks again when it is time (or now, with force); done() when something came. */
+  function sportsRefresh(force, done) {
+    var live = sports.games.some(function (g) { return g.state === 'in' || (g.state === 'pre' && g.at - Date.now() < 10 * 60000 && g.at > Date.now() - 3 * 3600000); });
+    if (sports.busy || (!force && Date.now() - sports.at < (live ? 55000 : 15 * 60000))) return;
+    var list = sportsLeagues(), left = list.length, games = [];
+    if (!left) { sports.games = []; if (done) done(); return; }
+    sports.busy = true;
+    list.forEach(function (lg) {
+      Data.getJson('https://site.api.espn.com/apis/site/v2/sports/' + lg + '/scoreboard', function (err, d) {
+        if (!err && d && d.events instanceof Array) d.events.forEach(function (e) { var g = sportsGame(lg, e); if (g) games.push(g); });
+        if (--left > 0) return;
+        sports.busy = false;
+        sports.at = Date.now();
+        var before = {};
+        sports.games.forEach(function (g) { before[g.lg + g.id] = g; });
+        sports.games = games;
+        if (sportsAlerts() && !document.hidden) goalNotices(before);
+        if (done) done();
+      });
+    });
+  }
+
+  /** "Goal!" on the home, for a score that went up since the last look (not for the first look, nor a match already over). */
+  function goalNotices(before) {
+    sports.games.forEach(function (g) {
+      var b = before[g.lg + g.id];
+      if (!b || g.state !== 'in' || (+g.hs || 0) + (+g.as || 0) <= (+b.hs || 0) + (+b.as || 0)) return;
+      var soccer = g.lg.indexOf('soccer/') === 0;
+      if (!soccer && (+g.hs || 0) + (+g.as || 0) - ((+b.hs || 0) + (+b.as || 0)) < 6) return;   // basketball: not every basket
+      toast((soccer ? tr('Gol!  ', 'Goal!  ', '¡Gol!  ') : '') + g.home + ' ' + g.hs + ' – ' + g.as + ' ' + g.away + (g.detail ? '  ·  ' + g.detail : ''));
+    });
+  }
+
+  /** Every 30 seconds with the home in front: only when the notices are on or the sheet is open. */
+  function sportsTick() {
+    var open = st.zone === Z.INFO && info.kind === 'sports';
+    if (!sportsAlerts() && !open) return;
+    sportsRefresh(false, function () { if (st.zone === Z.INFO && info.kind === 'sports') renderInfo(); });
+  }
+
+  /** What goes on the right of a match: the score and minute while it is played, the score at the end, the time before. */
+  function gameValue(g) {
+    var d = new Date(g.at);
+    if (g.state === 'in') return g.hs + ' – ' + g.as + '  ' + g.detail;
+    if (g.state === 'post') return g.hs + ' – ' + g.as;
+    if (/postp|cancel|susp/i.test(g.detail)) return g.detail;
+    return (dayKey(d) === dayKey() ? '' : weekday(d) + ' ') + hhmm(d);
+  }
+
+  INFO.sports = function () {
+    var chosen = sportsLeagues(), rows = [];
+    if (!sports.at || Date.now() - sports.at > 60000) sportsRefresh(true, function () { if (st.zone === Z.INFO && info.kind === 'sports') renderInfo(); });
+    rows.push({label: tr('Avisar dos gols no início', 'Goal notices on the home', 'Avisar de los goles en el inicio'), icon: 'bell', toggle: sportsAlerts(),
+      run: function () { Prefs.set('sportsAlerts', !sportsAlerts()); }});
+    LEAGUES.forEach(function (l) {
+      var on = chosen.indexOf(l[0]) >= 0;
+      rows.push({label: l[1], toggle: on, run: function () {
+        var now = sportsLeagues().filter(function (x) { return x !== l[0]; });
+        if (!on) now.push(l[0]);
+        Prefs.set('sportsLeagues', now);
+        sports.at = 0;
+        sportsRefresh(true, function () { if (st.zone === Z.INFO && info.kind === 'sports') renderInfo(); });
+      }});
+    });
+    return {title: tr('Esportes ao vivo', 'Live sports', 'Deportes en directo'), icon: 'sports', rows: rows, visible: 3, build: function (box) {
+      setClass(box, 'wide', true);
+      var grid = el('div', 'wgrid', box), by = {};
+      sports.games.forEach(function (g) { (by[g.lg] = by[g.lg] || []).push(g); });
+      // The competitions with a match being played first, then the ones with matches soonest; two cards.
+      var order = chosen.filter(function (lg) { return by[lg] && by[lg].length; }).sort(function (a, b) {
+        function key(lg) { var live = by[lg].some(function (g) { return g.state === 'in'; }); return (live ? 0 : 1e15) + Math.min.apply(null, by[lg].map(function (g) { return Math.abs(g.at - Date.now()); })); }
+        return key(a) - key(b);
+      });
+      if (!order.length) {
+        line(grid, '', sports.busy || !sports.at ? tr('Procurando os jogos…', 'Looking for the matches…', 'Buscando los partidos…')
+          : chosen.length ? tr('Sem jogos agora nestas competições.', 'No matches right now in these competitions.', 'No hay partidos ahora en estas competiciones.')
+          : tr('Escolha abaixo as competições.', 'Pick the competitions below.', 'Elige abajo las competiciones.'));
+        return;
+      }
+      order.slice(0, 2).forEach(function (lg) {
+        var card = el('div', 'wcard sports', grid), list = by[lg].slice().sort(function (a, b) {
+          var ra = a.state === 'in' ? 0 : a.state === 'pre' ? 1 : 2, rb = b.state === 'in' ? 0 : b.state === 'pre' ? 1 : 2;
+          return ra - rb || (ra === 2 ? b.at - a.at : a.at - b.at);
+        });
+        el('div', 'wh', card, leagueName(lg));
+        list.slice(0, 5).forEach(function (g) {
+          var r = el('div', 'kv', card);
+          el('span', 'k', r, g.home + ' – ' + g.away);
+          el('span', 'v' + (g.state === 'in' ? ' live' : g.state === 'post' ? ' done' : ''), r, gameValue(g));
+        });
+      });
+    }, hint: tr('OK liga ou desliga · Voltar fecha', 'OK turns on or off · Back closes', 'OK activa o desactiva · Atrás cierra')};
+  };
+
   INFO.widgets = function () {
     var rows = [];
     if (widgetOn('countdown')) rows.push({label: tr('Nova contagem regressiva…', 'New countdown…', 'Nueva cuenta atrás…'), value: '›', icon: 'timer', run: addCountdown});
     if (widgetOn('notes')) rows.push({label: tr('Nova nota ou lembrete…', 'New note or reminder…', 'Nueva nota o recordatorio…'), value: '›', icon: 'bell', run: addNote});
     if (widgetOn('notes') && notes().length) rows.push({label: tr('Apagar as notas', 'Clear the notes', 'Borrar las notas'), value: String(notes().length), plain: true, run: function () { Prefs.set('notes', []); }});
     if (widgetOn('football')) rows.push({label: tr('Meu time', 'My team', 'Mi equipo'), value: (Prefs.opt('team', null) || {}).name || '›', run: askTeam});
+    if (widgetOn('football')) rows.push({label: tr('Esportes ao vivo', 'Live sports', 'Deportes en directo'), value: '›', icon: 'sports', run: function () { openInfo('sports'); }});
     if (widgetOn('news')) rows.push({label: tr('Notícias de', 'News from', 'Noticias de'), value: newsName(), step: function (d) { cycleNews(d); }});
     rows.push({label: tr('Quais widgets mostrar', 'Which widgets to show', 'Qué widgets mostrar'), value: '›', icon: 'settings', run: function () { openSettings(); settingsCat = 'widgets'; renderSettings(); }});
     return {title: tr('Meus widgets', 'My widgets', 'Mis widgets'), icon: 'partly_cloudy_day', rows: rows, visible: 2, build: function (box) {
@@ -5821,16 +5952,19 @@
   }
 
   setInterval(function () { if (Prefs.wallpaper() === 'places') backdrop(bgFor('')); }, 600000);   // a new landscape every half hour
+  // Each job on its own: an error in one (a feed that changed, say) no longer leaves the clock, the routines or the kids' time limit undone.
+  function guarded(fn) { try { fn(); } catch (e) { if (window.console) console.log('FreeTV: ' + (e && e.message || e)); setTimeout(function () { throw e; }, 0); } }
   setInterval(function () {
     if (document.hidden) return;   // nothing to draw or fetch while another app is in front
-    renderClock();
-    checkNight();
-    Data.refresh();
-    if (saverOn) tickSaverClock($('saver').querySelector('.clock'));
-    checkRoutines();
-    checkReminders();
-    checkKidsLimit();
-    if (++ticks % 10 === 0) refreshTickers();
+    guarded(renderClock);
+    guarded(checkNight);
+    guarded(Data.refresh);
+    if (saverOn) guarded(function () { tickSaverClock($('saver').querySelector('.clock')); });
+    guarded(checkRoutines);
+    guarded(checkReminders);
+    guarded(checkKidsLimit);
+    guarded(sportsTick);
+    if (++ticks % 10 === 0) guarded(refreshTickers);
   }, 30000);
   var ticks = 0;
   setTimeout(refreshTickers, 8000);

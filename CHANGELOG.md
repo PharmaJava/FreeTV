@@ -3,6 +3,24 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.18.0 (2026-11-24)
+
+### Added
+- **Live sports** (`INFO.sports`, the quick panel's *Live sports* tile, hidden until chosen in *Home Settings → Quick panel*, and a row in *My widgets*):
+  the matches of the competitions the person follows, from ESPN's public scoreboards (`site.api.espn.com/apis/site/v2/sports/<sport>/<league>/scoreboard`,
+  no key, any origin allowed). Thirteen competitions; the ones followed start from the TV's country (Spain: LaLiga and the Champions League). Two cards:
+  the competitions with a match being played first, five matches each (playing, then coming, then over), the score and the minute in red while it is played.
+  **Goal notices on the home** (off by default): a toast on FreeTV's home when a score goes up (for basketball, a run of six points or more). It asks only
+  while the sheet is open or the notices are on, every minute while a match is played (or about to start), every 15 minutes otherwise, and never while
+  another app is in front. A football symbol (`tools/make_symbols.py`).
+
+### Fixed
+- **The store service always answers**: `status`, `remove` and `devmode` had no answer when their check failed, so the screen waited for each call's
+  timeout (70 s for `status`, which the Store and the TV's health ask first). A promise nobody catches and a throw in a callback are now written to the
+  service's log and it goes on.
+- **One failing job no longer stops the others** on the home's 30-second tick (clock, night, weather and picks, routines, reminders, kids' time limit,
+  quotes): each runs on its own, and the error still reaches *Diagnostics*.
+
 ## 2.17.3 (2026-11-20)
 
 ### Added (LG)

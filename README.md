@@ -11,6 +11,15 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.18: live sports, and steadier
+
+- **Live sports** (quick panel → *Live sports*, or *My widgets*): today's matches of the competitions you follow (LaLiga, Champions League, Premier
+  League, Serie A, Bundesliga, Ligue 1, Liga Portugal, Brasileirão, MLS, NBA, NFL…), with the score and minute as they are played. Turn on
+  **Goal notices on the home** and a goal shows up on FreeTV's home while you are on it (never over an app or a film). From ESPN's public scores: no key,
+  nothing to sign up for. It only asks while the sheet is open or the notices are on.
+- **Steadier:** the store service always answers, even when a check fails (before, the Store or the updates could wait over a minute for nothing), and
+  an error in one of the home's background jobs no longer stops the clock, the routines or the kids' time limit.
+
 ### FreeTV 2.17.3: IPTVnator in the Store
 
 - **IPTVnator TV**, an IPTV player for your own m3u playlists (favourites, TV guide; it brings no channels), installs from the Store.
@@ -474,6 +483,15 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.18: deportes en directo, y más estable
+
+- **Deportes en directo** (panel rápido → *Deportes en directo*, o *Mis widgets*): los partidos de hoy de las competiciones que sigues (LaLiga, Champions
+  League, Premier League, Serie A, Bundesliga, Ligue 1, Liga Portugal, Brasileirão, MLS, NBA, NFL…), con el marcador y el minuto mientras se juegan.
+  Activa **Avisar de los goles en el inicio** y cada gol sale en el inicio de FreeTV mientras estás en él (nunca encima de una app o de una película).
+  Con los marcadores públicos de ESPN: sin clave ni registro. Solo pregunta mientras la hoja está abierta o los avisos están activados.
+- **Más estable:** el servicio de la tienda siempre contesta, aunque falle una comprobación (antes la Tienda o las actualizaciones podían esperar más de un
+  minuto para nada), y un error en una de las tareas de fondo del inicio ya no para el reloj, las rutinas ni el límite de tiempo de los niños.
 
 ### FreeTV 2.17.3: IPTVnator en la Tienda
 

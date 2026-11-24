@@ -106,7 +106,29 @@ def tiles():
     done(im, 'tiles')
 
 
+def sports():
+    """A football: the round ball with its middle pentagon, the seams and the patches cut by the edge."""
+    im, d = canvas()
+    ring(d, 72, 72, 58, 10)
+    def penta(cx, cy, r, turn):
+        return [(cx + r * math.cos(math.radians(turn + 72 * i)), cy + r * math.sin(math.radians(turn + 72 * i))) for i in range(5)]
+    mid = penta(72, 72, 21, -90)
+    d.polygon([(x * K, y * K) for x, y in mid], fill=255)
+    patch = Image.new('L', im.size, 0)
+    pd = ImageDraw.Draw(patch)
+    for i in range(5):
+        a = math.radians(-90 + 72 * i)
+        x, y = mid[i]
+        line(d, [(x, y), (72 + 40 * math.cos(a), 72 + 40 * math.sin(a))], 8)
+        cx, cy = 72 + 62 * math.cos(a), 72 + 62 * math.sin(a)
+        pd.polygon([(px * K, py * K) for px, py in penta(cx, cy, 22, math.degrees(a) + 36)], fill=255)
+    clip = Image.new('L', im.size, 0)
+    ImageDraw.Draw(clip).ellipse([16 * K, 16 * K, 128 * K, 128 * K], fill=255)
+    im.paste(255, (0, 0), Image.composite(patch, Image.new('L', im.size, 0), clip))
+    done(im, 'sports')
+
+
 if __name__ == '__main__':
-    for fn in (search, kids, health, calm, lock, timer, tiles):
+    for fn in (search, kids, health, calm, lock, timer, tiles, sports):
         fn()
     print('symbols written to', os.path.normpath(OUT))

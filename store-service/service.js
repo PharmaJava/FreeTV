@@ -11,6 +11,10 @@ var Store = function (options) { return new (require('./store').Store)(options);
 var youtube = { search: function (q, done) { require('./youtube').search(q, done); } };
 
 var service = new Service('com.gathin.tvhome.store');
+// A promise that fails with nobody to catch it, or a throw in a callback, is written to the log and the service goes on: before,
+// it could stop answering, and the screen waited for each call's timeout (up to 70 s) with the Store, updates and the rest.
+process.on('unhandledRejection', function (e) { console.log('unhandled: ' + String(e && e.stack || e).slice(0, 400)); });
+process.on('uncaughtException', function (e) { console.log('uncaught: ' + String(e && e.stack || e).slice(0, 400)); });
 var dir = path.join(__dirname, 'state'), keyFile = path.join(dir, 'key.pem');
 var store = null;
 
@@ -34,7 +38,7 @@ service.register('status', function (message) {
   if (!s) { message.respond({returnValue: true, provisioned: false, ready: false, job: null}); return; }
   s.check().then(function (r) {
     message.respond({returnValue: true, provisioned: true, ready: r.ok, error: r.error || '', job: s.job});
-  });
+  }).catch(function (e) { message.respond({returnValue: true, provisioned: true, ready: false, error: String(e && e.message || e), job: s.job}); });
 });
 
 service.register('install', function (message) {
@@ -114,7 +118,7 @@ service.register('remove', function (message) {
   if (!s) { message.respond({returnValue: false, code: 'no-key', error: 'FreeTV todavía no tiene permiso para borrar desde la tele: vuelve a ejecutar bash install.sh en el ordenador.'}); return; }
   s.remove(String(p.id || '')).then(function (r) {
     message.respond(r.ok ? {returnValue: true} : {returnValue: false, code: r.code || 'failed', error: r.error});
-  });
+  }).catch(function (e) { message.respond({returnValue: false, code: 'failed', error: String(e && e.message || e)}); });
 });
 
 /** YouTube channels for FreeTV's Custom tab: a name, an @name or a youtube.com address (the screen cannot read YouTube itself). */
@@ -143,7 +147,7 @@ service.register('devmode', function (message) {
     var entry = {at: Date.now(), ok: r.ok, hours: r.after !== undefined ? r.after : r.before, extended: !!r.extended, error: r.error || ''};
     if (r.extended || !r.ok || !last || entry.at - last.at > 6 * 3600 * 1000) { history.push(entry); history = history.slice(-30); writeJson(HISTORY, history); }
     message.respond({returnValue: true, ok: r.ok, hours: entry.hours, extended: !!r.extended, error: r.error || '', history: history});
-  });
+  }).catch(function (e) { message.respond({returnValue: false, error: String(e && e.message || e), history: history}); });
 });
 
 /** The settings the person chose (and the keys of the TV's remote API) survive a reinstall of FreeTV: the page keeps a copy here. */
