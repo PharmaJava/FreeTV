@@ -10,13 +10,13 @@
    "id": "tv.stremioorigin.app",
    "minSdk": 24,
    "repo": "PharmaJava/webos",
-   "sha256": "81d87426cfa7a3e4e051f91aa44e847920cb62a5b308e0cca97ea479cee8ae96",
-   "size": 12811681,
-   "tag": "android-tv-v1.5.0",
+   "sha256": "6d1726c75b3a55065888ec0a51f3747469f3a0c24d4c8dc8d7d944d7380a0f2d",
+   "size": 12829490,
+   "tag": "android-tv-v1.5.4",
    "title": "Stremio Claude",
-   "url": "https://github.com/PharmaJava/webos/releases/download/android-tv-v1.5.0/StremioClaude-AndroidTV-1.5.0.apk",
-   "version": "1.5.0",
-   "versionCode": 10500
+   "url": "https://github.com/PharmaJava/webos/releases/download/android-tv-v1.5.4/StremioClaude-AndroidTV-1.5.4.apk",
+   "version": "1.5.4",
+   "versionCode": 10504
   },
   {
    "desc": [
