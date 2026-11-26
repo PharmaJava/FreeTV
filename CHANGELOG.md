@@ -3,6 +3,23 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.19.0 (2026-11-26)
+
+### Added (LG)
+- **The most starred webOS apps on GitHub in the Store.** `tools/webos_catalog.py` (run each day by `.github/workflows/webos-catalog.yml`) searches
+  GitHub (topics webos, webos-app, webos-homebrew, lg-webos, webostv, and "webos ipk"), 15 stars or more, no forks or archived projects, the most
+  starred first, forty at most. For each project, its newest release with an .ipk is downloaded once: the package's control file and appinfo.json
+  give the id, version, name and icon (committed in `webos/catalog-icons/`), and its SHA-256 is pinned in `webos/catalog.json` (the webOS
+  Homebrew format). Left out: ids webOS Homebrew already lists, our own apps and other home screens (Free My TV and its copies), projects that say
+  they need root (but not "no root needed"), ids that say root, packages that install system files, and packages over 150 MB. A project that cannot
+  be checked keeps its previous entry. The TV (store service and screen) reads that file as one more source: every app in it is a GitHub one, so it
+  needs the person's "unofficial" yes, and the download is checked against the pinned hash as always. Each card shows the project's stars.
+
+### Changed (LG)
+- **The Store's sources are asked at the same time**, three at most at once over the one Developer Mode SSH session (the catalogue, the extra
+  repositories and the GitHub projects), instead of one after another (each up to 60 s), and the whole list is kept five minutes: the Store, its
+  updates and every install no longer ask each source again.
+
 ## 2.18.0 (2026-11-24)
 
 ### Added

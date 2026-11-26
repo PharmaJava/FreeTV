@@ -1446,7 +1446,9 @@
   var OWN_IDS = ['tv.stremioorigin.app'];   // our own apps (Stremio Claude, PharmaJava/webos): never from another source (store.js OWN_IDS)
   // Other people's repositories, read only for these app ids (keep in step with store-service/store.js); they always need the "unofficial" confirmation.
   var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
-    {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
+    {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'},
+    // 2.19: FreeTV's list of the most starred webOS apps on GitHub, made again each day (tools/webos_catalog.py; keep in step with store.js)
+    {url: 'https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog.json', all: true, github: true, ours: true}];
   var commList = [], commOpen = -1, commState = 'idle', commAct = 0, commActs = [];
   // svc: the store service on this TV ('none' = not set up, 'checking', 'ok', 'off'); conn: the computer ('none' = unknown address, 'checking', 'ok', 'off'); flow: this install ('idle', 'asking', 'working', 'done', 'failed')
   var store = {conn: 'none', svc: 'none', via: '', flow: 'idle', id: '', phase: '', message: '', note: '', misses: 0,
@@ -1745,7 +1747,9 @@
             if (p && p.manifest && (src.all || src.ids.indexOf(p.id) >= 0)) {
               if (src.as) { p.realId = p.id; p.id = src.as; }   // listed under its own name, installed with its real id
               if (commAll.some(function (o) { return o.id === p.id; })) return;
-              if (src.all) p.repo = src.url.replace(/^https:\/\//, '').split('/')[0];
+              if (OWN_IDS.indexOf(p.id) >= 0) return;   // (our own apps only from our own project)
+              if (src.github) p.github = true;   // (GitHub's projects: the "unofficial" yes before installing)
+              if (src.all && !src.ours) p.repo = src.url.replace(/^https:\/\//, '').split('/')[0];
               commAll.push(p);
             }
           });
@@ -2572,8 +2576,10 @@
   };
 
   function commDesc(p) {
-    var d = COMM_DESC[p.id];
-    return d ? tr(d[0], d[1], d[2]) : p.shortDescription || (p.manifest && p.manifest.appDescription) || '';
+    var d = COMM_DESC[p.id], text = d ? tr(d[0], d[1], d[2]) : p.shortDescription || (p.manifest && p.manifest.appDescription) || '';
+    // 2.19: an app from FreeTV's GitHub list says how many people starred it, so the most used ones stand out
+    if (p.stars > 0) text = '★ ' + (p.stars >= 1000 ? (Math.round(p.stars / 100) / 10) + 'k' : p.stars) + (text ? '  ·  ' + text : '');
+    return text;
   }
 
   /** The app's icon from the catalogue (an image on the web); a soft square with its first letter when it has none or it fails. */

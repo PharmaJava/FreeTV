@@ -1,0 +1,357 @@
+{
+ "source": "GitHub, the most starred webOS apps (tools/webos_catalog.py)",
+ "packages": [
+  {
+   "id": "space.nuvio.native.legacy",
+   "title": "Nuvio Legacy",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/space.nuvio.native.legacy.png",
+   "shortDescription": "Unofficial native Nuvio client for LG webOS 3+, Samsung Tizen 4+, GoogleTV 7+. C/SDL2/GLES2 on LG and on Samsung (native .tpk, Tizen 4.0-9),",
+   "github": true,
+   "repo": "github.com/iqui27/nuvio-native-legacy",
+   "stars": 647,
+   "manifest": {
+    "id": "space.nuvio.native.legacy",
+    "version": "2.0.8",
+    "title": "Nuvio Legacy",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/iqui27/nuvio-native-legacy/releases/download/v2.0.8/space.nuvio.native.legacy_2.0.8_arm.ipk",
+    "ipkSize": 65645392,
+    "ipkHash": {
+     "sha256": "cea89bbc27940c0a966f0b972f58dddfbb8f5616a6df8a3f1efa7e9ec05ad9ce"
+    },
+    "sourceUrl": "https://github.com/iqui27/nuvio-native-legacy",
+    "appDescription": "Unofficial native Nuvio client for LG webOS 3+, Samsung Tizen 4+, GoogleTV 7+. C/SDL2/GLES2 on LG and on Samsung (native .tpk, Tizen 4.0-9), plus a WebAssembly .wgt for Tizen 5.5+. Install from the Homebrew Channel or the releases."
+   }
+  },
+  {
+   "id": "com.couchsubs.tv",
+   "title": "CouchSubs",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.couchsubs.tv.png",
+   "shortDescription": "PS5 oyun altyazılarını anlık Türkçeye çevirip TV'de oyunun üstünde gösterir / Real-time translated PS5 subtitles on your TV",
+   "github": true,
+   "repo": "github.com/yorulmazsinan/couchsubs",
+   "stars": 273,
+   "manifest": {
+    "id": "com.couchsubs.tv",
+    "version": "0.9.115",
+    "title": "CouchSubs",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/yorulmazsinan/couchsubs/releases/download/v0.1.0-beta.104/com.couchsubs.tv_0.9.115_all.ipk",
+    "ipkSize": 212624,
+    "ipkHash": {
+     "sha256": "3f9dc90bb43f16f0b6e9cf38843f943387a6052f5ac74fce2d38bf45f633c5ec"
+    },
+    "sourceUrl": "https://github.com/yorulmazsinan/couchsubs",
+    "appDescription": "PS5 oyun altyazılarını anlık Türkçeye çevirip TV'de oyunun üstünde gösterir / Real-time translated PS5 subtitles on your TV"
+   }
+  },
+  {
+   "id": "com.difix.crunchyroll",
+   "title": "Crunchyroll",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.difix.crunchyroll.png",
+   "shortDescription": "Crunchyroll unofficial app for Smart TV Samsung Tizen OS that currently doesnt exist in appstore, requires crunchyrrol account.",
+   "github": true,
+   "repo": "github.com/jhassan8/crunchyroll-tizen",
+   "stars": 198,
+   "manifest": {
+    "id": "com.difix.crunchyroll",
+    "version": "1.0.0",
+    "title": "Crunchyroll",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/jhassan8/crunchyroll-tizen/releases/download/v1.1.6/com.difix.crunchyroll_1.0.0_all.ipk",
+    "ipkSize": 72076,
+    "ipkHash": {
+     "sha256": "af8218f0cdbe161d5fb28b80e1f2a3ba5791501a4004fe75f1e294b4ade2a29e"
+    },
+    "sourceUrl": "https://github.com/jhassan8/crunchyroll-tizen",
+    "appDescription": "Crunchyroll unofficial app for Smart TV Samsung Tizen OS that currently doesnt exist in appstore, requires crunchyrrol account."
+   }
+  },
+  {
+   "id": "io.github.chiotas.lightkeeper",
+   "title": "Lightkeeper",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/io.github.chiotas.lightkeeper.png",
+   "shortDescription": "A calm Home screen for LG TVs on older webOS, made to sit beside GlassHouse",
+   "github": true,
+   "repo": "github.com/chiotas/lightkeeper",
+   "stars": 106,
+   "manifest": {
+    "id": "io.github.chiotas.lightkeeper",
+    "version": "1.1.1",
+    "title": "Lightkeeper",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/chiotas/lightkeeper/releases/download/v1.1.1/io.github.chiotas.lightkeeper_1.1.1_all.ipk",
+    "ipkSize": 5936250,
+    "ipkHash": {
+     "sha256": "6d70f91f31ced10182d3e7ddd6b6591d3577608f338236e68cce74cd2b12e3e7"
+    },
+    "sourceUrl": "https://github.com/chiotas/lightkeeper",
+    "appDescription": "A calm Home screen for LG TVs on older webOS, made to sit beside GlassHouse"
+   }
+  },
+  {
+   "id": "com.mbs.communityhome",
+   "title": "Lg Tv Ha Home Launcher",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.mbs.communityhome.png",
+   "shortDescription": "Configurable Home Assistant home launcher for LG webOS TVs, with a local setup wizard and optional no-root Home-button helper.",
+   "github": true,
+   "repo": "github.com/mbsintegrations/LG-TV-HA-Home-Launcher",
+   "stars": 102,
+   "manifest": {
+    "id": "com.mbs.communityhome",
+    "version": "0.6.0",
+    "title": "Lg Tv Ha Home Launcher",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/mbsintegrations/LG-TV-HA-Home-Launcher/releases/download/v0.6/com.mbs.communityhome_0.6.0_SAMPLE_all.ipk",
+    "ipkSize": 189444,
+    "ipkHash": {
+     "sha256": "f5b9626e722bf36b9bc8794b801aeb1521711caa1c7701704b777c58f7e06cfd"
+    },
+    "sourceUrl": "https://github.com/mbsintegrations/LG-TV-HA-Home-Launcher",
+    "appDescription": "Configurable Home Assistant home launcher for LG webOS TVs, with a local setup wizard and optional no-root Home-button helper."
+   }
+  },
+  {
+   "id": "com.denisefremov.luma.player",
+   "title": "Luma Player",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.denisefremov.luma.player.png",
+   "shortDescription": "LG webOS TV launcher: a fast, remote-first home screen with live video wallpapers, widgets, Jellyfin, Moonlight game streaming and Home Assi",
+   "github": true,
+   "repo": "github.com/funnymataleao/luma-webos-launcher",
+   "stars": 99,
+   "manifest": {
+    "id": "com.denisefremov.luma.player",
+    "version": "0.0.11",
+    "title": "Luma Player",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/funnymataleao/luma-webos-launcher/releases/download/v2.2.160/com.denisefremov.luma.player_0.0.11_all.ipk",
+    "ipkSize": 222926,
+    "ipkHash": {
+     "sha256": "8697db57abe8e97d67afb71ebaae06ada1868cb9de3ba29a1a8e6bd138c156be"
+    },
+    "sourceUrl": "https://github.com/funnymataleao/luma-webos-launcher",
+    "appDescription": "LG webOS TV launcher: a fast, remote-first home screen with live video wallpapers, widgets, Jellyfin, Moonlight game streaming and Home Assistant. Native Rust + OpenGL ES."
+   }
+  },
+  {
+   "id": "com.spacesarmat.torrplayer",
+   "title": "OMP",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.spacesarmat.torrplayer.png",
+   "shortDescription": "OMP - медиаплеер для LG webOS, Android TV, Android, Windows, macOS и Linux: фильмы и сериалы из TorrServer, телефон как пульт, поиск раздач ",
+   "github": true,
+   "repo": "github.com/spacesarmat/omp",
+   "stars": 97,
+   "manifest": {
+    "id": "com.spacesarmat.torrplayer",
+    "version": "0.30.3",
+    "title": "OMP",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/spacesarmat/omp/releases/download/v0.30.3/OMP-0.30.3-webOS.ipk",
+    "ipkSize": 1235888,
+    "ipkHash": {
+     "sha256": "20393ca57514a6dc61094062ea100c164f39687b8c5dfbc1d40786fb0a8362bf"
+    },
+    "sourceUrl": "https://github.com/spacesarmat/omp",
+    "appDescription": "OMP - медиаплеер для LG webOS, Android TV, Android, Windows, macOS и Linux: фильмы и сериалы из TorrServer, телефон как пульт, поиск раздач и подписки на сериалы."
+   }
+  },
+  {
+   "id": "app.torsher.webos",
+   "title": "Torsher",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/app.torsher.webos.png",
+   "shortDescription": "Your home cinema in one container: a TV showcase, your own library, playback while the file downloads, and new episodes that arrive on their",
+   "github": true,
+   "repo": "github.com/torsher-app/torsher",
+   "stars": 95,
+   "manifest": {
+    "id": "app.torsher.webos",
+    "version": "1.9.0",
+    "title": "Torsher",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/torsher-app/torsher/releases/download/v1.9.0/app.torsher.webos_1.9.0_all.ipk",
+    "ipkSize": 199066,
+    "ipkHash": {
+     "sha256": "dd88a198fc6a16e5d28a1d87a7d6f6126ed823b6609487ac8f001cdf7cb36b30"
+    },
+    "sourceUrl": "https://github.com/torsher-app/torsher",
+    "appDescription": "Your home cinema in one container: a TV showcase, your own library, playback while the file downloads, and new episodes that arrive on their own. Self-hosted, built for the TV first."
+   }
+  },
+  {
+   "id": "com.ninotranslator.tv",
+   "title": "Nino Game Translator",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.ninotranslator.tv.png",
+   "shortDescription": "Nino Game Translator: PS5 ve Xbox oyunlarındaki İngilizce altyazı, telefon mesajı ve harita kartlarını anında Türkçeye ve Arapçaya çevirip T",
+   "github": true,
+   "repo": "github.com/yunusdemirbag/nino-game-translator",
+   "stars": 88,
+   "manifest": {
+    "id": "com.ninotranslator.tv",
+    "version": "4.5.0",
+    "title": "Nino Game Translator",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/yunusdemirbag/nino-game-translator/releases/download/v4.5.5/Nino-TV.ipk",
+    "ipkSize": 717504,
+    "ipkHash": {
+     "sha256": "614a0e52e3d33e20b715ff0c1d09d02034927813f866e5f8979749861dce052b"
+    },
+    "sourceUrl": "https://github.com/yunusdemirbag/nino-game-translator",
+    "appDescription": "Nino Game Translator: PS5 ve Xbox oyunlarındaki İngilizce altyazı, telefon mesajı ve harita kartlarını anında Türkçeye ve Arapçaya çevirip TV'de oyunun üstünde gösterir. Mac, Windows, Linux, iPhone, Android, Android TV, LG, Samsung. Ücretsiz, açık kaynak (AGPL-3.0)."
+   }
+  },
+  {
+   "id": "com.knikt.apltv",
+   "title": "APL TV",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.knikt.apltv.png",
+   "shortDescription": "An Apple TV style IPTV player for Samsung (Tizen), LG (webOS) and Android TV. Your own M3U and Xtream playlists, in the style of APL Launche",
+   "github": true,
+   "repo": "github.com/Knikt/APL-TV",
+   "stars": 85,
+   "manifest": {
+    "id": "com.knikt.apltv",
+    "version": "1.4.16",
+    "title": "APL TV",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/Knikt/APL-TV/releases/download/v1.4.16/apl-tv-v1.4.16-lg-webos.ipk",
+    "ipkSize": 1025526,
+    "ipkHash": {
+     "sha256": "275e507dafa0056d67bfb057969280168de0d8eff1022d18f092867b5319d4d4"
+    },
+    "sourceUrl": "https://github.com/Knikt/APL-TV",
+    "appDescription": "An Apple TV style IPTV player for Samsung (Tizen), LG (webOS) and Android TV. Your own M3U and Xtream playlists, in the style of APL Launcher."
+   }
+  },
+  {
+   "id": "me.wouterdek.magic4pc",
+   "title": "Magic4PC",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/me.wouterdek.magic4pc.png",
+   "shortDescription": "Allows you to use the magic remote on your LG tv as a mouse for your PC.",
+   "github": true,
+   "repo": "github.com/Wouterdek/magic4pc",
+   "stars": 83,
+   "manifest": {
+    "id": "me.wouterdek.magic4pc",
+    "version": "1.0.0",
+    "title": "Magic4PC",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/Wouterdek/magic4pc/releases/download/1.0.1/me.wouterdek.magic4pc_1.0.0_all.ipk",
+    "ipkSize": 8897090,
+    "ipkHash": {
+     "sha256": "298aae36bb77e14d4be9d39f0d5fa3d69e64d61a19f11366c66f4f7bf24f283f"
+    },
+    "sourceUrl": "https://github.com/Wouterdek/magic4pc",
+    "appDescription": "Allows you to use the magic remote on your LG tv as a mouse for your PC."
+   }
+  },
+  {
+   "id": "app.vodmax.client",
+   "title": "VodMax",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/app.vodmax.client.png",
+   "shortDescription": "Self-hosted media center for live TV, a Jellyfin and Plex alternative: M3U and Xtream Codes (IPTV) playlists you are entitled to use, EPG gu",
+   "github": true,
+   "repo": "github.com/silirim/VodMax",
+   "stars": 82,
+   "manifest": {
+    "id": "app.vodmax.client",
+    "version": "0.6.19",
+    "title": "VodMax",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/silirim/VodMax/releases/download/v0.6.19/app.vodmax.client_0.6.19_all.ipk",
+    "ipkSize": 18990,
+    "ipkHash": {
+     "sha256": "66d013988335065fc495014f6885f278d705e160f5c27064a21fabfcc98e2f73"
+    },
+    "sourceUrl": "https://github.com/silirim/VodMax",
+    "appDescription": "Self-hosted media center for live TV, a Jellyfin and Plex alternative: M3U and Xtream Codes (IPTV) playlists you are entitled to use, EPG guide, timeshift, DVR, movies and series. Apps for Android, Android TV, Fire TV and LG webOS."
+   }
+  },
+  {
+   "id": "io.github.alexesmm.legacytv",
+   "title": "StremCompat",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/io.github.alexesmm.legacytv.png",
+   "shortDescription": "Stremio and Nuvio on older LG TVs (webOS 3 and newer). Unofficial, no root: Homebrew Channel install, live channels, addon store and Nuvio p",
+   "github": true,
+   "repo": "github.com/StremCompat/webos",
+   "stars": 73,
+   "manifest": {
+    "id": "io.github.alexesmm.legacytv",
+    "version": "4.6.0",
+    "title": "StremCompat",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/StremCompat/webos/releases/download/v4.6.0/StremCompat-v4.6.0-1080p.ipk",
+    "ipkSize": 6703918,
+    "ipkHash": {
+     "sha256": "6677476d7e405370c10377468c74ef2e59dade5037c0c556baf4b3856b1e82fd"
+    },
+    "sourceUrl": "https://github.com/StremCompat/webos",
+    "appDescription": "Stremio and Nuvio on older LG TVs (webOS 3 and newer). Unofficial, no root: Homebrew Channel install, live channels, addon store and Nuvio profiles. Not affiliated with Stremio, Nuvio or LG."
+   }
+  },
+  {
+   "id": "com.mkcinema.app",
+   "title": "MKCinema",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.mkcinema.app.png",
+   "shortDescription": "Tomorrow’s cinema, for the whole house. A free home cinema app for the whole family, on every screen.",
+   "github": true,
+   "repo": "github.com/itbelikethatbruh/MKCinema",
+   "stars": 72,
+   "manifest": {
+    "id": "com.mkcinema.app",
+    "version": "1.1.0",
+    "title": "MKCinema",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/itbelikethatbruh/MKCinema/releases/download/v1.37/com.mkcinema.app_1.1.0_all.ipk",
+    "ipkSize": 147874,
+    "ipkHash": {
+     "sha256": "7433fbaf6aa2247489fc3cca2e3bc466887787d2c609cf652f8ff4b5d32f1108"
+    },
+    "sourceUrl": "https://github.com/itbelikethatbruh/MKCinema",
+    "appDescription": "Tomorrow’s cinema, for the whole house. A free home cinema app for the whole family, on every screen."
+   }
+  },
+  {
+   "id": "works.partridge.webos-launcher",
+   "title": "Webos Launcher",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/works.partridge.webos-launcher.png",
+   "shortDescription": "Minimalist home-screen launcher for LG webOS TVs (webOS 6 / Chrome 79). No root required.",
+   "github": true,
+   "repo": "github.com/partridgeworks/webos-launcher",
+   "stars": 57,
+   "manifest": {
+    "id": "works.partridge.webos-launcher",
+    "version": "1.0.0",
+    "title": "Webos Launcher",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/partridgeworks/webos-launcher/releases/download/v1.0.0/works.partridge.webos-launcher_1.0.0_all.ipk",
+    "ipkSize": 264856,
+    "ipkHash": {
+     "sha256": "a0056b89aa2a3396e766e20431c9ea09cc5d3ee1ee9c80e5be56e94e87fee64f"
+    },
+    "sourceUrl": "https://github.com/partridgeworks/webos-launcher",
+    "appDescription": "Minimalist home-screen launcher for LG webOS TVs (webOS 6 / Chrome 79). No root required."
+   }
+  },
+  {
+   "id": "com.zui.player",
+   "title": "ZUI",
+   "iconUri": "https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog-icons/com.zui.player.png",
+   "shortDescription": "Rootless IPTV player for LG webOS TVs, designed for Developer Mode deployment.",
+   "github": true,
+   "repo": "github.com/ZUI-WebOS/ZUI-IPTV-Player",
+   "stars": 21,
+   "manifest": {
+    "id": "com.zui.player",
+    "version": "1.0.1",
+    "title": "ZUI",
+    "rootRequired": false,
+    "ipkUrl": "https://github.com/ZUI-WebOS/ZUI-IPTV-Player/releases/download/v1.0.1/com.zui.player_1.0.1_all.ipk",
+    "ipkSize": 1350638,
+    "ipkHash": {
+     "sha256": "17beb2254c1b984dc3c4be098e5c024ade11dcff532bed78c4e5d23dbeb8f5e7"
+    },
+    "sourceUrl": "https://github.com/ZUI-WebOS/ZUI-IPTV-Player",
+    "appDescription": "Rootless IPTV player for LG webOS TVs, designed for Developer Mode deployment."
+   }
+  }
+ ]
+}

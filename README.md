@@ -11,6 +11,16 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.19: the most starred webOS apps in the Store, and a faster Store
+
+- **More apps in the Store, by themselves:** each day FreeTV looks up the most starred webOS apps on GitHub (Nuvio, CouchSubs,
+  Crunchyroll, Torsher, OMP, APL TV, Magic4PC, Luma Player…), downloads each one once, reads its real name, version and icon from
+  the package and pins its SHA-256 (`tools/webos_catalog.py`, `webos/catalog.json`). New apps and new versions reach the Store with
+  no FreeTV update. Left out: what webOS Homebrew already lists, anything that needs root, and other home screens. They are
+  third-party apps: the TV asks for your "unofficial" yes before installing one, and each card shows its GitHub stars.
+- **A faster Store:** the TV asks all its sources at the same time (three at most) instead of one after another, and keeps the list
+  five minutes, so opening the Store, checking updates and installing no longer wait for every source again.
+
 ### FreeTV 2.18: live sports, and steadier
 
 - **Live sports** (quick panel → *Live sports*, or *My widgets*): today's matches of the competitions you follow (LaLiga, Champions League, Premier
@@ -483,6 +493,16 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.19: las apps de webOS con más estrellas en la Tienda, y una Tienda más rápida
+
+- **Más apps en la Tienda, solas:** cada día FreeTV busca en GitHub las apps de webOS con más estrellas (Nuvio, CouchSubs,
+  Crunchyroll, Torsher, OMP, APL TV, Magic4PC, Luma Player…), descarga cada una una vez, lee su nombre, versión e icono reales del
+  paquete y fija su SHA-256 (`tools/webos_catalog.py`, `webos/catalog.json`). Las apps nuevas y las versiones nuevas llegan a la
+  Tienda sin actualizar FreeTV. Se dejan fuera las que ya están en webOS Homebrew, las que necesitan root y otras pantallas de
+  inicio. Son apps de terceros: la tele te pide el «sí» de app no oficial antes de instalar, y cada tarjeta muestra sus estrellas.
+- **Una Tienda más rápida:** la tele pregunta a todas sus fuentes a la vez (tres como mucho) en lugar de una tras otra, y guarda la
+  lista cinco minutos: abrir la Tienda, buscar actualizaciones e instalar ya no esperan otra vez a cada fuente.
 
 ### FreeTV 2.18: deportes en directo, y más estable
 

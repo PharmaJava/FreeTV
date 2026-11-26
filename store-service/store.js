@@ -23,7 +23,9 @@ var CATALOGUE = 'https://repo.webosbrew.org/api/apps.json';
 var EXTRA = [{url: 'https://atlet99.github.io/rezkatv-public/repository.json', ids: ['com.rezkatv.app', 'com.rezkatv.app.legacy']},
   // YouTube Cobalt AdFree has the real app id youtube.leanback.v4 (like the catalogue's AdFree, and only one of them can be installed): it is listed
   // beside it under its own name (`as`) and installed with the real id.
-  {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'}];
+  {url: 'https://raw.githubusercontent.com/RF1705/youtube-webos-cobalt-adfree/main/repo.json', ids: ['youtube.leanback.v4'], as: 'youtube.leanback.v4.cobalt'},
+  // FreeTV's own list of the most starred webOS apps on GitHub, made again each day (tools/webos_catalog.py): all of it, every one "unofficial"
+  {url: 'https://raw.githubusercontent.com/PharmaJava/FreeTV/main/webos/catalog.json', all: true, github: true}];
 var TEMP = '/media/developer/temp';
 var ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 var URL_RE = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]{2,5})?\/[A-Za-z0-9._~!$&()*+,;=:@%\/?#-]*$/;   // no quotes, no spaces: it goes into a shell command
@@ -191,16 +193,33 @@ Store.prototype.githubPackage = async function (conn, repo) {
 };
 
 /** The GitHub projects (the ones FreeTV brings and the person's) as catalogue entries; those that do not answer are left out. */
-Store.prototype.githubPackages = async function (conn) {
-  var repos = GITHUB_DEFAULT.concat(this.github || []).filter(function (x, n, all) { return all.indexOf(x) === n; }), out = [], i;
-  for (i = 0; i < repos.length; i++) {
-    try { out.push(await this.githubPackage(conn, repos[i])); } catch (e) { this.log('github ' + repos[i] + ': ' + (e && e.message)); }
-  }
+/** Runs these jobs (functions that return a promise) at most `n` at a time over the one SSH session; the answers in order. */
+async function pool(jobs, n) {
+  var out = new Array(jobs.length), next = 0;
+  async function worker() { while (next < jobs.length) { var k = next++; out[k] = await jobs[k](); } }
+  var ws = []; for (var i = 0; i < Math.min(n, jobs.length); i++) ws.push(worker());
+  await Promise.all(ws);
   return out;
+}
+
+Store.prototype.githubPackages = async function (conn) {
+  var self = this, repos = GITHUB_DEFAULT.concat(this.github || []).filter(function (x, n, all) { return all.indexOf(x) === n; });
+  // 2.19: the projects asked at the same time (three at most), not one after another
+  var got = await pool(repos.map(function (repo) { return function () {
+    return self.githubPackage(conn, repo).catch(function (e) { self.log('github ' + repo + ': ' + (e && e.message)); return null; });
+  }; }), 3);
+  return got.filter(function (p) { return p; });
 };
 
+// (this.catCache: the whole list, kept five minutes: the Store, its updates and each install all ask for it)
 Store.prototype.catalogue = async function (conn) {
-  var r = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(CATALOGUE));
+  var key = (this.github || []).join(',');
+  var hit = this.catCache;
+  if (hit && hit.key === key && Date.now() - hit.at < 5 * 60000) return hit.apps.slice();
+  var self = this, curl = function (u) { return function () { return self.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(u)); }; };
+  // 2.19: every source at the same time (three at most), the GitHub projects too, instead of one after another
+  var asked = await Promise.all([pool([curl(CATALOGUE)].concat(EXTRA.map(function (x) { return curl(x.url); })), 3), this.githubPackages(conn)]);
+  var r = asked[0][0], extraAnswers = asked[0].slice(1), gh = asked[1];
   var apps, down = '';
   if (r.code !== 0) down = 'No pude leer el catálogo (' + (r.err.trim().split('\n').pop() || 'sin respuesta') + ').';
   else { try { apps = JSON.parse(r.out).packages; } catch (e) { down = 'El catálogo no tiene el formato esperado.'; } }
@@ -208,21 +227,22 @@ Store.prototype.catalogue = async function (conn) {
   // checked the same way (https, root, hash). Only when none answers is it an error.
   if (down) apps = [];
   for (var x = 0; x < EXTRA.length; x++) {
-    var e = await this.exec(conn, 'curl -fsSL --connect-timeout 20 --max-time 60 ' + q(EXTRA[x].url));
-    if (e.code !== 0) continue;   // an extra source that does not answer is just not offered
+    var e = extraAnswers[x];
+    if (!e || e.code !== 0) continue;   // an extra source that does not answer is just not offered
     var more;
     try { more = JSON.parse(e.out).packages; } catch (err) { continue; }
     for (var y = 0; y < more.length; y++) {
       var id = more[y] && more[y].id;
-      if (EXTRA[x].ids.indexOf(id) < 0) continue;
+      if (!EXTRA[x].all && EXTRA[x].ids.indexOf(id) < 0) continue;
+      if (OWN_IDS.indexOf(id) >= 0) continue;   // (our own apps only ever from our own project)
       var pkg = more[y], listed = EXTRA[x].as || id;
+      if (EXTRA[x].github) pkg = Object.assign({}, pkg, {github: true});   // (it needs the person's "unofficial" yes)
       if (EXTRA[x].as) { pkg = Object.assign({}, more[y], {id: EXTRA[x].as, realId: id}); }   // listed under its own name, installed with its real id
       if (!apps.some(function (a) { return a.id === listed; })) apps.push(pkg);
     }
   }
   // Our own projects (GITHUB_DEFAULT: Stremio Claude in PharmaJava/webos) take the place of a catalogue entry with the same id (webOS
   // Homebrew still lists the original Stremio Origin under tv.stremioorigin.app); a project the person added never replaces one.
-  var gh = await this.githubPackages(conn);
   // The ids our own projects use are never offered from another source (webOS Homebrew still lists the original Stremio Origin under
   // Stremio Claude's id): when our project does not answer, the app is just not offered this time.
   OWN_IDS.forEach(function (id) { apps = apps.filter(function (a) { return a.id !== id; }); });
@@ -233,6 +253,7 @@ Store.prototype.catalogue = async function (conn) {
     else if (p.own) apps[at] = p;
   });
   if (down && !apps.length) throw fail(down);
+  if (!down) this.catCache = {key: key, at: Date.now(), apps: apps.slice()};   // (a list made without the main catalogue is asked again next time)
   return apps;
 };
 
