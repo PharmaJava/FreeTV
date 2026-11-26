@@ -87,6 +87,14 @@ if [[ "$FREETV_STORE" == 1 ]]; then
   (cd "$ROOT" && node tools/provision_store.js "$TV_IP") || echo 'The store could not be turned on (everything else is installed). See docs/COMUNIDAD.md.'
 fi
 
+echo
+echo '== Stremio Claude, our Stremio, comes with FreeTV'
+# The newest release of github.com/PharmaJava/webos, checked against its SHA-256, installed with the same Developer Mode session.
+# FREETV_STREMIO=0 leaves it out (the Store on the TV still offers it).
+if [[ "${FREETV_STREMIO:-1}" == 1 ]]; then
+  (cd "$ROOT" && node tools/install_stremio.js "$TV_IP") || true
+fi
+
 cat <<'EOF'
 
 Done. On the TV: open an app and press Home, or turn the TV off and on again.

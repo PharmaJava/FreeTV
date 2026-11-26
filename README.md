@@ -11,6 +11,15 @@
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Home Settings: language, theme, start tab…"><br><sub>Home Settings: language, theme, start tab…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="The Store lists what you have installed, with its version"><br><sub>The Store lists what you have installed, with its version</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Apps with a new version are marked; Update all"><br><sub>Apps with a new version are marked; Update all</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Developer Mode: time left and automatic renewal"><br><sub>Developer Mode: time left and automatic renewal</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="LG privacy: is the TV listening? (ACR)"><br><sub>LG privacy: is the TV listening? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Hold OK on a channel: open, move, remove"><br><sub>Hold OK on a channel: open, move, remove</sub></td></tr></table>
 
+### FreeTV 2.20: Stremio Claude comes with FreeTV
+
+- **Installing FreeTV on an LG now installs Stremio Claude too** (our fixed Stremio, github.com/PharmaJava/webos): `install.sh` puts its
+  newest release on the TV right after FreeTV, checked against its SHA-256 (`FREETV_STREMIO=0` leaves it out). If that step could not run, a
+  fresh FreeTV installs it once by itself through the TV's own store. A FreeTV that was already on the TV never installs it again (whoever
+  removed it keeps it removed). On Samsung it was already inside FreeTV; on Android TV its icon is on the shelf and installs it.
+- Measured on an LG OLED B1: FreeTV's home uses 9.5 MB of JavaScript memory, 250 page elements and nine small pictures, and is ready in
+  0.9 s; its screen guard takes 15 MB while another app is in front.
+
 ### FreeTV 2.19: the most starred webOS apps in the Store, and a faster Store
 
 - **More apps in the Store, by themselves:** each day FreeTV looks up the most starred webOS apps on GitHub (Nuvio, CouchSubs,
@@ -493,6 +502,16 @@ affiliated with LG.
 ![FreeTV en una LG OLED](docs/screenshot.png)
 
 <table><tr><td width="33%"><img src="docs/screens/ajustes.jpg" alt="Ajustes de inicio: idioma, tema, pestaña de inicio…"><br><sub>Ajustes de inicio: idioma, tema, pestaña de inicio…</sub></td><td width="33%"><img src="docs/screens/tienda-instaladas.jpg" alt="La Tienda enseña lo que tienes instalado, con su versión"><br><sub>La Tienda enseña lo que tienes instalado, con su versión</sub></td><td width="33%"><img src="docs/screens/tienda-actualizaciones.jpg" alt="Las apps con versión nueva salen marcadas; Actualizar todo"><br><sub>Las apps con versión nueva salen marcadas; Actualizar todo</sub></td></tr><tr><td width="33%"><img src="docs/screens/modo-desarrollador.jpg" alt="Modo Desarrollador: tiempo restante y renovación automática"><br><sub>Modo Desarrollador: tiempo restante y renovación automática</sub></td><td width="33%"><img src="docs/screens/privacidad-lg.jpg" alt="Privacidad de LG: ¿la tele escucha? (ACR)"><br><sub>Privacidad de LG: ¿la tele escucha? (ACR)</sub></td><td width="33%"><img src="docs/screens/menu-mantener-ok.jpg" alt="Mantén OK sobre un canal: abrir, mover, quitar"><br><sub>Mantén OK sobre un canal: abrir, mover, quitar</sub></td></tr></table>
+
+### FreeTV 2.20: Stremio Claude viene con FreeTV
+
+- **Instalar FreeTV en una LG ahora instala también Stremio Claude** (nuestro Stremio corregido, github.com/PharmaJava/webos): `install.sh`
+  pone su última versión en la tele justo después de FreeTV, comprobada con su SHA-256 (`FREETV_STREMIO=0` lo deja fuera). Si ese paso no
+  pudo hacerse, un FreeTV recién instalado lo instala él solo una vez, con la tienda de la propia tele. Un FreeTV que ya estaba en la tele
+  nunca lo vuelve a instalar (quien lo quitó lo tiene quitado). En Samsung ya venía dentro de FreeTV; en Android TV su icono está en la
+  estantería y lo instala.
+- Medido en una LG OLED B1: el inicio de FreeTV usa 9,5 MB de memoria de JavaScript, 250 elementos y nueve imágenes pequeñas, y está listo en
+  0,9 s; su vigilante de pantalla ocupa 15 MB mientras hay otra app delante.
 
 ### FreeTV 2.19: las apps de webOS con más estrellas en la Tienda, y una Tienda más rápida
 

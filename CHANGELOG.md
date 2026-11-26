@@ -3,6 +3,19 @@
 FreeTV's version is the one in `home/appinfo.json`; the TV shows it while FreeTV starts (`home/splash.png`) and at the
 bottom of *Home Settings*. Every change is also in the git history of `main`.
 
+## 2.20.0 (2026-11-26)
+
+### Added (LG)
+- **Stremio Claude comes with FreeTV.** `install.sh` runs `tools/install_stremio.js` after FreeTV: the store's own installer (store-service/store.js)
+  over the computer's Developer Mode session, the newest release of PharmaJava/webos downloaded by the TV and checked against its SHA-256; already
+  installed, it is left as it is. `FREETV_STREMIO=0` leaves it out. When that could not run, a fresh FreeTV (no saved settings, none restored)
+  installs it once through the TV's store service, 45 s after it starts and only when that service can install (`stremioAuto` keeps it to once).
+  A FreeTV that was already installed never installs it.
+
+### Measured
+- On the LG OLED B1 (webOS 6): the home's JavaScript heap 9.5 MB (limit 497 MB), 250 elements, nine pictures (none over 720p), page loaded in
+  0.9 s, 214 KB in localStorage (142 KB the Store's catalogue copy); the screen guard 15 MB of RAM while another app is in front.
+
 ## 2.19.0 (2026-11-26)
 
 ### Added (LG)

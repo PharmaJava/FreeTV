@@ -5944,6 +5944,22 @@
     });
   }
   restoreSettings();
+
+  // 2.20: Stremio Claude (our Stremio Origin) comes with FreeTV. install.sh installs it from the computer; when it could not (the store's
+  // permission was given later, say), a FRESH install puts it here once, through the TV's own store, the same way the Store does
+  // (its newest release, its SHA-256 checked). Never on a FreeTV that was already there (whoever removed it keeps it removed).
+  function stremioWithFreeTV() {
+    if (TV.name !== 'webos' || !freshInstall || Prefs.opt('stremioAuto', false)) return;
+    if (findApp('tv.stremioorigin.app')) { Prefs.set('stremioAuto', true); return; }
+    svcCall('status', {}, function (r) {
+      if (!r || !r.returnValue || !r.ready) return;   // the store cannot install here (yet): the Store still offers it
+      Prefs.set('stremioAuto', true);
+      svcCall('install', {id: 'tv.stremioorigin.app', flag: 'unofficial'}, function (r2) {
+        if (r2 && r2.returnValue) toast(tr('Instalando o Stremio Claude, que vem com o FreeTV…', 'Installing Stremio Claude, which comes with FreeTV…', 'Instalando Stremio Claude, que viene con FreeTV…'));
+      });
+    });
+  }
+  if (TV.name === 'webos') setTimeout(stremioWithFreeTV, 45000);
   if (TV.name === 'webos') setInterval(saveSettings, 10 * 60 * 1000);   // also picks up the keys of the TV's remote API and the app list
 
   // Wake the store service now, so the first visit to the Store does not wait for its cold start (about 30 s on the TV).
