@@ -8,7 +8,7 @@
    "shortDescription": "Unofficial native Nuvio client for LG webOS 3+, Samsung Tizen 4+, GoogleTV 7+. C/SDL2/GLES2 on LG and on Samsung (native .tpk, Tizen 4.0-9),",
    "github": true,
    "repo": "github.com/iqui27/nuvio-native-legacy",
-   "stars": 647,
+   "stars": 664,
    "manifest": {
     "id": "space.nuvio.native.legacy",
     "version": "2.0.8",
@@ -30,16 +30,16 @@
    "shortDescription": "PS5 oyun altyazılarını anlık Türkçeye çevirip TV'de oyunun üstünde gösterir / Real-time translated PS5 subtitles on your TV",
    "github": true,
    "repo": "github.com/yorulmazsinan/couchsubs",
-   "stars": 273,
+   "stars": 278,
    "manifest": {
     "id": "com.couchsubs.tv",
-    "version": "0.9.115",
+    "version": "0.9.123",
     "title": "CouchSubs",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/yorulmazsinan/couchsubs/releases/download/v0.1.0-beta.104/com.couchsubs.tv_0.9.115_all.ipk",
-    "ipkSize": 212624,
+    "ipkUrl": "https://github.com/yorulmazsinan/couchsubs/releases/download/v0.1.0-beta.106/com.couchsubs.tv_0.9.123_all.ipk",
+    "ipkSize": 219916,
     "ipkHash": {
-     "sha256": "3f9dc90bb43f16f0b6e9cf38843f943387a6052f5ac74fce2d38bf45f633c5ec"
+     "sha256": "eccf656478b0013cf44ac8885104cc828eed5d8fa2c9662e5bc4219e31934b05"
     },
     "sourceUrl": "https://github.com/yorulmazsinan/couchsubs",
     "appDescription": "PS5 oyun altyazılarını anlık Türkçeye çevirip TV'de oyunun üstünde gösterir / Real-time translated PS5 subtitles on your TV"
@@ -118,7 +118,7 @@
    "shortDescription": "LG webOS TV launcher: a fast, remote-first home screen with live video wallpapers, widgets, Jellyfin, Moonlight game streaming and Home Assi",
    "github": true,
    "repo": "github.com/funnymataleao/luma-webos-launcher",
-   "stars": 99,
+   "stars": 100,
    "manifest": {
     "id": "com.denisefremov.luma.player",
     "version": "0.0.11",
@@ -143,13 +143,13 @@
    "stars": 97,
    "manifest": {
     "id": "com.spacesarmat.torrplayer",
-    "version": "0.30.3",
+    "version": "0.30.4",
     "title": "OMP",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/spacesarmat/omp/releases/download/v0.30.3/OMP-0.30.3-webOS.ipk",
-    "ipkSize": 1235888,
+    "ipkUrl": "https://github.com/spacesarmat/omp/releases/download/v0.30.4/OMP-0.30.4-webOS.ipk",
+    "ipkSize": 1257308,
     "ipkHash": {
-     "sha256": "20393ca57514a6dc61094062ea100c164f39687b8c5dfbc1d40786fb0a8362bf"
+     "sha256": "c21f4429edc2228f507c3dd79e449d254089c34fbc0c0fc9d30895a9e7242fab"
     },
     "sourceUrl": "https://github.com/spacesarmat/omp",
     "appDescription": "OMP - медиаплеер для LG webOS, Android TV, Android, Windows, macOS и Linux: фильмы и сериалы из TorrServer, телефон как пульт, поиск раздач и подписки на сериалы."
@@ -162,16 +162,16 @@
    "shortDescription": "Your home cinema in one container: a TV showcase, your own library, playback while the file downloads, and new episodes that arrive on their",
    "github": true,
    "repo": "github.com/torsher-app/torsher",
-   "stars": 95,
+   "stars": 96,
    "manifest": {
     "id": "app.torsher.webos",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "title": "Torsher",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/torsher-app/torsher/releases/download/v1.9.0/app.torsher.webos_1.9.0_all.ipk",
-    "ipkSize": 199066,
+    "ipkUrl": "https://github.com/torsher-app/torsher/releases/download/v1.10.0/app.torsher.webos_1.10.0_all.ipk",
+    "ipkSize": 199062,
     "ipkHash": {
-     "sha256": "dd88a198fc6a16e5d28a1d87a7d6f6126ed823b6609487ac8f001cdf7cb36b30"
+     "sha256": "103422371388d233a66ff5c0e15b30a82bdf43f189d6f80f79fe11b352c5ebe8"
     },
     "sourceUrl": "https://github.com/torsher-app/torsher",
     "appDescription": "Your home cinema in one container: a TV showcase, your own library, playback while the file downloads, and new episodes that arrive on their own. Self-hosted, built for the TV first."
@@ -184,7 +184,7 @@
    "shortDescription": "Nino Game Translator: PS5 ve Xbox oyunlarındaki İngilizce altyazı, telefon mesajı ve harita kartlarını anında Türkçeye ve Arapçaya çevirip T",
    "github": true,
    "repo": "github.com/yunusdemirbag/nino-game-translator",
-   "stars": 88,
+   "stars": 90,
    "manifest": {
     "id": "com.ninotranslator.tv",
     "version": "4.5.0",
@@ -206,7 +206,7 @@
    "shortDescription": "An Apple TV style IPTV player for Samsung (Tizen), LG (webOS) and Android TV. Your own M3U and Xtream playlists, in the style of APL Launche",
    "github": true,
    "repo": "github.com/Knikt/APL-TV",
-   "stars": 85,
+   "stars": 86,
    "manifest": {
     "id": "com.knikt.apltv",
     "version": "1.4.16",
@@ -300,7 +300,7 @@
     "version": "1.1.0",
     "title": "MKCinema",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/itbelikethatbruh/MKCinema/releases/download/v1.37/com.mkcinema.app_1.1.0_all.ipk",
+    "ipkUrl": "https://github.com/itbelikethatbruh/MKCinema/releases/download/v1.38/com.mkcinema.app_1.1.0_all.ipk",
     "ipkSize": 147874,
     "ipkHash": {
      "sha256": "7433fbaf6aa2247489fc3cca2e3bc466887787d2c609cf652f8ff4b5d32f1108"
