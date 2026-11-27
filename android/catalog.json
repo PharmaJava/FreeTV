@@ -44,13 +44,13 @@
    "id": "org.jellyfin.androidtv",
    "minSdk": 23,
    "repo": "jellyfin/jellyfin-androidtv",
-   "sha256": "dfcc665195bed4ea087dca63df6f77497acc1185c4b15776b336d80eeaeb7fa6",
-   "size": 29945596,
-   "tag": "v0.20.0",
+   "sha256": "5a9ec1d489b542eafc6fe628278f6aa2c077fd1b15f8f9b7da1924b52566111c",
+   "size": 29957341,
+   "tag": "v0.20.1",
    "title": "Jellyfin",
-   "url": "https://github.com/jellyfin/jellyfin-androidtv/releases/download/v0.20.0/jellyfin-androidtv-v0.20.0-release.apk",
-   "version": "0.20.0",
-   "versionCode": 200099
+   "url": "https://github.com/jellyfin/jellyfin-androidtv/releases/download/v0.20.1/jellyfin-androidtv-v0.20.1-release.apk",
+   "version": "0.20.1",
+   "versionCode": 200199
   },
   {
    "desc": [
