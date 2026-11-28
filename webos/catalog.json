@@ -8,7 +8,7 @@
    "shortDescription": "Unofficial native Nuvio client for LG webOS 3+, Samsung Tizen 4+, GoogleTV 7+. C/SDL2/GLES2 on LG and on Samsung (native .tpk, Tizen 4.0-9),",
    "github": true,
    "repo": "github.com/iqui27/nuvio-native-legacy",
-   "stars": 664,
+   "stars": 665,
    "manifest": {
     "id": "space.nuvio.native.legacy",
     "version": "2.0.8",
@@ -30,16 +30,16 @@
    "shortDescription": "PS5 oyun altyazılarını anlık Türkçeye çevirip TV'de oyunun üstünde gösterir / Real-time translated PS5 subtitles on your TV",
    "github": true,
    "repo": "github.com/yorulmazsinan/couchsubs",
-   "stars": 278,
+   "stars": 283,
    "manifest": {
     "id": "com.couchsubs.tv",
-    "version": "0.9.123",
+    "version": "0.9.127",
     "title": "CouchSubs",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/yorulmazsinan/couchsubs/releases/download/v0.1.0-beta.106/com.couchsubs.tv_0.9.123_all.ipk",
-    "ipkSize": 219916,
+    "ipkUrl": "https://github.com/yorulmazsinan/couchsubs/releases/download/v0.1.0-beta.108/com.couchsubs.tv_0.9.127_all.ipk",
+    "ipkSize": 221550,
     "ipkHash": {
-     "sha256": "eccf656478b0013cf44ac8885104cc828eed5d8fa2c9662e5bc4219e31934b05"
+     "sha256": "b834cd3c06978ce3b91881aa754287f60f9a1d6231feddcf6eab54c0b63367b1"
     },
     "sourceUrl": "https://github.com/yorulmazsinan/couchsubs",
     "appDescription": "PS5 oyun altyazılarını anlık Türkçeye çevirip TV'de oyunun üstünde gösterir / Real-time translated PS5 subtitles on your TV"
@@ -74,7 +74,7 @@
    "shortDescription": "A calm Home screen for LG TVs on older webOS, made to sit beside GlassHouse",
    "github": true,
    "repo": "github.com/chiotas/lightkeeper",
-   "stars": 106,
+   "stars": 107,
    "manifest": {
     "id": "io.github.chiotas.lightkeeper",
     "version": "1.1.1",
@@ -118,7 +118,7 @@
    "shortDescription": "LG webOS TV launcher: a fast, remote-first home screen with live video wallpapers, widgets, Jellyfin, Moonlight game streaming and Home Assi",
    "github": true,
    "repo": "github.com/funnymataleao/luma-webos-launcher",
-   "stars": 100,
+   "stars": 101,
    "manifest": {
     "id": "com.denisefremov.luma.player",
     "version": "0.0.11",
@@ -206,7 +206,7 @@
    "shortDescription": "An Apple TV style IPTV player for Samsung (Tizen), LG (webOS) and Android TV. Your own M3U and Xtream playlists, in the style of APL Launche",
    "github": true,
    "repo": "github.com/Knikt/APL-TV",
-   "stars": 86,
+   "stars": 89,
    "manifest": {
     "id": "com.knikt.apltv",
     "version": "1.4.16",
@@ -250,7 +250,7 @@
    "shortDescription": "Self-hosted media center for live TV, a Jellyfin and Plex alternative: M3U and Xtream Codes (IPTV) playlists you are entitled to use, EPG gu",
    "github": true,
    "repo": "github.com/silirim/VodMax",
-   "stars": 82,
+   "stars": 83,
    "manifest": {
     "id": "app.vodmax.client",
     "version": "0.6.19",
@@ -275,13 +275,13 @@
    "stars": 73,
    "manifest": {
     "id": "io.github.alexesmm.legacytv",
-    "version": "4.6.0",
+    "version": "4.8.0",
     "title": "StremCompat",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/StremCompat/webos/releases/download/v4.6.0/StremCompat-v4.6.0-1080p.ipk",
-    "ipkSize": 6703918,
+    "ipkUrl": "https://github.com/StremCompat/webos/releases/download/v4.8.0/StremCompat-v4.8.0-1080p.ipk",
+    "ipkSize": 6736164,
     "ipkHash": {
-     "sha256": "6677476d7e405370c10377468c74ef2e59dade5037c0c556baf4b3856b1e82fd"
+     "sha256": "8cb8223dbb02a4dc013d1d0e97ba6517042f7ceb5ee4b23d41a90a0161a6652f"
     },
     "sourceUrl": "https://github.com/StremCompat/webos",
     "appDescription": "Stremio and Nuvio on older LG TVs (webOS 3 and newer). Unofficial, no root: Homebrew Channel install, live channels, addon store and Nuvio profiles. Not affiliated with Stremio, Nuvio or LG."
@@ -300,7 +300,7 @@
     "version": "1.1.0",
     "title": "MKCinema",
     "rootRequired": false,
-    "ipkUrl": "https://github.com/itbelikethatbruh/MKCinema/releases/download/v1.38/com.mkcinema.app_1.1.0_all.ipk",
+    "ipkUrl": "https://github.com/itbelikethatbruh/MKCinema/releases/download/v1.39/com.mkcinema.app_1.1.0_all.ipk",
     "ipkSize": 147874,
     "ipkHash": {
      "sha256": "7433fbaf6aa2247489fc3cca2e3bc466887787d2c609cf652f8ff4b5d32f1108"
