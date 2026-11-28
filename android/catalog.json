@@ -78,13 +78,13 @@
    "id": "org.courville.nova",
    "minSdk": 23,
    "repo": "nova-video-player/aos-AVP",
-   "sha256": "9fb146566d8fb70ec5ed03ea180aa10abf294eea7a52a4eafc17634eb20e7143",
-   "size": 32683439,
-   "tag": "v6.6.5",
+   "sha256": "b01d33e02e3a049b97036484e5b574a32b4bb306ed65b5ea0fc4e3547dfaadea",
+   "size": 32733191,
+   "tag": "v6.6.6",
    "title": "Nova Video Player",
-   "url": "https://github.com/nova-video-player/aos-AVP/releases/download/v6.6.5/org.courville.nova-2674922-6.6.5-20261111.1224-armeabi-v7a-release.apk",
-   "version": "6.6.5-20261111.1224",
-   "versionCode": 2674922
+   "url": "https://github.com/nova-video-player/aos-AVP/releases/download/v6.6.6/org.courville.nova-2676333-6.6.6-20261127.2019-armeabi-v7a-release.apk",
+   "version": "6.6.6-20261127.2019",
+   "versionCode": 2676333
   },
   {
    "desc": [
